@@ -706,12 +706,13 @@
     <div class="page" id="page-cad-procedimentos">
       <div class="page-title">Procedimentos</div>
       <div class="search-bar">
-        <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-procedimentos', this.value)" />
-        <button class="btn btn-success" onclick="openModal('modal-procedimento')">+ Novo Procedimento</button>
+        <input type="text" placeholder="Pesquisar por código ou nome..." oninput="filterProcedimentos(this.value)" />
+        <button class="btn btn-primary" onclick="abrirTussModal()" style="background:#1a6bb5;">🔍 Buscar na TUSS</button>
+        <button class="btn btn-success" onclick="openModal('modal-procedimento')">+ Manual</button>
       </div>
       <div class="card">
-        <div class="card-header"><h3>&#9776; Lista de Procedimentos</h3></div>
-        <table><thead><tr><th>Código</th><th>Nome</th><th>Nome Abreviado</th><th>Ações</th></tr></thead><tbody id="tb-cad-procedimentos"></tbody></table>
+        <div class="card-header"><h3>&#9776; Lista de Procedimentos Cadastrados</h3></div>
+        <table><thead><tr><th>Tabela</th><th>Código TUSS</th><th>Nome</th><th>Nome Abreviado</th><th>Ações</th></tr></thead><tbody id="tb-cad-procedimentos"></tbody></table>
       </div>
     </div>
 
@@ -888,12 +889,62 @@
 </div>
 
 <!-- Modal Procedimento -->
+<!-- Modal busca TUSS -->
+<div class="modal-overlay" id="modal-tuss-busca">
+  <div class="modal" style="max-width:700px;width:95vw;">
+    <h2>🔍 Buscar na Tabela TUSS</h2>
+    <div style="display:flex;gap:10px;margin-bottom:14px;">
+      <input type="text" id="tuss-busca-input" placeholder="Código ou nome do procedimento..." oninput="filtrarTUSS(this.value)" style="flex:1;" />
+      <select id="tuss-busca-categoria" onchange="filtrarTUSS(document.getElementById('tuss-busca-input').value)" style="width:180px;">
+        <option value="">Todas as categorias</option>
+        <option value="Avaliação">Avaliação</option>
+        <option value="Respiratória">Respiratória</option>
+        <option value="Motora">Motora</option>
+        <option value="Diária">Diária</option>
+        <option value="Ventilação">Ventilação Mecânica</option>
+        <option value="Eletroterapia">Eletroterapia</option>
+        <option value="Hidroterapia">Hidroterapia</option>
+        <option value="Neurofuncional">Neurofuncional</option>
+        <option value="Neonatal">Neonatal/Pediátrica</option>
+        <option value="Intensivismo">Intensivismo</option>
+      </select>
+    </div>
+    <div style="max-height:380px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead style="position:sticky;top:0;background:#f5f7fa;z-index:1;">
+          <tr><th style="padding:8px 12px;text-align:left;font-size:12px;">Tab.</th><th style="padding:8px 12px;text-align:left;font-size:12px;">Código</th><th style="padding:8px 12px;text-align:left;font-size:12px;">Nome</th><th style="padding:8px 12px;text-align:left;font-size:12px;">Categoria</th><th style="padding:8px 4px;font-size:12px;"></th></tr>
+        </thead>
+        <tbody id="tb-tuss-lista"></tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:#888;margin-top:10px;">Tabela 22 — CBHPM Fisioterapia. Verifique valores com seu convênio.</div>
+    <div class="form-actions" style="margin-top:12px;">
+      <button class="btn" onclick="closeModal('modal-tuss-busca')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Procedimento (manual) -->
 <div class="modal-overlay" id="modal-procedimento">
   <div class="modal">
-    <h2>Novo Procedimento</h2>
-    <div class="form-group"><label>Código *</label><input type="text" id="proc-codigo" /></div>
+    <h2 id="proc-modal-titulo">Novo Procedimento</h2>
+    <input type="hidden" id="proc-edit-id" />
+    <div class="form-row">
+      <div class="form-group"><label>Tabela</label><input type="number" id="proc-tabela" value="22" /></div>
+      <div class="form-group"><label>Código TUSS *</label><input type="text" id="proc-codigo" /></div>
+    </div>
     <div class="form-group"><label>Nome *</label><input type="text" id="proc-nome" /></div>
-    <div class="form-group"><label>Nome Abreviado</label><input type="text" id="proc-abrev" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Nome Abreviado</label><input type="text" id="proc-abrev" /></div>
+      <div class="form-group"><label>Categoria</label>
+        <select id="proc-categoria">
+          <option>Avaliação</option><option>Respiratória</option><option>Motora</option>
+          <option>Diária</option><option>Ventilação</option><option>Eletroterapia</option>
+          <option>Hidroterapia</option><option>Neurofuncional</option><option>Neonatal</option>
+          <option>Intensivismo</option><option>Outro</option>
+        </select>
+      </div>
+    </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-procedimento')">Cancelar</button>
       <button class="btn btn-success" onclick="saveProcedimento()">Salvar</button>
@@ -1531,9 +1582,41 @@ function renderProfissionais() {
 }
 
 function renderProcedimentos() {
-  document.getElementById('tb-cad-procedimentos').innerHTML = DB.get('procedimentos').map(p => `
-    <tr data-search="${p.nome.toLowerCase()}"><td>${p.codigo}</td><td>${p.nome}</td><td>${p.abrev||'-'}</td>
-    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+  const lista = DB.get('procedimentos');
+  document.getElementById('tb-cad-procedimentos').innerHTML = lista.length
+    ? lista.map(p => `
+        <tr data-search="${(p.nome+' '+(p.codigo||'')).toLowerCase()}">
+          <td>${p.tabela||22}</td><td>${p.codigo}</td><td>${p.nome}</td><td>${p.abrev||'-'}</td>
+          <td><button class="btn btn-primary btn-sm" onclick="editarProcedimento(${p.id})">Editar</button>
+              <button class="btn btn-sm" style="background:#e74c3c;color:#fff;margin-left:4px" onclick="excluirProcedimento(${p.id})">✕</button></td>
+        </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento cadastrado. Use "Buscar na TUSS" para adicionar.</td></tr>';
+}
+
+function filterProcedimentos(q) {
+  const v = q.toLowerCase();
+  document.querySelectorAll('#tb-cad-procedimentos tr').forEach(tr => {
+    tr.style.display = tr.dataset.search && !tr.dataset.search.includes(v) ? 'none' : '';
+  });
+}
+
+function editarProcedimento(id) {
+  const p = DB.get('procedimentos').find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('proc-modal-titulo').textContent = 'Editar Procedimento';
+  document.getElementById('proc-edit-id').value = id;
+  document.getElementById('proc-tabela').value = p.tabela || 22;
+  document.getElementById('proc-codigo').value = p.codigo;
+  document.getElementById('proc-nome').value = p.nome;
+  document.getElementById('proc-abrev').value = p.abrev || '';
+  document.getElementById('proc-categoria').value = p.categoria || 'Outro';
+  openModal('modal-procedimento');
+}
+
+function excluirProcedimento(id) {
+  if (!confirm('Excluir este procedimento?')) return;
+  DB.set('procedimentos', DB.get('procedimentos').filter(p => p.id !== id));
+  renderProcedimentos(); showToast('Procedimento removido.');
 }
 
 function renderSetores() {
@@ -1850,11 +1933,147 @@ function saveProfissional() {
 }
 
 function saveProcedimento() {
-  const nome=document.getElementById('proc-nome').value.trim(), codigo=document.getElementById('proc-codigo').value.trim();
-  if (!nome||!codigo) { alert('Código e Nome são obrigatórios'); return; }
-  DB.push('procedimentos',{id:getNextId('procedimentos'),codigo,nome,abrev:document.getElementById('proc-abrev').value});
-  closeModal('modal-procedimento'); renderProcedimentos(); showToast('Procedimento salvo!');
-  document.getElementById('proc-nome').value=''; document.getElementById('proc-codigo').value='';
+  const nome = document.getElementById('proc-nome').value.trim();
+  const codigo = document.getElementById('proc-codigo').value.trim();
+  if (!nome || !codigo) { alert('Código e Nome são obrigatórios'); return; }
+  const obj = {
+    tabela: parseInt(document.getElementById('proc-tabela').value) || 22,
+    codigo, nome,
+    abrev: document.getElementById('proc-abrev').value,
+    categoria: document.getElementById('proc-categoria').value
+  };
+  const editId = parseInt(document.getElementById('proc-edit-id').value);
+  if (editId) {
+    const procs = DB.get('procedimentos');
+    const idx = procs.findIndex(p => p.id === editId);
+    if (idx >= 0) { procs[idx] = { ...procs[idx], ...obj }; DB.set('procedimentos', procs); }
+    document.getElementById('proc-edit-id').value = '';
+  } else {
+    // não duplicar código
+    if (DB.get('procedimentos').find(p => p.codigo === codigo)) { alert('Procedimento com este código já cadastrado.'); return; }
+    DB.push('procedimentos', { id: getNextId('procedimentos'), ...obj });
+  }
+  closeModal('modal-procedimento');
+  renderProcedimentos();
+  updateConvenioSelects();
+  showToast('Procedimento salvo!');
+  document.getElementById('proc-modal-titulo').textContent = 'Novo Procedimento';
+  ['proc-nome','proc-codigo','proc-abrev'].forEach(f => document.getElementById(f).value = '');
+}
+
+// ─── TABELA TUSS – Fisioterapia (Tabela 22 CBHPM) ──────────────────────────
+const TUSS_FISIO = [
+  // Avaliação
+  {tab:22,cod:'50000349',nome:'Avaliação fisioterapêutica',abrev:'AVAL FISIO',cat:'Avaliação'},
+  {tab:22,cod:'50000357',nome:'Reavaliação fisioterapêutica',abrev:'REAVAL FISIO',cat:'Avaliação'},
+  {tab:22,cod:'50000403',nome:'Avaliação fisioterapêutica em grupo',abrev:'AVAL GRUPO',cat:'Avaliação'},
+
+  // Diárias
+  {tab:22,cod:'80116850',nome:'Diária fisioterapêutica com ventilação mecânica – UTI/Apto/Enf',abrev:'DIÁRIA C VM',cat:'Diária'},
+  {tab:22,cod:'80116868',nome:'Diária fisioterapêutica sem ventilação mecânica – UTI',abrev:'DIÁRIA S VM UTI',cat:'Diária'},
+  {tab:22,cod:'80116876',nome:'Diária fisioterapêutica sem ventilação mecânica – Apto/Enf',abrev:'DIÁRIA S VM APT',cat:'Diária'},
+
+  // Fisioterapia Respiratória
+  {tab:22,cod:'50000861',nome:'Fisioterapia respiratória',abrev:'FISIO RESP',cat:'Respiratória'},
+  {tab:22,cod:'50000900',nome:'Drenagem postural',abrev:'DRENAGEM POST',cat:'Respiratória'},
+  {tab:22,cod:'50000919',nome:'Aspiração de vias aéreas / Higiene brônquica',abrev:'ASPIRAÇÃO',cat:'Respiratória'},
+  {tab:22,cod:'50000935',nome:'Ventilação não invasiva – VNI (CPAP/BIPAP)',abrev:'VNI',cat:'Respiratória'},
+  {tab:22,cod:'50000943',nome:'Treinamento muscular respiratório',abrev:'TREINO MUSC RESP',cat:'Respiratória'},
+  {tab:22,cod:'50000951',nome:'Desobstrução brônquica (técnicas manuais)',abrev:'DESOBSTR BRONQ',cat:'Respiratória'},
+  {tab:22,cod:'50000986',nome:'Reexpansão pulmonar',abrev:'REEXPANSÃO PULM',cat:'Respiratória'},
+  {tab:22,cod:'50001001',nome:'Incentivação respiratória (espirometria de incentivo)',abrev:'INCENTIV RESP',cat:'Respiratória'},
+
+  // Ventilação Mecânica
+  {tab:22,cod:'80116483',nome:'Ventilação mecânica invasiva – instalação e monitoramento',abrev:'VM INVASIVA',cat:'Ventilação'},
+  {tab:22,cod:'80116491',nome:'Desmame de ventilação mecânica',abrev:'DESMAME VM',cat:'Ventilação'},
+  {tab:22,cod:'80116507',nome:'Ajuste e monitoramento de ventilação mecânica',abrev:'AJUSTE VM',cat:'Ventilação'},
+
+  // Fisioterapia Motora
+  {tab:22,cod:'50001036',nome:'Cinesioterapia ativa – mobilização e exercícios',abrev:'CINESIOTERAP',cat:'Motora'},
+  {tab:22,cod:'50001044',nome:'Mobilização passiva e ativo-assistida',abrev:'MOB PASSIVA',cat:'Motora'},
+  {tab:22,cod:'50001052',nome:'Reeducação postural global – RPG',abrev:'RPG',cat:'Motora'},
+  {tab:22,cod:'50001079',nome:'Estimulação elétrica neuromuscular – EENM/FES',abrev:'EENM / FES',cat:'Eletroterapia'},
+  {tab:22,cod:'50001087',nome:'Eletroterapia (TENS, ondas curtas, ultrassom)',abrev:'ELETROTERAPIA',cat:'Eletroterapia'},
+  {tab:22,cod:'50001095',nome:'Hidroterapia / Fisioterapia aquática',abrev:'HIDROTERAPIA',cat:'Hidroterapia'},
+  {tab:22,cod:'50001109',nome:'Crioterapia',abrev:'CRIOTERAPIA',cat:'Motora'},
+  {tab:22,cod:'50001117',nome:'Termoterapia (calor superficial e profundo)',abrev:'TERMOTERAPIA',cat:'Motora'},
+  {tab:22,cod:'50001125',nome:'Fototerapia / Laserterapia',abrev:'LASER',cat:'Eletroterapia'},
+  {tab:22,cod:'50001133',nome:'Tração mecânica / Manual',abrev:'TRAÇÃO',cat:'Motora'},
+  {tab:22,cod:'50001168',nome:'Treino de marcha',abrev:'TREINO MARCHA',cat:'Motora'},
+  {tab:22,cod:'50001176',nome:'Treino de transferências e AVD',abrev:'TREINO AVD',cat:'Motora'},
+  {tab:22,cod:'50001184',nome:'Treino de equilíbrio e propriocepção',abrev:'EQUILÍBRIO',cat:'Motora'},
+
+  // Neurofuncional
+  {tab:22,cod:'50001230',nome:'Fisioterapia neurofuncional – adulto',abrev:'NEUROFUNC ADULTO',cat:'Neurofuncional'},
+  {tab:22,cod:'50001249',nome:'Fisioterapia neurofuncional – método Bobath',abrev:'BOBATH',cat:'Neurofuncional'},
+  {tab:22,cod:'50001257',nome:'Estimulação sensório-motora',abrev:'ESTIM SENSÓRIO',cat:'Neurofuncional'},
+  {tab:22,cod:'50001265',nome:'Reabilitação neurológica pós-AVC',abrev:'REAB AVC',cat:'Neurofuncional'},
+  {tab:22,cod:'50001273',nome:'Reabilitação neurológica pós-TCE',abrev:'REAB TCE',cat:'Neurofuncional'},
+
+  // Intensivismo / UTI
+  {tab:22,cod:'80116515',nome:'Fisioterapia intensivista – sessão UTI adulto',abrev:'FISIO UTI ADULTO',cat:'Intensivismo'},
+  {tab:22,cod:'80116523',nome:'Mobilização precoce em UTI',abrev:'MOB PRECOCE UTI',cat:'Intensivismo'},
+  {tab:22,cod:'80116531',nome:'Posicionamento terapêutico em UTI',abrev:'POSIC UTI',cat:'Intensivismo'},
+  {tab:22,cod:'80116540',nome:'Fisioterapia pós-extubação',abrev:'PÓS EXTUBAÇÃO',cat:'Intensivismo'},
+  {tab:22,cod:'80116558',nome:'Reabilitação pós-operatória – pós cirurgia cardíaca',abrev:'PÓS CIR CARD',cat:'Intensivismo'},
+  {tab:22,cod:'80116566',nome:'Reabilitação pós-operatória – pós cirurgia torácica',abrev:'PÓS CIR TOR',cat:'Intensivismo'},
+
+  // Neonatal / Pediátrica
+  {tab:22,cod:'80118020',nome:'Fisioterapia neonatal – recém-nascido',abrev:'FISIO NEONATAL',cat:'Neonatal'},
+  {tab:22,cod:'80118038',nome:'Fisioterapia respiratória neonatal',abrev:'RESP NEONATAL',cat:'Neonatal'},
+  {tab:22,cod:'80118046',nome:'Estimulação neuropsicomotora – neonato',abrev:'ESTIM NEONATO',cat:'Neonatal'},
+  {tab:22,cod:'80118054',nome:'Fisioterapia pediátrica – UTI pediátrica',abrev:'FISIO UTI PED',cat:'Neonatal'},
+  {tab:22,cod:'80118062',nome:'Ventilação mecânica neonatal – ajuste',abrev:'VM NEONATAL',cat:'Neonatal'},
+
+  // Outros
+  {tab:22,cod:'50001540',nome:'Bandagem funcional / Taping neuromuscular',abrev:'BANDAGEM',cat:'Motora'},
+  {tab:22,cod:'50001559',nome:'Drenagem linfática manual',abrev:'DRENAGEM LINF',cat:'Motora'},
+  {tab:22,cod:'50001567',nome:'Massoterapia terapêutica',abrev:'MASSOTERAPIA',cat:'Motora'},
+  {tab:22,cod:'50001583',nome:'Cinesioterapia em grupo (até 5 pacientes)',abrev:'CINESIOTERAP GRP',cat:'Motora'},
+];
+
+function abrirTussModal() {
+  filtrarTUSS('');
+  openModal('modal-tuss-busca');
+  setTimeout(() => document.getElementById('tuss-busca-input').focus(), 200);
+}
+
+function filtrarTUSS(q) {
+  const cat = document.getElementById('tuss-busca-categoria').value;
+  const v = (q || '').toLowerCase();
+  const jaAdd = new Set(DB.get('procedimentos').map(p => p.codigo));
+  const filtrado = TUSS_FISIO.filter(p =>
+    (!cat || p.cat === cat) &&
+    (!v || p.cod.includes(v) || p.nome.toLowerCase().includes(v) || p.abrev.toLowerCase().includes(v))
+  );
+  document.getElementById('tb-tuss-lista').innerHTML = filtrado.length
+    ? filtrado.map(p => {
+        const adicionado = jaAdd.has(p.cod);
+        return `<tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:8px 12px;font-size:12px;color:#888;">${p.tab}</td>
+          <td style="padding:8px 12px;font-size:12px;font-weight:600;">${p.cod}</td>
+          <td style="padding:8px 12px;font-size:12px;">${p.nome}</td>
+          <td style="padding:8px 12px;font-size:11px;color:#4a90d9;">${p.cat}</td>
+          <td style="padding:8px 6px;">
+            ${adicionado
+              ? '<span style="color:#27ae60;font-size:12px;">✔ adicionado</span>'
+              : `<button class="btn btn-success btn-sm" onclick="adicionarDaTUSS('${p.cod}')">+ Adicionar</button>`}
+          </td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="5" style="padding:20px;text-align:center;color:#aaa;">Nenhum procedimento encontrado</td></tr>';
+}
+
+function adicionarDaTUSS(cod) {
+  const p = TUSS_FISIO.find(x => x.cod === cod);
+  if (!p) return;
+  if (DB.get('procedimentos').find(x => x.codigo === cod)) { showToast('Já adicionado!'); return; }
+  DB.push('procedimentos', { id: getNextId('procedimentos'), tabela: p.tab, codigo: p.cod, nome: p.nome, abrev: p.abrev, categoria: p.cat });
+  renderProcedimentos();
+  updateConvenioSelects();
+  // atualiza checkmarks na lista TUSS
+  filtrarTUSS(document.getElementById('tuss-busca-input').value);
+  showToast(`"${p.abrev}" adicionado!`);
 }
 
 function saveSetor() {
