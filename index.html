@@ -210,6 +210,29 @@
     .acesso-negado h2 { font-size: 22px; color: #e74c3c; margin-bottom: 8px; }
 
     @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    /* ===== IMS SELECTOR ===== */
+    .ims-selector { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .ims-btn {
+      width:38px; height:38px; border:2px solid #ddd; border-radius:6px;
+      background:#fff; font-size:13px; font-weight:600; color:#555; cursor:pointer; transition:all 0.15s;
+    }
+    .ims-btn:hover { border-color:#4a90d9; color:#4a90d9; }
+    .ims-btn.selected { background:#0a1628; border-color:#0a1628; color:#fff; }
+
+    /* ===== TOGGLE SWITCH ===== */
+    .toggle-switch { position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider {
+      position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+      background:#ccc; border-radius:26px; transition:0.3s;
+    }
+    .toggle-slider:before {
+      position:absolute; content:""; height:20px; width:20px; left:3px; bottom:3px;
+      background:#fff; border-radius:50%; transition:0.3s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background:#27ae60; }
+    .toggle-switch input:checked + .toggle-slider:before { transform:translateX(20px); }
   </style>
 </head>
 <body>
@@ -458,11 +481,115 @@
       <div class="page-title">Pacientes</div>
       <div class="search-bar">
         <input type="text" placeholder="Digite o Nome do Paciente para pesquisar" oninput="filterTable('tb-cad-pacientes', this.value)" />
-        <button class="btn btn-success" onclick="openModal('modal-paciente')">+ Novo Paciente</button>
+        <button class="btn btn-success" onclick="abrirNovoAtendimento(null,null)">+ Novo Paciente</button>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Pacientes</h3></div>
         <table><thead><tr><th>Nome</th><th>Idade</th><th>CPF</th><th>Convênio</th><th>Ações</th></tr></thead><tbody id="tb-cad-pacientes"></tbody></table>
+      </div>
+    </div>
+
+    <!-- NOVO ATENDIMENTO -->
+    <div class="page" id="page-novo-atendimento">
+      <div style="background:#fff;border-bottom:1px solid #e0e0e0;padding:14px 28px;display:flex;align-items:center;gap:16px;margin:-28px -28px 24px -28px;">
+        <button class="btn btn-navy" onclick="voltarDoNovoAtendimento()">← Voltar</button>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:11px;color:#888;">Setor - Leito</div>
+          <div id="novoat-setor-leito" style="font-size:18px;font-weight:700;color:#0a1628;">—</div>
+        </div>
+      </div>
+
+      <div style="max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:18px;">
+
+        <!-- Setor/Leito (quando vem do cadastro) -->
+        <div id="novoat-select-setor-wrap" style="display:none;">
+          <div class="card" style="padding:20px;">
+            <div style="font-weight:700;font-size:14px;color:#0a1628;margin-bottom:14px;">Localização</div>
+            <div class="form-group"><label>Setor *</label>
+              <select id="novoat-setor" onchange="novoatGerarLeitos()"><option value="">Selecione o setor</option></select>
+            </div>
+            <div class="form-group"><label>Leito *</label>
+              <select id="novoat-leito"><option value="">Selecione o leito</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dados do paciente -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:700;font-size:14px;color:#0a1628;margin-bottom:14px;">Dados do Paciente</div>
+          <div class="form-group"><label>Número do Atendimento *</label><input type="text" id="novoat-num-at" /></div>
+          <div class="form-group"><label>Convênio *</label><select id="novoat-convenio"><option value="">Selecione...</option></select></div>
+          <div class="form-group"><label>Nome Completo do Paciente *</label><input type="text" id="novoat-nome" /></div>
+          <div class="form-group"><label>Data de Nascimento</label><input type="date" id="novoat-nascimento" /></div>
+          <div class="form-group"><label>CPF</label><input type="text" id="novoat-cpf" placeholder="000.000.000-00" /></div>
+          <div class="form-group"><label>Status do Paciente</label>
+            <select id="novoat-status"><option value="">Selecione...</option></select>
+          </div>
+        </div>
+
+        <!-- Dados da internação -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:700;font-size:14px;color:#0a1628;margin-bottom:14px;">Dados da Internação</div>
+          <div class="form-group"><label>Clínica Responsável</label>
+            <select id="novoat-clinica"><option value="">Selecione...</option><option>Clínica Médica</option><option>Cirurgia Geral</option><option>Ortopedia</option><option>Cardiologia</option><option>Pneumologia</option><option>Neurologia</option><option>UTI</option><option>Outro</option></select>
+          </div>
+          <div class="form-group"><label>Tipo da Internação</label>
+            <select id="novoat-tipo"><option value="">Selecione...</option><option>Clínico</option><option>Cirúrgico</option><option>Obstétrico</option><option>Psiquiátrico</option></select>
+          </div>
+          <div class="form-group"><label>Diagnóstico Médico</label><input type="text" id="novoat-diag" /></div>
+          <div class="form-group"><label>Data da Internação</label><input type="date" id="novoat-data-intern" /></div>
+          <div class="form-group"><label>Data de Início do Atendimento</label><input type="date" id="novoat-data-atend" /></div>
+          <div class="form-group"><label>Observação</label><textarea id="novoat-obs" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;resize:vertical;"></textarea></div>
+        </div>
+
+        <!-- IMS -->
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:700;font-size:14px;color:#0a1628;margin-bottom:14px;">Escala de Mobilidade (IMS)</div>
+          <div class="form-group">
+            <label>Prévio</label>
+            <div class="ims-selector" id="ims-prev-selector">
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',0)">0</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',1)">1</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',2)">2</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',3)">3</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',4)">4</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',5)">5</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',6)">6</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',7)">7</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',8)">8</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',9)">9</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('prev',10)">10</button>
+            </div>
+            <input type="hidden" id="novoat-ims-prev" value="" />
+          </div>
+          <div class="form-group">
+            <label>Admissão</label>
+            <div class="ims-selector" id="ims-adm-selector">
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',0)">0</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',1)">1</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',2)">2</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',3)">3</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',4)">4</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',5)">5</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',6)">6</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',7)">7</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',8)">8</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',9)">9</button>
+              <button type="button" class="ims-btn" onclick="selecionarIMS('adm',10)">10</button>
+            </div>
+            <input type="hidden" id="novoat-ims-adm" value="" />
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+            <label style="margin:0;font-size:13px;color:#555;font-weight:500;">Paciente com cuidados paliativos?</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="novoat-paliativo" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <button class="btn btn-success" style="width:100%;padding:14px;font-size:15px;" onclick="saveNovoAtendimento()">Salvar Paciente</button>
+        <div style="height:20px;"></div>
       </div>
     </div>
 
@@ -1103,7 +1230,7 @@ const breadcrumbs = {
   'dashboard':'Dashboard','guias-abertas':'Guias Em Aberto','guias-fechadas':'Guias Fechadas',
   'lotes-pendente':'Lotes Pendentes','lotes-concluida':'Lotes Concluídas',
   'mapa-geral':'Mapa Geral','mapa-ocupacao':'Mapa de Ocupação',
-  'rel-ims':'Relatório IMS','rel-atend':'Atendimentos Geral',
+  'novo-atendimento':'Novo Atendimento','rel-ims':'Relatório IMS','rel-atend':'Atendimentos Geral',
   'rel-pacientes':'Relatório de Pacientes','rel-produtividade':'Produtividade',
   'cad-pacientes':'Pacientes','cad-convenios':'Convênios',
   'cad-profissionais':'Profissionais','cad-procedimentos':'Procedimentos',
@@ -1335,7 +1462,7 @@ function renderMapaGeral() {
       const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
       return pac
         ? `<div class="leito-cell ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-num">${num}</div><div class="leito-nome">${pac.nome.split(' ').slice(0,2).join(' ')}</div><div class="leito-conv">(${conv?conv.nome:''})</div></div>`
-        : `<div class="leito-cell"><div class="leito-num">${num}</div></div>`;
+        : `<div class="leito-cell livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${num}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`;
     }).join('');
     return `<div class="mapa-setor"><div class="mapa-setor-title">${s.nome}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
   }).join('');
@@ -1353,7 +1480,7 @@ function renderMapaOcupacao() {
       const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
       return pac
         ? `<div class="ocupacao-leito ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-id">${num}</div><div class="leito-info"><div class="nome">${pac.nome}</div><div class="detalhe">${conv?conv.nome:''} - NA: ${guia.num_at||''}</div></div><div class="leito-arrow">›</div></div>`
-        : `<div class="ocupacao-leito"><div class="leito-id">${num}</div><div class="leito-info"></div><div class="leito-arrow">›</div></div>`;
+        : `<div class="ocupacao-leito livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-ocupacao')" style="cursor:pointer;opacity:0.6;" title="Clique para internar paciente"><div class="leito-id">${num}</div><div class="leito-info" style="font-size:11px;color:#aaa;">Leito livre — clique para internar</div><div class="leito-arrow">+</div></div>`;
     }).join('');
     return `<div class="ocupacao-setor"><div class="ocupacao-setor-header"><span>${s.nome} (${ocup} pacientes - ${pct}% ocupado)</span><span>🖨</span></div>${leitosHtml}</div>`;
   }).join('');
@@ -1778,6 +1905,129 @@ function salvarStatus() {
   closeModal('modal-alterar-status');
   renderDetStatus(pacienteAtivo.id);
   showToast('Status atualizado!');
+}
+
+// ===== NOVO ATENDIMENTO =====
+let _novoatSetorNome = null, _novoatLeitoNum = null, _novoatOrigem = null;
+
+function abrirNovoAtendimento(setorNome, leitoNum, origem) {
+  _novoatSetorNome = setorNome;
+  _novoatLeitoNum = leitoNum;
+  _novoatOrigem = origem || 'cad-pacientes';
+
+  // Limpar campos
+  ['novoat-num-at','novoat-nome','novoat-cpf','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
+  ['novoat-nascimento','novoat-data-intern','novoat-data-atend'].forEach(id => document.getElementById(id).value = new Date().toISOString().split('T')[0]);
+  document.getElementById('novoat-convenio').value='';
+  document.getElementById('novoat-status').value='';
+  document.getElementById('novoat-clinica').value='';
+  document.getElementById('novoat-tipo').value='';
+  document.getElementById('novoat-paliativo').checked=false;
+  document.getElementById('novoat-ims-prev').value='';
+  document.getElementById('novoat-ims-adm').value='';
+  document.querySelectorAll('.ims-btn').forEach(b => b.classList.remove('selected'));
+
+  // Preencher selects
+  const convs = DB.get('convenios');
+  document.getElementById('novoat-convenio').innerHTML = '<option value="">Selecione...</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  const status = DB.get('status_paciente');
+  document.getElementById('novoat-status').innerHTML = '<option value="">Selecione...</option>' + status.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+
+  if (setorNome && leitoNum) {
+    document.getElementById('novoat-setor-leito').textContent = `${setorNome} - ${leitoNum}`;
+    document.getElementById('novoat-select-setor-wrap').style.display = 'none';
+  } else {
+    document.getElementById('novoat-setor-leito').textContent = '—';
+    document.getElementById('novoat-select-setor-wrap').style.display = 'block';
+    const setores = DB.get('setores');
+    document.getElementById('novoat-setor').innerHTML = '<option value="">Selecione o setor</option>' + setores.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+    document.getElementById('novoat-leito').innerHTML = '<option value="">Selecione o leito</option>';
+  }
+
+  nav('novo-atendimento');
+}
+
+function novoatGerarLeitos() {
+  const nomeSetor = document.getElementById('novoat-setor').value;
+  const setor = DB.get('setores').find(s => s.nome === nomeSetor);
+  const sel = document.getElementById('novoat-leito');
+  if (!setor) { sel.innerHTML = '<option value="">Selecione o leito</option>'; return; }
+  const nomes = getLeitosNomes(setor);
+  const guias = DB.get('guias');
+  sel.innerHTML = '<option value="">Selecione o leito</option>' + nomes.map(n => {
+    const ocupado = guias.some(g => g.setor === `${setor.nome} - ${n}`);
+    return `<option value="${n}" ${ocupado?'disabled style="color:#ccc"':''}>${n}${ocupado?' (ocupado)':''}</option>`;
+  }).join('');
+}
+
+function selecionarIMS(tipo, val) {
+  const inputId = tipo === 'prev' ? 'novoat-ims-prev' : 'novoat-ims-adm';
+  const selectorId = tipo === 'prev' ? 'ims-prev-selector' : 'ims-adm-selector';
+  document.getElementById(inputId).value = val;
+  document.querySelectorAll(`#${selectorId} .ims-btn`).forEach((b,i) => b.classList.toggle('selected', i === val));
+}
+
+function voltarDoNovoAtendimento() {
+  nav(_novoatOrigem || 'cad-pacientes');
+}
+
+function saveNovoAtendimento() {
+  const nome = document.getElementById('novoat-nome').value.trim();
+  const numAt = document.getElementById('novoat-num-at').value.trim();
+  const convenioId = parseInt(document.getElementById('novoat-convenio').value);
+
+  let setorNome = _novoatSetorNome;
+  let leitoNum = _novoatLeitoNum;
+  if (!setorNome) {
+    setorNome = document.getElementById('novoat-setor').value;
+    leitoNum = document.getElementById('novoat-leito').value;
+  }
+
+  if (!nome) { alert('Nome do paciente é obrigatório'); return; }
+  if (!numAt) { alert('Número do atendimento é obrigatório'); return; }
+  if (!convenioId) { alert('Convênio é obrigatório'); return; }
+  if (!setorNome || !leitoNum) { alert('Setor e leito são obrigatórios'); return; }
+
+  // Verificar se leito está ocupado
+  const guias = DB.get('guias');
+  const setorLeito = `${setorNome} - ${leitoNum}`;
+  if (guias.some(g => g.setor === setorLeito)) { alert('Este leito já está ocupado'); return; }
+
+  const nascimento = document.getElementById('novoat-nascimento').value;
+  const cpf = document.getElementById('novoat-cpf').value.trim();
+  const status = document.getElementById('novoat-status').value;
+  const clinica = document.getElementById('novoat-clinica').value;
+  const tipo = document.getElementById('novoat-tipo').value;
+  const diag = document.getElementById('novoat-diag').value.trim();
+  const dataIntern = document.getElementById('novoat-data-intern').value;
+  const dataAtend = document.getElementById('novoat-data-atend').value;
+  const obs = document.getElementById('novoat-obs').value.trim();
+  const imsPrev = document.getElementById('novoat-ims-prev').value;
+  const imsAdm = document.getElementById('novoat-ims-adm').value;
+  const paliativo = document.getElementById('novoat-paliativo').checked;
+
+  function fmtDate(d) { if(!d) return ''; const p=d.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+
+  // Salvar paciente
+  const pacId = getNextId('pacientes');
+  DB.push('pacientes', {id:pacId, nome, nascimento, cpf, convenio_id:convenioId});
+
+  // Salvar guia/atendimento
+  const guiaId = getNextId('guias');
+  DB.push('guias', {
+    id:guiaId, num_at:numAt, setor:setorLeito,
+    paciente_id:pacId, convenio_id:convenioId,
+    internacao:fmtDate(dataIntern), atend:fmtDate(dataAtend),
+    tipo_internacao:tipo, diagnostico:diag, clinica,
+    status, obs, paliativo,
+    ims_previo: imsPrev !== '' ? parseInt(imsPrev) : null,
+    ims_admissao: imsAdm !== '' ? parseInt(imsAdm) : null,
+    dias:0, valor:'R$ 0,00'
+  });
+
+  showToast('Paciente internado com sucesso!');
+  renderKpis();
+  nav(_novoatOrigem || 'cad-pacientes');
 }
 
 function gerarLeitosTransfer() {
