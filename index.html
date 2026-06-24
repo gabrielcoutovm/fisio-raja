@@ -1073,25 +1073,35 @@ const DB = {
 };
 
 async function carregarDados() {
-  const { data, error } = await sb.from('store').select('*');
-  if (error) { console.warn('Erro ao carregar dados:', error); return; }
-  if (data) data.forEach(row => { _mem[row.key] = row.value; });
+  try {
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+    const query = sb.from('store').select('*');
+    const { data, error } = await Promise.race([query, timeout]);
+    if (error) { console.warn('Supabase erro:', error); return; }
+    if (data) data.forEach(row => { _mem[row.key] = row.value; });
+  } catch(e) {
+    console.warn('Supabase indisponível, modo offline:', e.message);
+  }
 }
 
 function assinarMudancas() {
-  sb.channel('store-sync')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'store' }, payload => {
-      if (payload.new && payload.new.key) {
-        _mem[payload.new.key] = payload.new.value;
-        const activePage = document.querySelector('.page.active');
-        if (activePage) {
-          const pageId = activePage.id.replace('page-', '');
-          renderPage(pageId);
-          if (pageId === 'dashboard') renderKpis();
+  try {
+    sb.channel('store-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'store' }, payload => {
+        if (payload.new && payload.new.key) {
+          _mem[payload.new.key] = payload.new.value;
+          const activePage = document.querySelector('.page.active');
+          if (activePage) {
+            const pageId = activePage.id.replace('page-', '');
+            renderPage(pageId);
+            if (pageId === 'dashboard') renderKpis();
+          }
         }
-      }
-    })
-    .subscribe();
+      })
+      .subscribe();
+  } catch(e) {
+    console.warn('Realtime indisponível:', e.message);
+  }
 }
 
 // ===== DADOS INICIAIS =====
