@@ -606,11 +606,86 @@
       <div class="page-title">Convênios</div>
       <div class="search-bar">
         <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-convenios', this.value)" />
-        <button class="btn btn-success" onclick="openModal('modal-convenio')">+ Novo Convênio</button>
+        <button class="btn btn-success" onclick="abrirFormConvenio(null)">+ Novo Convênio</button>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Convênios</h3></div>
         <table><thead><tr><th>Nome</th><th>Registro ANS</th><th>Código na Operadora</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="tb-cad-convenios"></tbody></table>
+      </div>
+    </div>
+
+    <!-- FORM CONVÊNIO -->
+    <div class="page" id="page-form-convenio">
+      <div style="background:#fff;border-bottom:1px solid #e0e0e0;padding:14px 28px;display:flex;align-items:center;gap:16px;margin:-28px -28px 24px -28px;">
+        <button class="btn btn-navy" onclick="nav('cad-convenios')">← Cancelar/Voltar</button>
+        <div style="flex:1;font-size:16px;font-weight:700;color:#0a1628;" id="conv-form-titulo">Novo Convênio</div>
+        <button class="btn btn-success" onclick="saveConvenio()">✔ Salvar Alterações</button>
+      </div>
+      <div style="max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:18px;">
+        <input type="hidden" id="conv-edit-id" value="" />
+
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:700;font-size:14px;color:#0a1628;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #eee;">Convênio (Operadora)</div>
+          <div class="form-row">
+            <div class="form-group"><label>Nome (Abreviado) *</label><input type="text" id="conv-nome" /></div>
+            <div class="form-group"><label>Nome Razão Social</label><input type="text" id="conv-razao" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Registro ANS</label><input type="text" id="conv-ans" /></div>
+            <div class="form-group"><label>Tipo Código</label>
+              <select id="conv-tipo-cod"><option>CNPJ</option><option>CPF</option><option>Outro</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Código na Operadora</label><input type="text" id="conv-cod" /></div>
+            <div class="form-group"><label>Código CNES</label><input type="text" id="conv-cnes" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Via</label>
+              <select id="conv-via"><option value="">Não informar</option><option>Única</option><option>1ª Via</option><option>2ª Via</option></select>
+            </div>
+            <div class="form-group"><label>Técnica</label>
+              <select id="conv-tecnica"><option value="">Não informar</option><option>Eletivo</option><option>Urgência</option></select>
+            </div>
+          </div>
+          <div class="form-group"><label>Fator</label><input type="text" id="conv-fator" placeholder="Ex: 1.0" /></div>
+        </div>
+
+        <div class="card" style="padding:20px;">
+          <div style="font-weight:700;font-size:13px;color:#4a90d9;margin-bottom:12px;">Número máximo de atendimentos</div>
+          <div class="form-row">
+            <div class="form-group"><label>Nº atd. no Apartamento por dia</label><input type="number" id="conv-max-apt" value="1" min="1" /></div>
+            <div class="form-group"><label>Nº atd. na UTI por dia</label><input type="number" id="conv-max-uti" value="1" min="1" /></div>
+          </div>
+          <div style="font-weight:700;font-size:13px;color:#4a90d9;margin:12px 0;">Geração do XML</div>
+          <div class="form-row">
+            <div class="form-group"><label>Tipo Guia</label>
+              <select id="conv-tipo-guia"><option>SADT</option><option>Internação</option><option>Consulta</option></select>
+            </div>
+            <div class="form-group"><label>Versão TISS</label>
+              <select id="conv-tiss"><option>4.01.00</option><option>3.05.00</option><option>3.03.03</option></select>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+            <label style="margin:0;font-size:13px;font-weight:500;">Ativo</label>
+            <label class="toggle-switch"><input type="checkbox" id="conv-ativo" checked /><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-weight:700;font-size:14px;color:#0a1628;">☰ Procedimentos</div>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalProcConv()">+ Adicionar</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead><tr><th>Ordem</th><th>Tabela</th><th>Código</th><th>Nome</th><th>Nome Abr.</th><th>Nº Apt.</th><th>Nº UTI</th><th>Valor Unit.</th><th></th></tr></thead>
+              <tbody id="tb-conv-procs"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="height:20px;"></div>
       </div>
     </div>
 
@@ -767,19 +842,27 @@
   </div>
 </div>
 
-<!-- Modal Convênio -->
-<div class="modal-overlay" id="modal-convenio">
+<!-- PÁGINA CONVÊNIO (substitui modal) inserida via JS no main-content -->
+
+<!-- Modal Procedimento do Convênio -->
+<div class="modal-overlay" id="modal-proc-conv">
   <div class="modal">
-    <h2>Novo Convênio</h2>
-    <div class="form-group"><label>Nome *</label><input type="text" id="conv-nome" /></div>
-    <div class="form-row">
-      <div class="form-group"><label>Registro ANS</label><input type="text" id="conv-ans" /></div>
-      <div class="form-group"><label>Código na Operadora</label><input type="text" id="conv-cod" /></div>
+    <h2>Adicionar Procedimento</h2>
+    <div class="form-group"><label>Procedimento *</label>
+      <select id="pconv-proc"><option value="">Selecione...</option></select>
     </div>
-    <div class="form-group"><label>Ativo</label><select id="conv-ativo"><option value="1">Sim</option><option value="0">Não</option></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Tabela</label><input type="number" id="pconv-tabela" value="22" /></div>
+      <div class="form-group"><label>Ordem</label><input type="number" id="pconv-ordem" value="1" min="1" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Nº máx. Apt./dia</label><input type="number" id="pconv-max-apt" value="1" min="0" /></div>
+      <div class="form-group"><label>Nº máx. UTI/dia</label><input type="number" id="pconv-max-uti" value="1" min="0" /></div>
+    </div>
+    <div class="form-group"><label>Valor Unitário (R$)</label><input type="text" id="pconv-valor" placeholder="0,00" /></div>
     <div class="form-actions">
-      <button class="btn" onclick="closeModal('modal-convenio')">Cancelar</button>
-      <button class="btn btn-success" onclick="saveConvenio()">Salvar</button>
+      <button class="btn" onclick="closeModal('modal-proc-conv')">Cancelar</button>
+      <button class="btn btn-success" onclick="addProcConv()">Adicionar</button>
     </div>
   </div>
 </div>
@@ -1291,7 +1374,7 @@ const breadcrumbs = {
   'dashboard':'Dashboard','guias-abertas':'Guias Em Aberto','guias-fechadas':'Guias Fechadas',
   'lotes-pendente':'Lotes Pendentes','lotes-concluida':'Lotes Concluídas',
   'mapa-geral':'Mapa Geral','mapa-ocupacao':'Mapa de Ocupação',
-  'novo-atendimento':'Novo Atendimento','rel-ims':'Relatório IMS','rel-atend':'Atendimentos Geral',
+  'novo-atendimento':'Novo Atendimento','form-convenio':'Convênio','rel-ims':'Relatório IMS','rel-atend':'Atendimentos Geral',
   'rel-pacientes':'Relatório de Pacientes','rel-produtividade':'Produtividade',
   'cad-pacientes':'Pacientes','cad-convenios':'Convênios',
   'cad-profissionais':'Profissionais','cad-procedimentos':'Procedimentos',
@@ -1433,9 +1516,11 @@ function renderPacientes() {
 
 function renderConvenios() {
   document.getElementById('tb-cad-convenios').innerHTML = DB.get('convenios').map(c => `
-    <tr data-search="${c.nome.toLowerCase()}"><td>${c.nome}</td><td>${c.ans}</td><td>${c.cod}</td>
-    <td><span class="icon-ativo ${c.ativo?'sim':'nao'}">${c.ativo?'✔':'✘'}</span></td>
-    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+    <tr data-search="${c.nome.toLowerCase()}">
+      <td>${c.nome}</td><td>${c.ans||'-'}</td><td>${c.cod||'-'}</td>
+      <td><span class="icon-ativo ${c.ativo?'sim':'nao'}">${c.ativo?'✔':'✘'}</span></td>
+      <td><button class="btn btn-primary btn-sm" onclick="abrirFormConvenio(${c.id})">Editar</button></td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">Nenhum convênio cadastrado</td></tr>';
 }
 
 function renderProfissionais() {
@@ -1635,12 +1720,125 @@ function savePaciente() {
   document.getElementById('pac-nome').value=''; document.getElementById('pac-cpf').value='';
 }
 
+let _convProcsTemp = [];
+
+function abrirFormConvenio(id) {
+  _convProcsTemp = [];
+  document.getElementById('conv-edit-id').value = id || '';
+  document.getElementById('conv-form-titulo').textContent = id ? 'Editar Convênio' : 'Novo Convênio';
+  // limpar campos
+  ['conv-nome','conv-razao','conv-ans','conv-cod','conv-cnes','conv-fator'].forEach(f => document.getElementById(f).value = '');
+  document.getElementById('conv-tipo-cod').value = 'CNPJ';
+  document.getElementById('conv-via').value = '';
+  document.getElementById('conv-tecnica').value = '';
+  document.getElementById('conv-max-apt').value = 1;
+  document.getElementById('conv-max-uti').value = 1;
+  document.getElementById('conv-tipo-guia').value = 'SADT';
+  document.getElementById('conv-tiss').value = '4.01.00';
+  document.getElementById('conv-ativo').checked = true;
+
+  if (id) {
+    const c = DB.get('convenios').find(x => x.id === id);
+    if (c) {
+      document.getElementById('conv-nome').value = c.nome || '';
+      document.getElementById('conv-razao').value = c.razao_social || '';
+      document.getElementById('conv-ans').value = c.ans || '';
+      document.getElementById('conv-tipo-cod').value = c.tipo_codigo || 'CNPJ';
+      document.getElementById('conv-cod').value = c.cod || '';
+      document.getElementById('conv-cnes').value = c.cnes || '';
+      document.getElementById('conv-via').value = c.via || '';
+      document.getElementById('conv-tecnica').value = c.tecnica || '';
+      document.getElementById('conv-fator').value = c.fator || '';
+      document.getElementById('conv-max-apt').value = c.max_apt || 1;
+      document.getElementById('conv-max-uti').value = c.max_uti || 1;
+      document.getElementById('conv-tipo-guia').value = c.tipo_guia || 'SADT';
+      document.getElementById('conv-tiss').value = c.versao_tiss || '4.01.00';
+      document.getElementById('conv-ativo').checked = c.ativo != 0;
+      _convProcsTemp = c.procedimentos ? JSON.parse(JSON.stringify(c.procedimentos)) : [];
+    }
+  }
+  renderTbConvProcs();
+  nav('form-convenio');
+}
+
+function renderTbConvProcs() {
+  const procs = DB.get('procedimentos');
+  document.getElementById('tb-conv-procs').innerHTML = _convProcsTemp.length
+    ? _convProcsTemp.map((p, i) => {
+        const proc = procs.find(x => x.id === p.proc_id) || {};
+        return `<tr>
+          <td>${p.ordem}</td><td>${p.tabela}</td><td>${proc.codigo||''}</td>
+          <td>${proc.nome||''}</td><td>${proc.abrev||''}</td>
+          <td>${p.max_apt}</td><td>${p.max_uti}</td>
+          <td>R$ ${parseFloat(p.valor||0).toFixed(2).replace('.',',')}</td>
+          <td><button class="btn btn-sm" style="background:#e74c3c;color:#fff" onclick="removerProcConv(${i})">✕</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:14px;">Nenhum procedimento adicionado</td></tr>';
+}
+
+function abrirModalProcConv() {
+  const procs = DB.get('procedimentos');
+  document.getElementById('pconv-proc').innerHTML = '<option value="">Selecione...</option>' +
+    procs.map(p => `<option value="${p.id}">${p.codigo} — ${p.nome}</option>`).join('');
+  document.getElementById('pconv-tabela').value = 22;
+  document.getElementById('pconv-ordem').value = _convProcsTemp.length + 1;
+  document.getElementById('pconv-max-apt').value = parseInt(document.getElementById('conv-max-apt').value) || 1;
+  document.getElementById('pconv-max-uti').value = parseInt(document.getElementById('conv-max-uti').value) || 1;
+  document.getElementById('pconv-valor').value = '';
+  openModal('modal-proc-conv');
+}
+
+function addProcConv() {
+  const procId = parseInt(document.getElementById('pconv-proc').value);
+  if (!procId) { alert('Selecione um procedimento'); return; }
+  _convProcsTemp.push({
+    proc_id: procId,
+    tabela: parseInt(document.getElementById('pconv-tabela').value) || 22,
+    ordem: parseInt(document.getElementById('pconv-ordem').value) || _convProcsTemp.length + 1,
+    max_apt: parseInt(document.getElementById('pconv-max-apt').value) || 1,
+    max_uti: parseInt(document.getElementById('pconv-max-uti').value) || 1,
+    valor: parseFloat(document.getElementById('pconv-valor').value.replace(',','.')) || 0
+  });
+  closeModal('modal-proc-conv');
+  renderTbConvProcs();
+}
+
+function removerProcConv(idx) {
+  _convProcsTemp.splice(idx, 1);
+  renderTbConvProcs();
+}
+
 function saveConvenio() {
   const nome = document.getElementById('conv-nome').value.trim();
   if (!nome) { alert('Nome é obrigatório'); return; }
-  DB.push('convenios',{id:getNextId('convenios'),nome,ans:document.getElementById('conv-ans').value,cod:document.getElementById('conv-cod').value,ativo:parseInt(document.getElementById('conv-ativo').value)});
-  closeModal('modal-convenio'); renderConvenios(); showToast('Convênio salvo!');
-  document.getElementById('conv-nome').value='';
+  const editId = document.getElementById('conv-edit-id').value;
+  const obj = {
+    nome, razao_social: document.getElementById('conv-razao').value,
+    ans: document.getElementById('conv-ans').value,
+    tipo_codigo: document.getElementById('conv-tipo-cod').value,
+    cod: document.getElementById('conv-cod').value,
+    cnes: document.getElementById('conv-cnes').value,
+    via: document.getElementById('conv-via').value,
+    tecnica: document.getElementById('conv-tecnica').value,
+    fator: document.getElementById('conv-fator').value,
+    max_apt: parseInt(document.getElementById('conv-max-apt').value) || 1,
+    max_uti: parseInt(document.getElementById('conv-max-uti').value) || 1,
+    tipo_guia: document.getElementById('conv-tipo-guia').value,
+    versao_tiss: document.getElementById('conv-tiss').value,
+    ativo: document.getElementById('conv-ativo').checked ? 1 : 0,
+    procedimentos: _convProcsTemp
+  };
+  if (editId) {
+    const convs = DB.get('convenios');
+    const idx = convs.findIndex(c => c.id === parseInt(editId));
+    if (idx >= 0) { convs[idx] = { ...convs[idx], ...obj }; DB.set('convenios', convs); }
+  } else {
+    DB.push('convenios', { id: getNextId('convenios'), ...obj });
+  }
+  updateConvenioSelects();
+  showToast('Convênio salvo!');
+  nav('cad-convenios');
 }
 
 function saveProfissional() {
