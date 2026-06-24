@@ -1766,8 +1766,9 @@ function salvarEdicaoPaciente() {
 }
 
 // ===== INIT =====
+initData(); // garante admin antes do primeiro login
+
 function initApp() {
-  initData();
   setTimeout(initCharts,100);
   updateConvenioSelects();
   // Abrir modal de novo usuário limpo
