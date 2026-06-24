@@ -271,12 +271,12 @@
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <div class="kpi-grid">
-        <div class="kpi-card kpi-green"><div class="kpi-num">12</div><div class="kpi-label">Fisioterapeutas</div></div>
-        <div class="kpi-card kpi-gray"><div class="kpi-num">80</div><div class="kpi-label">Leitos</div></div>
-        <div class="kpi-card kpi-blue"><div class="kpi-num">45</div><div class="kpi-label">Pacientes</div></div>
-        <div class="kpi-card kpi-teal"><div class="kpi-num">56%</div><div class="kpi-label">Ocupado</div></div>
-        <div class="kpi-card kpi-red"><div class="kpi-num">8</div><div class="kpi-label">Pacientes UTI</div></div>
-        <div class="kpi-card kpi-yellow"><div class="kpi-num">37</div><div class="kpi-label">Pacientes Apt.</div></div>
+        <div class="kpi-card kpi-green"><div class="kpi-num" id="kpi-fisios">0</div><div class="kpi-label">Fisioterapeutas</div></div>
+        <div class="kpi-card kpi-gray"><div class="kpi-num" id="kpi-leitos">0</div><div class="kpi-label">Leitos</div></div>
+        <div class="kpi-card kpi-blue"><div class="kpi-num" id="kpi-pacientes">0</div><div class="kpi-label">Pacientes</div></div>
+        <div class="kpi-card kpi-teal"><div class="kpi-num" id="kpi-ocupado">0%</div><div class="kpi-label">Ocupado</div></div>
+        <div class="kpi-card kpi-red"><div class="kpi-num" id="kpi-uti">0</div><div class="kpi-label">Pacientes UTI</div></div>
+        <div class="kpi-card kpi-yellow"><div class="kpi-num" id="kpi-apt">0</div><div class="kpi-label">Pacientes Apt.</div></div>
       </div>
       <div class="chart-card">
         <div class="chart-header">
@@ -1121,8 +1121,32 @@ function nav(id) {
   return false;
 }
 
+function renderKpis() {
+  const profissionais = DB.get('profissionais').filter(p => p.ativo == 1);
+  const setores = DB.get('setores');
+  const guias = DB.get('guias').filter(g => !g.alta);
+  const totalLeitos = setores.reduce((s, x) => s + (parseInt(x.leitos) || 0), 0);
+  const pacAtivos = guias.length;
+  const pct = totalLeitos > 0 ? Math.round(pacAtivos / totalLeitos * 100) : 0;
+
+  const guiasComSetor = guias.map(g => {
+    const setor = setores.find(s => g.setor && g.setor.startsWith(s.nome));
+    return { ...g, tipoSetor: setor ? setor.tipo : '' };
+  });
+  const pacUti = guiasComSetor.filter(g => g.tipoSetor === 'UTI').length;
+  const pacApt = guiasComSetor.filter(g => g.tipoSetor !== 'UTI').length;
+
+  document.getElementById('kpi-fisios').textContent = profissionais.length;
+  document.getElementById('kpi-leitos').textContent = totalLeitos;
+  document.getElementById('kpi-pacientes').textContent = pacAtivos;
+  document.getElementById('kpi-ocupado').textContent = pct + '%';
+  document.getElementById('kpi-uti').textContent = pacUti;
+  document.getElementById('kpi-apt').textContent = pacApt;
+}
+
 function renderPage(id) {
   const renders = {
+    'dashboard': renderKpis,
     'cad-pacientes': renderPacientes,
     'cad-convenios': renderConvenios,
     'cad-profissionais': renderProfissionais,
@@ -1723,6 +1747,7 @@ function salvarEdicaoPaciente() {
 initData(); // garante admin antes do primeiro login
 
 function initApp() {
+  renderKpis();
   setTimeout(initCharts,100);
   updateConvenioSelects();
   // Abrir modal de novo usuário limpo
