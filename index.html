@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FISIO RAJA - Gestão de Fisioterapia Hospitalar</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a1628; color: #333; display: flex; min-height: 100vh; }
+
+    /* ===== LOGIN ===== */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; min-height: 100vh;
+      background: linear-gradient(135deg, #0a1628 0%, #0d2247 50%, #0a1e3d 100%);
+    }
+    .login-box {
+      background: #fff; border-radius: 12px; padding: 48px 40px; width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-logo h1 { color: #0a1628; font-size: 28px; font-weight: 800; letter-spacing: 1px; }
+    .login-logo p { color: #4a90d9; font-size: 12px; margin-top: 6px; font-weight: 500; }
+    .login-box label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 500; }
+    .login-box input {
+      width: 100%; padding: 11px 14px; border: 1px solid #ddd; border-radius: 6px;
+      font-size: 14px; margin-bottom: 18px; transition: border 0.2s;
+    }
+    .login-box input:focus { border-color: #4a90d9; outline: none; }
+    .btn-login {
+      width: 100%; padding: 12px; background: #0a1628; color: #fff; border: none;
+      border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-login:hover { background: #0d2247; }
+    .login-error { color: #e74c3c; font-size: 13px; margin-bottom: 12px; display: none; background:#fdecea; padding:8px 12px; border-radius:5px; }
+
+    /* ===== LAYOUT ===== */
+    #app { display: none; width: 100%; }
+    .sidebar {
+      width: 210px; min-height: 100vh; background: #0a1628; color: #ccc;
+      position: fixed; top: 0; left: 0; overflow-y: auto; z-index: 100;
+      border-right: 1px solid #1a2e50;
+    }
+    .sidebar-brand {
+      padding: 18px 16px; background: #060f1c; color: #fff;
+      font-weight: 800; font-size: 16px; border-bottom: 1px solid #1a2e50;
+      letter-spacing: 0.5px;
+    }
+    .sidebar-brand small { display: block; font-size: 10px; color: #4a90d9; font-weight: 400; margin-top: 3px; }
+    .sidebar-section { padding: 14px 16px 4px; font-size: 10px; color: #4a5a6a; text-transform: uppercase; letter-spacing: 1px; }
+    .sidebar a {
+      display: flex; align-items: center; gap: 8px; padding: 9px 16px;
+      color: #8a9ab0; text-decoration: none; font-size: 13px; transition: all 0.15s;
+    }
+    .sidebar a:hover, .sidebar a.active { background: #0d2247; color: #fff; }
+    .sidebar a.active { border-left: 3px solid #4a90d9; color: #4a90d9; }
+    .sidebar a svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* ===== TOPBAR ===== */
+    .topbar {
+      position: fixed; top: 0; left: 210px; right: 0; height: 52px;
+      background: #fff; border-bottom: 1px solid #e0e0e0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; z-index: 99; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .topbar-breadcrumb { font-size: 13px; color: #888; }
+    .topbar-breadcrumb span { color: #4a90d9; font-weight: 500; }
+    .topbar-user {
+      font-size: 13px; font-weight: 600; color: #333;
+      display: flex; align-items: center; gap: 8px; position: relative; cursor: pointer;
+    }
+    .topbar-user-name { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 5px; transition: background 0.15s; }
+    .topbar-user-name:hover { background: #f5f5f5; }
+    .topbar-user-badge {
+      width: 30px; height: 30px; border-radius: 50%; background: #0a1628;
+      color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700;
+    }
+    .topbar-menu {
+      display: none; position: absolute; top: 44px; right: 0; background: #fff;
+      border: 1px solid #e0e0e0; border-radius: 8px; min-width: 200px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 200; overflow: hidden;
+    }
+    .topbar-menu.open { display: block; }
+    .topbar-menu a {
+      display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+      color: #333; text-decoration: none; font-size: 13px; font-weight: 500;
+      transition: background 0.1s; border-bottom: 1px solid #f5f5f5;
+    }
+    .topbar-menu a:last-child { border-bottom: none; color: #e74c3c; }
+    .topbar-menu a:hover { background: #f5f8ff; }
+    .topbar-menu a svg { width: 15px; height: 15px; color: #888; flex-shrink: 0; }
+    .topbar-menu a:last-child svg { color: #e74c3c; }
+
+    .main-content { margin-left: 210px; padding-top: 52px; min-height: 100vh; background: #f0f2f5; }
+    .page { display: none; padding: 28px; }
+    .page.active { display: block; }
+    .page-title { font-size: 26px; font-weight: 700; color: #1a2a3a; margin-bottom: 24px; }
+
+    /* ===== KPI CARDS ===== */
+    .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 24px; }
+    .kpi-card { border-radius: 8px; padding: 18px 16px; color: #fff; }
+    .kpi-card .kpi-num { font-size: 28px; font-weight: 700; line-height: 1; }
+    .kpi-card .kpi-label { font-size: 12px; margin-top: 6px; opacity: 0.9; }
+    .kpi-green { background: #27ae60; } .kpi-gray { background: #95a5a6; }
+    .kpi-blue { background: #4a90d9; } .kpi-teal { background: #1abc9c; }
+    .kpi-red { background: #e74c3c; } .kpi-yellow { background: #f39c12; }
+    .kpi-navy { background: #0a1628; }
+
+    /* ===== CHARTS ===== */
+    .chart-card { background: #fff; border-radius: 8px; padding: 22px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 20px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .chart-title { font-size: 17px; font-weight: 600; color: #1a2a3a; }
+    .chart-date { font-size: 12px; color: #888; background: #f5f5f5; padding: 4px 10px; border-radius: 4px; }
+
+    /* ===== CARDS / TABLES ===== */
+    .card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow: hidden; }
+    .card-header { padding: 14px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .card-header h3 { font-size: 14px; font-weight: 600; color: #444; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f7f8fa; padding: 11px 14px; text-align: left; font-size: 12px; color: #666; font-weight: 600; border-bottom: 1px solid #eee; }
+    td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbfc; }
+
+    /* ===== FILTERS ===== */
+    .filter-card { background: #fff; border-radius: 8px; padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .filter-label { font-weight: 600; font-size: 13px; margin-bottom: 12px; color: #555; }
+    .filter-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+    .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 160px; }
+    .filter-group label { font-size: 12px; color: #666; font-weight: 500; }
+    .filter-group input, .filter-group select { padding: 8px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; }
+    .filter-group input:focus, .filter-group select:focus { border-color: #4a90d9; outline: none; }
+
+    /* ===== BUTTONS ===== */
+    .btn { padding: 8px 16px; border-radius: 5px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    .btn-primary { background: #4a90d9; color: #fff; } .btn-primary:hover { background: #357abd; }
+    .btn-success { background: #27ae60; color: #fff; } .btn-success:hover { background: #219a52; }
+    .btn-danger { background: #e74c3c; color: #fff; } .btn-danger:hover { background: #c0392b; }
+    .btn-warning { background: #f39c12; color: #fff; } .btn-warning:hover { background: #d68910; }
+    .btn-navy { background: #0a1628; color: #fff; } .btn-navy:hover { background: #0d2247; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn-update { width: 100%; padding: 12px; background: #4a90d9; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+    .btn-update:hover { background: #357abd; }
+
+    /* ===== BADGES ===== */
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-success { background: #e8f5e9; color: #27ae60; }
+    .badge-warning { background: #fff8e1; color: #f39c12; }
+    .badge-danger { background: #fdecea; color: #e74c3c; }
+    .badge-blue { background: #e3f2fd; color: #1976d2; }
+    .badge-navy { background: #e8eaf6; color: #0a1628; }
+
+    /* ===== MAPA GERAL ===== */
+    .mapa-setor { margin-bottom: 24px; }
+    .mapa-setor-title { background: #4a90d9; color: #fff; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 6px 6px 0 0; }
+    .mapa-grid { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; background: #f5f6f8; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; }
+    .leito-cell { width: 90px; min-height: 70px; border: 1px solid #ccc; border-radius: 4px; background: #fff; padding: 5px; font-size: 10px; text-align: center; cursor: pointer; transition: transform 0.1s; }
+    .leito-cell:hover { transform: scale(1.03); }
+    .leito-cell.ocupado { background: #c8e6c9; border-color: #81c784; }
+    .leito-num { font-weight: 700; font-size: 11px; color: #444; margin-bottom: 3px; }
+    .leito-nome { font-size: 9px; color: #333; line-height: 1.3; }
+    .leito-conv { font-size: 9px; color: #666; margin-top: 2px; }
+
+    /* ===== MAPA OCUPAÇÃO ===== */
+    .ocupacao-setor { margin-bottom: 16px; }
+    .ocupacao-setor-header { background: #f0f2f5; padding: 10px 16px; font-size: 13px; font-weight: 600; border: 1px solid #ddd; border-radius: 6px 6px 0 0; display: flex; justify-content: space-between; }
+    .ocupacao-leito { display: flex; align-items: center; padding: 10px 16px; border: 1px solid #eee; border-top: none; background: #fff; cursor: pointer; transition: background 0.1s; }
+    .ocupacao-leito:last-child { border-radius: 0 0 6px 6px; }
+    .ocupacao-leito:hover { background: #f5f5f5; }
+    .ocupacao-leito.ocupado { background: #f0f8f0; }
+    .leito-id { width: 60px; font-weight: 700; font-size: 13px; color: #444; }
+    .leito-info { flex: 1; }
+    .leito-info .nome { font-size: 13px; font-weight: 600; }
+    .leito-info .detalhe { font-size: 12px; color: #777; }
+    .leito-arrow { color: #aaa; font-size: 16px; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 10px; padding: 28px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #0a1628; border-bottom: 2px solid #4a90d9; padding-bottom: 12px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .form-group label { font-size: 12px; color: #666; font-weight: 600; }
+    .form-group input, .form-group select { padding: 9px 11px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; }
+    .form-group input:focus, .form-group select:focus { border-color: #4a90d9; outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,0.1); }
+    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; border-top: 1px solid #eee; padding-top: 16px; }
+
+    /* ===== SEARCH BAR ===== */
+    .search-bar { display: flex; gap: 12px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; padding: 9px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; }
+    .search-bar input:focus { border-color: #4a90d9; outline: none; }
+
+    /* ===== ICON ATIVO ===== */
+    .icon-ativo { font-size: 18px; }
+    .icon-ativo.sim { color: #27ae60; }
+    .icon-ativo.nao { color: #e74c3c; }
+
+    /* ===== PERFIL BADGE ===== */
+    .perfil-gestao { background: #0a1628; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+    .perfil-fisio { background: #e3f2fd; color: #1976d2; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+    .perfil-secretaria { background: #f3e5f5; color: #7b1fa2; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+
+    /* ===== TOAST ===== */
+    #toast { position: fixed; bottom: 24px; right: 24px; background: #27ae60; color: #fff; padding: 12px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 9999; display: none; }
+
+    /* ===== ACESSO NEGADO ===== */
+    .acesso-negado { text-align: center; padding: 80px 20px; color: #888; }
+    .acesso-negado h2 { font-size: 22px; color: #e74c3c; margin-bottom: 8px; }
+
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  </style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>FISIO RAJA</h1>
+      <p>Gestão de Fisioterapia Hospitalar</p>
+    </div>
+    <p class="login-error" id="login-error">Usuário ou senha incorretos.</p>
+    <label>Usuário</label>
+    <input type="text" id="login-user" placeholder="seu.usuario" />
+    <label>Senha</label>
+    <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="btn-login" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">FISIO RAJA <small>Gestão de Fisioterapia Hospitalar</small></div>
+    <div id="sidebar-menu"></div>
+  </nav>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-breadcrumb">Sistemas / <span id="breadcrumb-text">Dashboard</span></div>
+    <div class="topbar-user" onclick="toggleMenu()">
+      <div class="topbar-user-name">
+        <div class="topbar-user-badge" id="user-badge">A</div>
+        <span id="topbar-username">ADMIN</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="topbar-menu" id="topbar-menu">
+        <a href="#" onclick="nav('config-usuarios');closeMenu();return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Gerenciar Usuários
+        </a>
+        <a href="#" onclick="openModal('modal-alterar-senha');closeMenu();return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Alterar Senha
+        </a>
+        <a href="#" onclick="doLogout();return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-green"><div class="kpi-num">12</div><div class="kpi-label">Fisioterapeutas</div></div>
+        <div class="kpi-card kpi-gray"><div class="kpi-num">80</div><div class="kpi-label">Leitos</div></div>
+        <div class="kpi-card kpi-blue"><div class="kpi-num">45</div><div class="kpi-label">Pacientes</div></div>
+        <div class="kpi-card kpi-teal"><div class="kpi-num">56%</div><div class="kpi-label">Ocupado</div></div>
+        <div class="kpi-card kpi-red"><div class="kpi-num">8</div><div class="kpi-label">Pacientes UTI</div></div>
+        <div class="kpi-card kpi-yellow"><div class="kpi-num">37</div><div class="kpi-label">Pacientes Apt.</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Número de Procedimentos</div>
+          <div class="chart-date">Últimos 30 dias</div>
+        </div>
+        <canvas id="chartProcedimentos" height="80"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><div class="chart-title">Setores × Pacientes</div></div>
+        <canvas id="chartSetores" height="60"></canvas>
+      </div>
+    </div>
+
+    <!-- GUIAS EM ABERTO (só Gestão) -->
+    <div class="page" id="page-guias-abertas">
+      <div class="page-title">Guias - Em Aberto</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Setores</label><input type="text" placeholder="Todos" /></div>
+          <div class="filter-group"><label>Convênios</label><input type="text" placeholder="Todos" /></div>
+          <div class="filter-group"><label>Paciente ou N. Atendimento</label><input type="text" placeholder="Buscar..." /></div>
+          <div class="filter-group"><label>Suspensa</label><select><option>Todas</option><option>Sim</option><option>Não</option></select></div>
+          <div class="filter-group"><label>Tipo da Alta</label><input type="text" placeholder="Todos" /></div>
+        </div>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Nº At.</th><th>Setor/Leito</th><th>Nº Guia</th><th>Paciente</th><th>Convênio</th><th>Internação</th><th>Atend.</th><th>R$</th><th>Dias</th></tr></thead>
+          <tbody id="tb-guias-abertas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GUIAS FECHADAS (só Gestão) -->
+    <div class="page" id="page-guias-fechadas">
+      <div class="page-title">Guias - Fechadas</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Setores</label><input type="text" placeholder="Todos" /></div>
+          <div class="filter-group"><label>Convênios</label><input type="text" placeholder="Todos" /></div>
+          <div class="filter-group"><label>Paciente ou N. Atendimento</label><input type="text" placeholder="Buscar..." /></div>
+          <div class="filter-group"><label>Tipo da Alta</label><input type="text" placeholder="Todos" /></div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:40px;color:#888;font-weight:600;">Nenhuma Guia Fechada!</div>
+    </div>
+
+    <!-- LOTES PENDENTE (só Gestão) -->
+    <div class="page" id="page-lotes-pendente">
+      <div class="page-title">Lotes de Guias - Pendentes</div>
+      <div class="filter-card">
+        <div class="filter-label">Filtros</div>
+        <div class="filter-row">
+          <div class="filter-group"><label>Convênio</label><select><option>Todos</option></select></div>
+          <div class="filter-group"><label>Status</label><select><option>Todos</option><option>Arquivo Gerado</option><option>Enviado</option></select></div>
+          <div class="filter-group"><label>Nº do Lote</label><input type="text" /></div>
+          <div class="filter-group"><label>Paciente ou N. Atendimento</label><input type="text" placeholder="Buscar..." /></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Pendentes</h3></div>
+        <table>
+          <thead><tr><th>Convênio</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor</th></tr></thead>
+          <tbody id="tb-lotes-pendente"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LOTES CONCLUÍDA (só Gestão) -->
+    <div class="page" id="page-lotes-concluida">
+      <div class="page-title">Lotes de Guias - Concluídas</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Convênio</label><select><option>Todos</option></select></div>
+          <div class="filter-group"><label>Nº do Lote</label><input type="text" /></div>
+          <div class="filter-group"><label>Paciente ou N. Atendimento</label><input type="text" placeholder="Buscar..." /></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Concluídas</h3></div>
+        <table>
+          <thead><tr><th>Convênio</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor</th></tr></thead>
+          <tbody id="tb-lotes-concluida"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MAPA GERAL -->
+    <div class="page" id="page-mapa-geral">
+      <button class="btn-update">Atualizar</button>
+      <div id="mapa-geral-container"></div>
+    </div>
+
+    <!-- MAPA OCUPAÇÃO -->
+    <div class="page" id="page-mapa-ocupacao">
+      <div class="filter-card" style="padding:10px 16px;">
+        <input type="text" placeholder="Digite o Nº. Atend. ou Nome para pesquisar..." style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:5px;font-size:13px;" />
+      </div>
+      <button class="btn-update">Atualizar</button>
+      <div id="mapa-ocupacao-container"></div>
+    </div>
+
+    <!-- RELATÓRIO IMS -->
+    <div class="page" id="page-rel-ims">
+      <div class="page-title">Relatório de Atendimentos IMS</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Exibir</label><select><option>Últimos 7 dias</option><option>Últimos 30 dias</option><option>Este mês</option></select></div>
+          <div class="filter-group"><label>Convênios</label><input type="text" placeholder="Todos" /></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0"><button class="btn btn-primary" style="white-space:nowrap">Atualizar</button></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;margin-bottom:20px;">
+        <div class="card" style="padding:18px;"><div style="font-size:12px;color:#888;">Total de altas</div><div style="font-size:28px;font-weight:700;color:#1a2a3a;">173</div><div style="font-size:11px;color:#aaa;">Período dos últimos 7 dias</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #f39c12;"><div style="font-size:12px;color:#888;">Não elegíveis</div><div style="font-size:28px;font-weight:700;color:#f39c12;">87</div><div style="font-size:11px;color:#aaa;">• Menos de 18 anos<br>• Menos de 3 dias internado</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #4a90d9;"><div style="font-size:12px;color:#888;">Excluídos</div><div style="font-size:28px;font-weight:700;color:#4a90d9;">25</div><div style="font-size:11px;color:#aaa;">• IMS Prévio de 0 a 5<br>• Óbito interhospitalar</div></div>
+        <div class="card" style="padding:18px;text-align:center;min-width:130px;"><div style="font-size:13px;color:#888;">Meta</div><div style="font-size:36px;font-weight:700;color:#27ae60;">93.44%</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+        <div class="card" style="padding:18px;border-top:3px solid #1abc9c;"><div style="font-size:12px;color:#888;">Elegíveis</div><div style="font-size:28px;font-weight:700;">61</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #e74c3c;"><div style="font-size:12px;color:#888;">Para análise</div><div style="font-size:28px;font-weight:700;color:#e74c3c;">4</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #27ae60;"><div style="font-size:12px;color:#888;">IMS adequado</div><div style="font-size:28px;font-weight:700;color:#27ae60;">57</div></div>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO ATENDIMENTOS -->
+    <div class="page" id="page-rel-atend">
+      <div class="page-title">Atendimentos Geral</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Setor</label><select><option>Todos</option></select></div>
+          <div class="filter-group"><label>Convênio</label><select><option>Todos</option></select></div>
+          <div class="filter-group"><label>Data</label><input type="text" value="17/06/2026 - 19/06/2026" /></div>
+        </div>
+      </div>
+      <div id="rel-atend-container"></div>
+    </div>
+
+    <!-- RELATÓRIO PACIENTES -->
+    <div class="page" id="page-rel-pacientes">
+      <div class="page-title">Relatório de Pacientes</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Setor</label><select><option>Todos</option></select></div>
+          <div class="filter-group"><label>Convênios</label><input type="text" placeholder="Todos" /></div>
+          <div class="filter-group"><label>Status Guia</label><select><option>Todos</option><option>Finalizada</option><option>Em aberto</option></select></div>
+          <div class="filter-group"><label>Tipo da Alta</label><select><option>Todos</option></select></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Relatório de Pacientes</h3><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm">Imprimir</button><button class="btn btn-success btn-sm">Exportar</button></div></div>
+        <table><thead><tr><th>Nome</th><th>Nº Atendimento</th><th>Convênio</th><th>Status Guia</th><th>Valor</th><th>Data Internação</th><th>Data Alta</th></tr></thead><tbody id="tb-rel-pacientes"></tbody></table>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO PRODUTIVIDADE -->
+    <div class="page" id="page-rel-produtividade">
+      <div class="page-title">Relatório de Produtividade</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Data</label><input type="text" value="20/05/2026 - 19/06/2026" /></div>
+          <div class="filter-group"><label>Status Guia</label><select><option>Todos</option></select></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
+        <div class="kpi-card kpi-blue" style="border-radius:8px;"><div class="kpi-num">R$ 48.500,00</div><div class="kpi-label">Total (1.200 atend.)</div></div>
+        <div class="kpi-card kpi-green" style="border-radius:8px;"><div class="kpi-num">R$ 35.200,00</div><div class="kpi-label">Contabilizados (980)</div></div>
+        <div class="kpi-card kpi-gray" style="border-radius:8px;"><div class="kpi-num">R$ 13.300,00</div><div class="kpi-label">Não contabilizados (220)</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Produtividade por Fisioterapeuta</h3></div>
+        <table><thead><tr><th>Nome</th><th>Total</th><th>Qtd</th><th>Contabilizado</th><th>Qtd</th><th>N. Contabilizado</th><th>Qtd</th></tr></thead><tbody id="tb-produtividade"></tbody></table>
+      </div>
+    </div>
+
+    <!-- CAD PACIENTES -->
+    <div class="page" id="page-cad-pacientes">
+      <div class="page-title">Pacientes</div>
+      <div class="search-bar">
+        <input type="text" placeholder="Digite o Nome do Paciente para pesquisar" oninput="filterTable('tb-cad-pacientes', this.value)" />
+        <button class="btn btn-success" onclick="openModal('modal-paciente')">+ Novo Paciente</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Pacientes</h3></div>
+        <table><thead><tr><th>Nome</th><th>Idade</th><th>CPF</th><th>Convênio</th><th>Ações</th></tr></thead><tbody id="tb-cad-pacientes"></tbody></table>
+      </div>
+    </div>
+
+    <!-- CAD CONVÊNIOS -->
+    <div class="page" id="page-cad-convenios">
+      <div class="page-title">Convênios</div>
+      <div class="search-bar">
+        <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-convenios', this.value)" />
+        <button class="btn btn-success" onclick="openModal('modal-convenio')">+ Novo Convênio</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Convênios</h3></div>
+        <table><thead><tr><th>Nome</th><th>Registro ANS</th><th>Código na Operadora</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="tb-cad-convenios"></tbody></table>
+      </div>
+    </div>
+
+    <!-- CAD PROFISSIONAIS -->
+    <div class="page" id="page-cad-profissionais">
+      <div class="page-title">Profissionais</div>
+      <div class="search-bar">
+        <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-profissionais', this.value)" />
+        <button class="btn btn-success" onclick="openModal('modal-profissional')">+ Novo Profissional</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Profissionais</h3></div>
+        <table><thead><tr><th>Nome</th><th>CPF</th><th>Conselho</th><th>Número no Conselho</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="tb-cad-profissionais"></tbody></table>
+      </div>
+    </div>
+
+    <!-- CAD PROCEDIMENTOS -->
+    <div class="page" id="page-cad-procedimentos">
+      <div class="page-title">Procedimentos</div>
+      <div class="search-bar">
+        <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-procedimentos', this.value)" />
+        <button class="btn btn-success" onclick="openModal('modal-procedimento')">+ Novo Procedimento</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Procedimentos</h3></div>
+        <table><thead><tr><th>Código</th><th>Nome</th><th>Nome Abreviado</th><th>Ações</th></tr></thead><tbody id="tb-cad-procedimentos"></tbody></table>
+      </div>
+    </div>
+
+    <!-- CAD SETORES -->
+    <div class="page" id="page-cad-setores">
+      <div class="page-title">Setores</div>
+      <div class="search-bar">
+        <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-setores', this.value)" />
+        <button class="btn btn-success" onclick="openModal('modal-setor')">+ Novo Setor</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Setores</h3></div>
+        <table><thead><tr><th>Nome</th><th>Tipo</th><th>Número de Leitos</th><th>Ações</th></tr></thead><tbody id="tb-cad-setores"></tbody></table>
+      </div>
+    </div>
+
+    <!-- GERENCIAR USUÁRIOS (só Gestão) -->
+    <div class="page" id="page-config-usuarios">
+      <div class="page-title">Usuários</div>
+      <div class="search-bar">
+        <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-usuarios', this.value)" />
+        <button class="btn btn-success" onclick="openModal('modal-usuario')">+ Novo Usuário</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Lista de Usuários</h3></div>
+        <table>
+          <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Ativo</th><th>Ações</th></tr></thead>
+          <tbody id="tb-usuarios"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DETALHE DO PACIENTE -->
+    <div class="page" id="page-paciente-detalhe">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button class="btn btn-navy btn-sm" onclick="history.back();nav('mapa-ocupacao')">← Voltar</button>
+        <div style="text-align:center;flex:1;">
+          <div style="font-size:12px;color:#888;">Setor - Leito</div>
+          <div id="det-setor-leito" style="font-size:18px;font-weight:700;color:#0a1628;"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+        <!-- Info do paciente -->
+        <div class="card" style="padding:20px;">
+          <div style="margin-bottom:12px;"><div style="font-size:11px;color:#888;font-weight:600;">Paciente</div><div id="det-nome" style="font-size:20px;font-weight:700;color:#0a1628;"></div></div>
+          <div style="margin-bottom:12px;"><div style="font-size:11px;color:#888;font-weight:600;">Convênio</div><div id="det-convenio" style="font-size:15px;font-weight:600;"></div></div>
+          <div id="det-status-box" style="border-radius:6px;padding:10px 14px;margin-bottom:12px;">
+            <div style="font-size:11px;color:#555;font-weight:600;">Status do Paciente</div>
+            <div id="det-status" style="font-size:15px;font-weight:700;margin-top:2px;"></div>
+          </div>
+          <div class="form-row" style="gap:12px;">
+            <div><div style="font-size:11px;color:#888;font-weight:600;">Data Nascimento</div><div id="det-nascimento" style="font-size:13px;font-weight:500;"></div></div>
+            <div><div style="font-size:11px;color:#888;font-weight:600;">Nº Atendimento</div><div id="det-num-at" style="font-size:13px;font-weight:500;"></div></div>
+          </div>
+          <div class="form-row" style="gap:12px;margin-top:10px;">
+            <div><div style="font-size:11px;color:#888;font-weight:600;">Tipo Internação</div><div id="det-tipo" style="font-size:13px;font-weight:500;"></div></div>
+            <div><div style="font-size:11px;color:#888;font-weight:600;">Diagnóstico</div><div id="det-diag" style="font-size:13px;font-weight:500;"></div></div>
+          </div>
+          <div class="form-row" style="gap:12px;margin-top:10px;">
+            <div><div style="font-size:11px;color:#888;font-weight:600;">Data Internação</div><div id="det-internacao" style="font-size:13px;font-weight:500;"></div></div>
+            <div><div style="font-size:11px;color:#888;font-weight:600;">Início Atendimento</div><div id="det-atend" style="font-size:13px;font-weight:500;"></div></div>
+          </div>
+          <div style="margin-top:14px;background:#f5f8ff;border-radius:6px;padding:10px 14px;">
+            <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:6px;">Escala de Mobilidade (IMS)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;">
+              <div><div style="font-size:10px;color:#aaa;">Prévio</div><div id="det-ims-prev" style="font-size:18px;font-weight:700;color:#0a1628;">-</div></div>
+              <div><div style="font-size:10px;color:#aaa;">Admissão</div><div id="det-ims-adm" style="font-size:18px;font-weight:700;color:#0a1628;">-</div></div>
+              <div><div style="font-size:10px;color:#aaa;">Atual</div><div id="det-ims-atual" style="font-size:18px;font-weight:700;color:#27ae60;">-</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- Ações -->
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button class="btn btn-success" style="padding:14px;font-size:14px;" onclick="openModal('modal-editar-paciente')">Editar Paciente</button>
+          <button class="btn btn-primary" style="padding:14px;font-size:14px;" onclick="openModal('modal-lancar-proc')">Lançar Procedimento</button>
+          <button class="btn btn-primary" style="padding:14px;font-size:14px;" onclick="openModal('modal-alterar-status')">Alterar Status Paciente</button>
+          <button class="btn btn-primary" style="padding:14px;font-size:14px;" onclick="openModal('modal-transferir')">Transferir de Setor/Leito</button>
+          <button class="btn btn-primary" style="padding:14px;font-size:14px;" onclick="openModal('modal-lancar-medidas')">Lançar Medidas</button>
+          <button class="btn btn-danger" style="padding:14px;font-size:14px;" onclick="openModal('modal-alta')">Alta do Paciente</button>
+        </div>
+      </div>
+      <!-- Históricos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card">
+          <div class="card-header"><h3>Procedimentos</h3></div>
+          <table><thead><tr><th>Data</th><th>Procedimento</th><th>Usuário</th></tr></thead>
+          <tbody id="det-tb-procs"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Histórico Status</h3></div>
+          <table><thead><tr><th>Data</th><th>Status</th><th>Usuário</th></tr></thead>
+          <tbody id="det-tb-status"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Medidas</h3></div>
+          <table><thead><tr><th>Data</th><th>Medida</th><th>Valor</th><th>Usuário</th></tr></thead>
+          <tbody id="det-tb-medidas"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Histórico Setor/Leito</h3></div>
+          <table><thead><tr><th>Data</th><th>Setor/Leito</th><th>Usuário</th></tr></thead>
+          <tbody id="det-tb-setor"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- ===== MODALS ===== -->
+
+<!-- Modal Paciente -->
+<div class="modal-overlay" id="modal-paciente">
+  <div class="modal">
+    <h2>Novo Paciente</h2>
+    <div class="form-row">
+      <div class="form-group"><label>Nome Completo *</label><input type="text" id="pac-nome" /></div>
+      <div class="form-group"><label>Data de Nascimento</label><input type="date" id="pac-nascimento" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>CPF</label><input type="text" id="pac-cpf" placeholder="000.000.000-00" /></div>
+      <div class="form-group"><label>Convênio *</label><select id="pac-convenio"><option value="">Selecione</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-paciente')">Cancelar</button>
+      <button class="btn btn-success" onclick="savePaciente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Convênio -->
+<div class="modal-overlay" id="modal-convenio">
+  <div class="modal">
+    <h2>Novo Convênio</h2>
+    <div class="form-group"><label>Nome *</label><input type="text" id="conv-nome" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Registro ANS</label><input type="text" id="conv-ans" /></div>
+      <div class="form-group"><label>Código na Operadora</label><input type="text" id="conv-cod" /></div>
+    </div>
+    <div class="form-group"><label>Ativo</label><select id="conv-ativo"><option value="1">Sim</option><option value="0">Não</option></select></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-convenio')">Cancelar</button>
+      <button class="btn btn-success" onclick="saveConvenio()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Profissional -->
+<div class="modal-overlay" id="modal-profissional">
+  <div class="modal">
+    <h2>Novo Profissional</h2>
+    <div class="form-group"><label>Nome Completo *</label><input type="text" id="prof-nome" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>CPF</label><input type="text" id="prof-cpf" /></div>
+      <div class="form-group"><label>Conselho</label><select id="prof-conselho"><option>CREFITO</option><option>CRM</option><option>COREN</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Número no Conselho</label><input type="text" id="prof-numconselho" /></div>
+      <div class="form-group"><label>Ativo</label><select id="prof-ativo"><option value="1">Sim</option><option value="0">Não</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-profissional')">Cancelar</button>
+      <button class="btn btn-success" onclick="saveProfissional()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Procedimento -->
+<div class="modal-overlay" id="modal-procedimento">
+  <div class="modal">
+    <h2>Novo Procedimento</h2>
+    <div class="form-group"><label>Código *</label><input type="text" id="proc-codigo" /></div>
+    <div class="form-group"><label>Nome *</label><input type="text" id="proc-nome" /></div>
+    <div class="form-group"><label>Nome Abreviado</label><input type="text" id="proc-abrev" /></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-procedimento')">Cancelar</button>
+      <button class="btn btn-success" onclick="saveProcedimento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Setor -->
+<div class="modal-overlay" id="modal-setor">
+  <div class="modal">
+    <h2>Novo Setor</h2>
+    <div class="form-group"><label>Nome *</label><input type="text" id="setor-nome" /></div>
+    <div class="form-row">
+      <div class="form-group"><label>Tipo</label><select id="setor-tipo"><option>Apartamento</option><option>UTI</option><option>Enfermaria</option></select></div>
+      <div class="form-group"><label>Número de Leitos *</label><input type="number" id="setor-leitos" /></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-setor')">Cancelar</button>
+      <button class="btn btn-success" onclick="saveSetor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Usuário -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <h2 id="modal-usuario-titulo">Novo Usuário</h2>
+    <input type="hidden" id="usr-id" value="" />
+    <div class="form-row">
+      <div class="form-group"><label>Nome Completo *</label><input type="text" id="usr-nome" /></div>
+      <div class="form-group"><label>Usuário (login) *</label><input type="text" id="usr-login" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Senha *</label><input type="password" id="usr-senha" placeholder="Mínimo 4 caracteres" /></div>
+      <div class="form-group"><label>Confirmar Senha *</label><input type="password" id="usr-senha2" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Perfil de Acesso *</label>
+        <select id="usr-perfil">
+          <option value="Gestão">Gestão (Acesso total)</option>
+          <option value="Fisioterapeuta">Fisioterapeuta</option>
+          <option value="Secretaria">Secretaria</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ativo</label><select id="usr-ativo"><option value="1">Sim</option><option value="0">Não</option></select></div>
+    </div>
+    <div style="background:#f0f8ff;border:1px solid #bee3f8;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#2b6cb0;">
+      <strong>Níveis de acesso:</strong><br>
+      🔐 <strong>Gestão</strong> — Dashboard, Guias, Lotes, Mapas, Relatórios, Cadastros, Usuários<br>
+      🩺 <strong>Fisioterapeuta</strong> — Dashboard, Mapas, Relatórios, Cadastros<br>
+      📋 <strong>Secretaria</strong> — Dashboard, Mapas, Cadastros
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-usuario')">Cancelar</button>
+      <button class="btn btn-success" onclick="saveUsuario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Alterar Senha -->
+<div class="modal-overlay" id="modal-alterar-senha">
+  <div class="modal">
+    <h2>Alterar Senha</h2>
+    <div class="form-group"><label>Senha Atual *</label><input type="password" id="senha-atual" /></div>
+    <div class="form-group"><label>Nova Senha *</label><input type="password" id="senha-nova" /></div>
+    <div class="form-group"><label>Confirmar Nova Senha *</label><input type="password" id="senha-nova2" /></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-alterar-senha')">Cancelar</button>
+      <button class="btn btn-navy" onclick="alterarSenha()">Alterar Senha</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lançar Procedimento -->
+<div class="modal-overlay" id="modal-lancar-proc">
+  <div class="modal">
+    <h2>Lançar Procedimento</h2>
+    <div style="text-align:center;font-weight:600;color:#888;margin-bottom:16px;" id="proc-setor-label"></div>
+    <div class="form-group">
+      <label>Data do Atendimento</label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btn btn-navy btn-sm" onclick="mudarDataProc(-1)">‹</button>
+        <input type="date" id="proc-data" style="flex:1;text-align:center;" />
+        <button class="btn btn-navy btn-sm" onclick="mudarDataProc(1)">›</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Atendido?</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="proc-atendido" checked style="width:18px;height:18px;" />
+        <span style="font-size:13px;">Sim, paciente foi atendido</span>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>Procedimentos Realizados</label>
+      <div id="proc-lista" style="border:1px solid #eee;border-radius:6px;overflow:hidden;"></div>
+    </div>
+    <div style="background:#f5f8ff;border-radius:6px;padding:14px;margin-bottom:14px;">
+      <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:8px;">Escala de Mobilidade - IMS Atual</label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:12px;color:#888;">Prévio: <strong id="proc-ims-prev">-</strong></span>
+        <span style="font-size:12px;color:#888;">Admissão: <strong id="proc-ims-adm">-</strong></span>
+        <input type="number" id="proc-ims-atual" min="0" max="10" placeholder="Atual (0-10)" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:5px;" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-lancar-proc')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarProcedimento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Alterar Status -->
+<div class="modal-overlay" id="modal-alterar-status">
+  <div class="modal">
+    <h2>Alterar Status do Paciente</h2>
+    <div class="form-group">
+      <label>Status Atual</label>
+      <div id="status-atual-display" style="padding:10px;background:#f5f5f5;border-radius:5px;font-weight:600;"></div>
+    </div>
+    <div class="form-group">
+      <label>Novo Status *</label>
+      <div id="status-lista" style="border:1px solid #eee;border-radius:6px;overflow:hidden;"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-alterar-status')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarStatus()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Transferir -->
+<div class="modal-overlay" id="modal-transferir">
+  <div class="modal">
+    <h2>Transferir de Setor/Leito</h2>
+    <div class="form-group">
+      <label>Setor/Leito Atual</label>
+      <div id="transfer-atual" style="padding:10px;background:#f5f5f5;border-radius:5px;font-weight:600;"></div>
+    </div>
+    <div class="form-group">
+      <label>Novo Setor *</label>
+      <select id="transfer-setor" onchange="gerarLeitosTransfer()">
+        <option value="">Selecione o setor</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Novo Leito *</label>
+      <input type="text" id="transfer-leito" placeholder="Ex: 101/1" />
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-transferir')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarTransferencia()">Transferir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lançar Medidas -->
+<div class="modal-overlay" id="modal-lancar-medidas">
+  <div class="modal">
+    <h2>Lançar Medidas</h2>
+    <div class="form-group">
+      <label>Data</label>
+      <input type="date" id="medida-data" />
+    </div>
+    <div id="medidas-lista" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-lancar-medidas')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarMedidas()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Alta -->
+<div class="modal-overlay" id="modal-alta">
+  <div class="modal">
+    <h2>Alta do Paciente</h2>
+    <div style="background:#fdecea;border:1px solid #e74c3c;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#c0392b;">
+      ⚠️ Esta ação encerrará o atendimento do paciente no leito atual.
+    </div>
+    <div class="form-group">
+      <label>Data da Alta *</label>
+      <input type="date" id="alta-data" />
+    </div>
+    <div class="form-group">
+      <label>Tipo da Alta *</label>
+      <select id="alta-tipo">
+        <option value="">Selecione</option>
+        <option>Hospitalar</option>
+        <option>Fisioterapêutica</option>
+        <option>Óbito</option>
+        <option>Transferência</option>
+        <option>A pedido</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>IMS na Alta</label>
+      <input type="number" id="alta-ims" min="0" max="10" placeholder="0 a 10" />
+    </div>
+    <div class="form-group">
+      <label>Observação</label>
+      <textarea id="alta-obs" rows="3" style="padding:9px;border:1px solid #ddd;border-radius:5px;font-size:13px;width:100%;resize:vertical;"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-alta')">Cancelar</button>
+      <button class="btn btn-danger" onclick="salvarAlta()">Confirmar Alta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Paciente (no detalhe) -->
+<div class="modal-overlay" id="modal-editar-paciente">
+  <div class="modal">
+    <h2>Editar Paciente</h2>
+    <input type="hidden" id="edit-pac-id" />
+    <div class="form-row">
+      <div class="form-group"><label>Nome Completo *</label><input type="text" id="edit-pac-nome" /></div>
+      <div class="form-group"><label>Data de Nascimento</label><input type="date" id="edit-pac-nasc" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>CPF</label><input type="text" id="edit-pac-cpf" /></div>
+      <div class="form-group"><label>Convênio</label><select id="edit-pac-conv"><option value="">Selecione</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Tipo Internação</label><select id="edit-pac-tipo"><option>Clinico</option><option>Cirúrgico</option><option>Obstétrico</option><option>Pediátrico</option></select></div>
+      <div class="form-group"><label>Diagnóstico Médico</label><input type="text" id="edit-pac-diag" /></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-editar-paciente')">Cancelar</button>
+      <button class="btn btn-success" onclick="salvarEdicaoPaciente()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ===== BANCO LOCAL (com fallback em memória se localStorage bloqueado) =====
+const _mem = {};
+const _ls = (() => { try { localStorage.setItem('_t','1'); localStorage.removeItem('_t'); return true; } catch(e) { return false; } })();
+const DB = {
+  get: k => { try { const v = _ls ? localStorage.getItem('raja_'+k) : _mem['raja_'+k]; return JSON.parse(v || '[]'); } catch(e){ return []; } },
+  set: (k,v) => { try { const s = JSON.stringify(v); if(_ls) localStorage.setItem('raja_'+k, s); else _mem['raja_'+k]=s; } catch(e){} },
+  push: (k,v) => { const a = DB.get(k); a.push(v); DB.set(k,a); return a; },
+  getItem: k => { try { return _ls ? localStorage.getItem(k) : (_mem[k]||null); } catch(e){ return null; } },
+  setItem: (k,v) => { try { if(_ls) localStorage.setItem(k,v); else _mem[k]=v; } catch(e){} }
+};
+
+// ===== DADOS INICIAIS =====
+function initData() {
+  // garante sempre que existe pelo menos um admin
+  const usuarios = DB.get('usuarios');
+  const temAdmin = usuarios.find(u => u.login === 'admin');
+  if (!temAdmin) {
+    usuarios.unshift({id:1, nome:'ADMINISTRADOR', login:'admin', senha:'1234', perfil:'Gestão', ativo:1});
+    DB.set('usuarios', usuarios);
+  }
+  // migração: garante medidas sempre existam
+  if (!DB.getItem('raja_medidas') || DB.get('medidas').length === 0) {
+    DB.set('medidas',[
+      {id:1,nome:'PE MAX',unidade:'cmH2O',valor_base:20},
+      {id:2,nome:'PI MAX',unidade:'cmH2O',valor_base:48},
+      {id:3,nome:'PEAK FLOW',unidade:'L/Min',valor_base:160},
+      {id:4,nome:'IMS',unidade:'pts',valor_base:6},
+      {id:5,nome:'MRC',unidade:'pts',valor_base:36},
+    ]);
+    DB.setItem('raja_medidas','1');
+  }
+  if (!DB.getItem('raja_init')) {
+    DB.set('convenios',[
+      {id:1,nome:'UNIMED',ans:'314668',cod:'73284036000118',ativo:1},
+      {id:2,nome:'AMIL / ONE HEALTH',ans:'326305',cod:'47376686',ativo:1},
+      {id:3,nome:'POLICIA MILITAR',ans:'001',cod:'73284036000118',ativo:1},
+      {id:4,nome:'SUS',ans:'000',cod:'73284036000118',ativo:1},
+      {id:5,nome:'CEMIG SAUDE',ans:'316350',cod:'73284036000118',ativo:1},
+    ]);
+    DB.set('setores',[
+      {id:1,nome:'Setor C',tipo:'Apartamento',leitos:31},
+      {id:2,nome:'Setor D',tipo:'Apartamento',leitos:32},
+      {id:3,nome:'UTI 1',tipo:'UTI',leitos:10},
+      {id:4,nome:'UTI 3',tipo:'UTI',leitos:8},
+    ]);
+    DB.set('profissionais',[
+      {id:1,nome:'Ana Cristina',cpf:'',conselho:'CREFITO',numconselho:'12345',ativo:1},
+      {id:2,nome:'Lucas Jesus',cpf:'',conselho:'CREFITO',numconselho:'22853',ativo:1},
+      {id:3,nome:'Livia Ávila',cpf:'',conselho:'CREFITO',numconselho:'64755',ativo:1},
+    ]);
+    DB.set('procedimentos',[
+      {id:1,codigo:'80116876',nome:'DIÁRIA SEM VM APTO/ENF',abrev:'DIÁRIA APT'},
+      {id:2,codigo:'80116868',nome:'DIÁRIA COM VM UTI/APTO/ENF',abrev:'DIÁRIA VM'},
+      {id:3,codigo:'80116850',nome:'DIÁRIA SEM VM UTI',abrev:'DIÁRIA UTI'},
+      {id:4,codigo:'20103913',nome:'Avaliação',abrev:'AVAL'},
+    ]);
+    DB.set('pacientes',[
+      {id:1,nome:'MARINA CAMARGOS TYMBURIBA',nascimento:'1934-10-29',cpf:'',convenio_id:1},
+      {id:2,nome:'ILDEU ALVES LOPES',nascimento:'1960-03-15',cpf:'',convenio_id:3},
+      {id:3,nome:'ELIZEU DE SOUZA PRADOS',nascimento:'1955-07-22',cpf:'',convenio_id:3},
+    ]);
+    DB.set('lotes',[
+      {id:630,convenio:'CEMIG SAUDE',status:'Arquivo Gerado',data:'18/06/2026 09:11',guias:1,valor:'R$ 131,09',concluido:0},
+      {id:629,convenio:'CEMIG SAUDE',status:'Arquivo Gerado',data:'15/06/2026 10:07',guias:1,valor:'R$ 447,20',concluido:0},
+      {id:566,convenio:'CEMIG SAUDE',status:'Finalizada',data:'02/02/2026 09:17',guias:1,valor:'R$ 574,20',concluido:1},
+    ]);
+    DB.set('guias',[
+      {id:1,num_at:'7448097',setor:'Setor C - 151/1',num_guia:1,paciente_id:1,convenio_id:1,internacao:'18/06/2026',atend:'18/06/2026',valor:'R$ 45,20',dias:1,tipo_internacao:'Clínico',diagnostico:'DOR TORÁCICA',ims_previo:9,ims_admissao:3},
+      {id:2,num_at:'7443206',setor:'Setor C - 153/2',num_guia:3,paciente_id:2,convenio_id:3,internacao:'14/04/2026',atend:'15/04/2026',valor:'R$ 498,16',dias:4,tipo_internacao:'Cirúrgico',diagnostico:'FRATURA DE FÊMUR',ims_previo:7,ims_admissao:2},
+      {id:3,num_at:'7404854',setor:'Setor C - 155/1',num_guia:2,paciente_id:3,convenio_id:3,internacao:'10/05/2026',atend:'10/05/2026',valor:'R$ 276,99',dias:2,tipo_internacao:'Clínico',diagnostico:'PNEUMONIA',ims_previo:8,ims_admissao:4},
+    ]);
+    DB.set('medidas',[
+      {id:1,nome:'PE MAX',unidade:'cmH2O',valor_base:20},
+      {id:2,nome:'PI MAX',unidade:'cmH2O',valor_base:48},
+      {id:3,nome:'PEAK FLOW',unidade:'L/Min',valor_base:160},
+      {id:4,nome:'IMS',unidade:'pts',valor_base:6},
+      {id:5,nome:'MRC',unidade:'pts',valor_base:36},
+    ]);
+    // Usuário admin padrão
+    DB.set('usuarios',[
+      {id:1,nome:'ADMINISTRADOR',login:'admin',senha:'1234',perfil:'Gestão',ativo:1},
+    ]);
+    DB.setItem('raja_init','1');
+  }
+}
+
+// ===== MENUS POR PERFIL =====
+const MENUS = {
+  'Gestão': `
+    <a href="#" onclick="nav('dashboard')" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    </a>
+    <div class="sidebar-section">Gestão</div>
+    <a href="#" onclick="nav('guias-abertas')" id="nav-guias-abertas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Guias Em Aberto
+    </a>
+    <a href="#" onclick="nav('guias-fechadas')" id="nav-guias-fechadas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Guias Fechadas
+    </a>
+    <a href="#" onclick="nav('lotes-pendente')" id="nav-lotes-pendente">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Lotes Pendentes
+    </a>
+    <a href="#" onclick="nav('lotes-concluida')" id="nav-lotes-concluida">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Lotes Concluídas
+    </a>
+    <div class="sidebar-section">Mapas</div>
+    <a href="#" onclick="nav('mapa-geral')" id="nav-mapa-geral">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Mapa Geral
+    </a>
+    <a href="#" onclick="nav('mapa-ocupacao')" id="nav-mapa-ocupacao">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Mapa de Ocupação
+    </a>
+    <div class="sidebar-section">Relatórios</div>
+    <a href="#" onclick="nav('rel-ims')" id="nav-rel-ims">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>IMS
+    </a>
+    <a href="#" onclick="nav('rel-atend')" id="nav-rel-atend">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/></svg>Atendimentos
+    </a>
+    <a href="#" onclick="nav('rel-pacientes')" id="nav-rel-pacientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Pacientes
+    </a>
+    <a href="#" onclick="nav('rel-produtividade')" id="nav-rel-produtividade">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Produtividade
+    </a>
+    <div class="sidebar-section">Cadastros</div>
+    <a href="#" onclick="nav('cad-pacientes')" id="nav-cad-pacientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Pacientes
+    </a>
+    <a href="#" onclick="nav('cad-convenios')" id="nav-cad-convenios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Convênios
+    </a>
+    <a href="#" onclick="nav('cad-profissionais')" id="nav-cad-profissionais">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Profissionais
+    </a>
+    <a href="#" onclick="nav('cad-procedimentos')" id="nav-cad-procedimentos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/></svg>Procedimentos
+    </a>
+    <a href="#" onclick="nav('cad-setores')" id="nav-cad-setores">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Setores
+    </a>`,
+
+  'Fisioterapeuta': `
+    <a href="#" onclick="nav('dashboard')" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    </a>
+    <div class="sidebar-section">Mapas</div>
+    <a href="#" onclick="nav('mapa-geral')" id="nav-mapa-geral">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Mapa Geral
+    </a>
+    <a href="#" onclick="nav('mapa-ocupacao')" id="nav-mapa-ocupacao">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Mapa de Ocupação
+    </a>
+    <div class="sidebar-section">Relatórios</div>
+    <a href="#" onclick="nav('rel-ims')" id="nav-rel-ims">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>IMS
+    </a>
+    <a href="#" onclick="nav('rel-atend')" id="nav-rel-atend">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/></svg>Atendimentos
+    </a>
+    <a href="#" onclick="nav('rel-pacientes')" id="nav-rel-pacientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Pacientes
+    </a>
+    <a href="#" onclick="nav('rel-produtividade')" id="nav-rel-produtividade">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Produtividade
+    </a>
+    <div class="sidebar-section">Cadastros</div>
+    <a href="#" onclick="nav('cad-pacientes')" id="nav-cad-pacientes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Pacientes
+    </a>
+    <a href="#" onclick="nav('cad-convenios')" id="nav-cad-convenios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Convênios
+    </a>
+    <a href="#" onclick="nav('cad-profissionais')" id="nav-cad-profissionais">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Profissionais
+    </a>
+    <a href="#" onclick="nav('cad-procedimentos')" id="nav-cad-procedimentos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/></svg>Procedimentos
+    </a>
+    <a href="#" onclick="nav('cad-setores')" id="nav-cad-setores">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Setores
+    </a>`,
+
+  'Secretaria': null
+};
+// Secretaria tem acesso igual à Gestão
+MENUS['Secretaria'] = MENUS['Gestão'];
+
+// ===== SESSÃO =====
+let currentUser = null;
+
+function doLogin() {
+  const login = document.getElementById('login-user').value.trim();
+  const senha = document.getElementById('login-pass').value;
+  const usuarios = DB.get('usuarios');
+  const user = usuarios.find(u => u.login === login && u.senha === senha && u.ativo == 1);
+  if (user) {
+    currentUser = user;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('topbar-username').textContent = user.nome.split(' ')[0].toUpperCase();
+    document.getElementById('user-badge').textContent = user.nome[0].toUpperCase();
+    // Gerenciar Usuários: só para Gestão
+    const menuGerenciar = document.querySelector('.topbar-menu a:first-child');
+    if (menuGerenciar) menuGerenciar.style.display = ['Gestão','Secretaria'].includes(user.perfil) ? 'flex' : 'none';
+    document.getElementById('sidebar-menu').innerHTML = MENUS[user.perfil] || MENUS['Fisioterapeuta'];
+    document.getElementById('login-error').style.display = 'none';
+    initApp();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  closeMenu();
+}
+
+// ===== MENU DROPDOWN =====
+function toggleMenu() { document.getElementById('topbar-menu').classList.toggle('open'); }
+function closeMenu() { document.getElementById('topbar-menu').classList.remove('open'); }
+document.addEventListener('click', e => {
+  if (!e.target.closest('.topbar-user')) closeMenu();
+});
+
+// ===== NAVEGAÇÃO =====
+const breadcrumbs = {
+  'dashboard':'Dashboard','guias-abertas':'Guias Em Aberto','guias-fechadas':'Guias Fechadas',
+  'lotes-pendente':'Lotes Pendentes','lotes-concluida':'Lotes Concluídas',
+  'mapa-geral':'Mapa Geral','mapa-ocupacao':'Mapa de Ocupação',
+  'rel-ims':'Relatório IMS','rel-atend':'Atendimentos Geral',
+  'rel-pacientes':'Relatório de Pacientes','rel-produtividade':'Produtividade',
+  'cad-pacientes':'Pacientes','cad-convenios':'Convênios',
+  'cad-profissionais':'Profissionais','cad-procedimentos':'Procedimentos',
+  'cad-setores':'Setores','config-usuarios':'Usuários','paciente-detalhe':'Detalhe do Paciente',
+};
+
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+  const page = document.getElementById('page-'+id);
+  if (page) page.classList.add('active');
+  const navEl = document.getElementById('nav-'+id);
+  if (navEl) navEl.classList.add('active');
+  document.getElementById('breadcrumb-text').textContent = breadcrumbs[id] || id;
+  renderPage(id);
+  return false;
+}
+
+function renderPage(id) {
+  const renders = {
+    'cad-pacientes': renderPacientes,
+    'cad-convenios': renderConvenios,
+    'cad-profissionais': renderProfissionais,
+    'cad-procedimentos': renderProcedimentos,
+    'cad-setores': renderSetores,
+    'guias-abertas': renderGuiasAbertas,
+    'lotes-pendente': renderLotesPendente,
+    'lotes-concluida': renderLotesConcluida,
+    'mapa-geral': renderMapaGeral,
+    'mapa-ocupacao': renderMapaOcupacao,
+    'rel-atend': renderRelAtend,
+    'rel-pacientes': renderRelPacientes,
+    'rel-produtividade': renderProdutividade,
+    'config-usuarios': renderUsuarios,
+  };
+  if (renders[id]) renders[id]();
+}
+
+// ===== RENDERS =====
+function renderPacientes() {
+  const data = DB.get('pacientes'), convs = DB.get('convenios');
+  document.getElementById('tb-cad-pacientes').innerHTML = data.map(p => {
+    const conv = convs.find(c=>c.id===p.convenio_id)||{};
+    const idade = p.nascimento ? Math.floor((new Date()-new Date(p.nascimento))/31557600000) : '-';
+    return `<tr data-search="${p.nome.toLowerCase()}"><td>${p.nome}</td><td>${idade}</td><td>${p.cpf||'-'}</td><td>${conv.nome||'-'}</td>
+      <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`;
+  }).join('');
+  updateConvenioSelects();
+}
+
+function renderConvenios() {
+  document.getElementById('tb-cad-convenios').innerHTML = DB.get('convenios').map(c => `
+    <tr data-search="${c.nome.toLowerCase()}"><td>${c.nome}</td><td>${c.ans}</td><td>${c.cod}</td>
+    <td><span class="icon-ativo ${c.ativo?'sim':'nao'}">${c.ativo?'✔':'✘'}</span></td>
+    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+}
+
+function renderProfissionais() {
+  document.getElementById('tb-cad-profissionais').innerHTML = DB.get('profissionais').map(p => `
+    <tr data-search="${p.nome.toLowerCase()}"><td>${p.nome}</td><td>${p.cpf||'-'}</td><td>${p.conselho}</td><td>${p.numconselho}</td>
+    <td><span class="icon-ativo ${p.ativo?'sim':'nao'}">${p.ativo?'✔':'✘'}</span></td>
+    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+}
+
+function renderProcedimentos() {
+  document.getElementById('tb-cad-procedimentos').innerHTML = DB.get('procedimentos').map(p => `
+    <tr data-search="${p.nome.toLowerCase()}"><td>${p.codigo}</td><td>${p.nome}</td><td>${p.abrev||'-'}</td>
+    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+}
+
+function renderSetores() {
+  document.getElementById('tb-cad-setores').innerHTML = DB.get('setores').map(s => `
+    <tr data-search="${s.nome.toLowerCase()}"><td>${s.nome}</td><td>${s.tipo}</td><td>${s.leitos}</td>
+    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+}
+
+function renderUsuarios() {
+  document.getElementById('tb-usuarios').innerHTML = DB.get('usuarios').map(u => {
+    const cls = u.perfil==='Gestão'?'perfil-gestao':u.perfil==='Secretaria'?'perfil-secretaria':'perfil-fisio';
+    return `<tr data-search="${u.nome.toLowerCase()} ${u.login.toLowerCase()}">
+      <td>${u.nome}</td><td>${u.login}</td>
+      <td><span class="${cls}">${u.perfil}</span></td>
+      <td><span class="icon-ativo ${u.ativo?'sim':'nao'}">${u.ativo?'✔':'✘'}</span></td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick="openEditUsuario(${u.id})">Editar</button>
+        ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="toggleUsuarioAtivo(${u.id})">
+          ${u.ativo?'Desativar':'Ativar'}
+        </button>`:''}
+      </td></tr>`;
+  }).join('');
+}
+
+function renderGuiasAbertas() {
+  const guias = DB.get('guias'), pacs = DB.get('pacientes'), convs = DB.get('convenios');
+  document.getElementById('tb-guias-abertas').innerHTML = guias.map(g => {
+    const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+    const conv = convs.find(c=>c.id===g.convenio_id)||{};
+    return `<tr><td>${g.num_at}</td><td>${g.setor}</td><td>${g.num_guia}</td>
+      <td>${pac.nome||'-'}</td><td>${conv.nome||'-'}</td>
+      <td>${g.internacao}</td><td>${g.atend}</td><td>${g.valor}</td><td>${g.dias}</td></tr>`;
+  }).join('');
+}
+
+function renderLotesPendente() {
+  document.getElementById('tb-lotes-pendente').innerHTML = DB.get('lotes').filter(l=>!l.concluido).map(l => `
+    <tr><td>${l.convenio}</td><td>${l.id}</td>
+    <td><span style="color:#f39c12;font-weight:600;">${l.status}</span></td>
+    <td>${l.data}</td><td>${l.guias}</td><td>${l.valor}</td></tr>`).join('');
+}
+
+function renderLotesConcluida() {
+  document.getElementById('tb-lotes-concluida').innerHTML = DB.get('lotes').filter(l=>l.concluido).map(l => `
+    <tr><td>${l.convenio}</td><td>${l.id}</td>
+    <td><span style="color:#27ae60;font-weight:600;">Finalizada</span></td>
+    <td>${l.data}</td><td>${l.guias}</td><td>${l.valor}</td></tr>`).join('');
+}
+
+function renderMapaGeral() {
+  const setores = DB.get('setores'), pacs = DB.get('pacientes'), guias = DB.get('guias'), convs = DB.get('convenios');
+  document.getElementById('mapa-geral-container').innerHTML = setores.map(s => {
+    const leitosHtml = Array.from({length:s.leitos},(_,i)=>{
+      const guia = i===0?guias.find(g=>g.setor.includes(s.nome)):null;
+      const pac = guia?pacs.find(p=>p.id===guia.paciente_id):null;
+      const conv = pac&&guia?convs.find(c=>c.id===guia.convenio_id):null;
+      const num = `${s.id*100+i+1}/${(i%3)+1}`;
+      return pac?`<div class="leito-cell ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-num">${num}</div>
+        <div class="leito-nome">${pac.nome.split(' ').slice(0,2).join(' ')}</div>
+        <div class="leito-conv">(${conv?conv.nome:''})</div></div>`:
+        `<div class="leito-cell"><div class="leito-num">${num}</div></div>`;
+    }).join('');
+    return `<div class="mapa-setor"><div class="mapa-setor-title">${s.nome}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
+  }).join('');
+}
+
+function renderMapaOcupacao() {
+  const setores = DB.get('setores'), pacs = DB.get('pacientes'), guias = DB.get('guias'), convs = DB.get('convenios');
+  document.getElementById('mapa-ocupacao-container').innerHTML = setores.map(s => {
+    const ocup = guias.filter(g=>g.setor.includes(s.nome)).length;
+    const pct = Math.round(ocup/s.leitos*100);
+    const leitosHtml = Array.from({length:Math.min(s.leitos,8)},(_,i)=>{
+      const guia = i===0?guias.find(g=>g.setor.includes(s.nome)):null;
+      const pac = guia?pacs.find(p=>p.id===guia.paciente_id):null;
+      const conv = pac&&guia?convs.find(c=>c.id===guia.convenio_id):null;
+      const num = `${s.id*100+i+1}/${(i%3)+1}`;
+      return pac?`<div class="ocupacao-leito ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-id">${num}</div>
+        <div class="leito-info"><div class="nome">${pac.nome}</div>
+        <div class="detalhe">${conv?conv.nome:''} - NA: ${guia.num_at}</div></div>
+        <div class="leito-arrow">›</div></div>`:
+        `<div class="ocupacao-leito"><div class="leito-id">${num}</div><div class="leito-info"></div><div class="leito-arrow">›</div></div>`;
+    }).join('');
+    return `<div class="ocupacao-setor"><div class="ocupacao-setor-header"><span>${s.nome} (${ocup} pacientes - ${pct}% ocupado)</span><span>🖨</span></div>${leitosHtml}</div>`;
+  }).join('');
+}
+
+function renderRelAtend() {
+  const guias = DB.get('guias'), pacs = DB.get('pacientes'), convs = DB.get('convenios');
+  document.getElementById('rel-atend-container').innerHTML = guias.map(g => {
+    const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+    const conv = convs.find(c=>c.id===g.convenio_id)||{};
+    return `<div style="margin-bottom:20px;">
+      <div style="color:#e74c3c;font-weight:700;font-size:13px;margin-bottom:8px;">${g.setor} - ${pac.nome} (${conv.nome})
+      <span style="float:right;color:#333;font-weight:400;font-size:12px;">Internação: ${g.internacao} - Nº: ${g.num_at}</span></div>
+      <div class="card"><table><thead><tr><th>Data</th><th>Código</th><th>Nome</th><th>Qtd.</th><th>Verificado</th><th>Usuário</th></tr></thead>
+      <tbody><tr><td>19/06</td><td>80116876</td><td>DIÁRIA SEM VM APTO/ENF</td><td>1</td>
+      <td><span style="background:#4a90d9;color:#fff;border-radius:20px;padding:2px 12px;font-size:12px;">✓</span></td>
+      <td>LUCAS JESUS</td></tr></tbody></table></div></div>`;
+  }).join('');
+}
+
+function renderRelPacientes() {
+  const pacs = DB.get('pacientes'), convs = DB.get('convenios'), guias = DB.get('guias');
+  document.getElementById('tb-rel-pacientes').innerHTML = pacs.map(p => {
+    const conv = convs.find(c=>c.id===p.convenio_id)||{};
+    const guia = guias.find(g=>g.paciente_id===p.id)||{};
+    return `<tr><td>${p.nome}</td><td>${guia.num_at||'-'}</td><td>${conv.nome||'-'}</td>
+      <td><span class="badge badge-success">Em Aberto</span></td>
+      <td>${guia.valor||'-'}</td><td>${guia.internacao||'-'}</td><td>-</td></tr>`;
+  }).join('');
+}
+
+function renderProdutividade() {
+  document.getElementById('tb-produtividade').innerHTML = DB.get('profissionais').map(p => `
+    <tr><td>${p.nome}</td><td>R$ ${(Math.random()*5000+500).toFixed(2)}</td><td>${Math.floor(Math.random()*200+20)}</td>
+    <td>R$ ${(Math.random()*4000+400).toFixed(2)}</td><td>${Math.floor(Math.random()*180+15)}</td>
+    <td>R$ ${(Math.random()*500+50).toFixed(2)}</td><td>${Math.floor(Math.random()*20)}</td></tr>`).join('');
+}
+
+// ===== FILTRO =====
+function filterTable(tbId, query) {
+  document.querySelectorAll(`#${tbId} tr`).forEach(tr => {
+    const s = tr.getAttribute('data-search')||'';
+    tr.style.display = s.includes(query.toLowerCase())?'':'none';
+  });
+}
+
+// ===== MODALS =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+
+function updateConvenioSelects() {
+  const opts = '<option value="">Selecione</option>' + DB.get('convenios').map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  const sel = document.getElementById('pac-convenio');
+  if (sel) sel.innerHTML = opts;
+}
+
+// ===== SALVAR =====
+function getNextId(key) { const d = DB.get(key); return d.length?Math.max(...d.map(x=>x.id))+1:1; }
+
+function savePaciente() {
+  const nome = document.getElementById('pac-nome').value.trim();
+  if (!nome) { alert('Nome é obrigatório'); return; }
+  DB.push('pacientes',{id:getNextId('pacientes'),nome,nascimento:document.getElementById('pac-nascimento').value,cpf:document.getElementById('pac-cpf').value,convenio_id:parseInt(document.getElementById('pac-convenio').value)||null});
+  closeModal('modal-paciente'); renderPacientes(); showToast('Paciente salvo!');
+  document.getElementById('pac-nome').value=''; document.getElementById('pac-cpf').value='';
+}
+
+function saveConvenio() {
+  const nome = document.getElementById('conv-nome').value.trim();
+  if (!nome) { alert('Nome é obrigatório'); return; }
+  DB.push('convenios',{id:getNextId('convenios'),nome,ans:document.getElementById('conv-ans').value,cod:document.getElementById('conv-cod').value,ativo:parseInt(document.getElementById('conv-ativo').value)});
+  closeModal('modal-convenio'); renderConvenios(); showToast('Convênio salvo!');
+  document.getElementById('conv-nome').value='';
+}
+
+function saveProfissional() {
+  const nome = document.getElementById('prof-nome').value.trim();
+  if (!nome) { alert('Nome é obrigatório'); return; }
+  DB.push('profissionais',{id:getNextId('profissionais'),nome,cpf:document.getElementById('prof-cpf').value,conselho:document.getElementById('prof-conselho').value,numconselho:document.getElementById('prof-numconselho').value,ativo:parseInt(document.getElementById('prof-ativo').value)});
+  closeModal('modal-profissional'); renderProfissionais(); showToast('Profissional salvo!');
+  document.getElementById('prof-nome').value='';
+}
+
+function saveProcedimento() {
+  const nome=document.getElementById('proc-nome').value.trim(), codigo=document.getElementById('proc-codigo').value.trim();
+  if (!nome||!codigo) { alert('Código e Nome são obrigatórios'); return; }
+  DB.push('procedimentos',{id:getNextId('procedimentos'),codigo,nome,abrev:document.getElementById('proc-abrev').value});
+  closeModal('modal-procedimento'); renderProcedimentos(); showToast('Procedimento salvo!');
+  document.getElementById('proc-nome').value=''; document.getElementById('proc-codigo').value='';
+}
+
+function saveSetor() {
+  const nome=document.getElementById('setor-nome').value.trim(), leitos=parseInt(document.getElementById('setor-leitos').value);
+  if (!nome||!leitos) { alert('Nome e Leitos são obrigatórios'); return; }
+  DB.push('setores',{id:getNextId('setores'),nome,tipo:document.getElementById('setor-tipo').value,leitos});
+  closeModal('modal-setor'); renderSetores(); showToast('Setor salvo!');
+  document.getElementById('setor-nome').value='';
+}
+
+function saveUsuario() {
+  const nome=document.getElementById('usr-nome').value.trim();
+  const login=document.getElementById('usr-login').value.trim();
+  const senha=document.getElementById('usr-senha').value;
+  const senha2=document.getElementById('usr-senha2').value;
+  const editId=document.getElementById('usr-id').value;
+
+  if (!nome||!login) { alert('Nome e Usuário são obrigatórios'); return; }
+  if (!editId && !senha) { alert('Senha é obrigatória'); return; }
+  if (senha && senha!==senha2) { alert('As senhas não coincidem'); return; }
+  if (senha && senha.length<4) { alert('Senha deve ter pelo menos 4 caracteres'); return; }
+
+  const usuarios = DB.get('usuarios');
+  const loginExiste = usuarios.find(u=>u.login===login && u.id!==parseInt(editId));
+  if (loginExiste) { alert('Esse usuário (login) já existe!'); return; }
+
+  if (editId) {
+    const idx = usuarios.findIndex(u=>u.id===parseInt(editId));
+    if (idx>=0) {
+      usuarios[idx].nome=nome; usuarios[idx].login=login;
+      usuarios[idx].perfil=document.getElementById('usr-perfil').value;
+      usuarios[idx].ativo=parseInt(document.getElementById('usr-ativo').value);
+      if (senha) usuarios[idx].senha=senha;
+      DB.set('usuarios',usuarios);
+      showToast('Usuário atualizado!');
+    }
+  } else {
+    DB.push('usuarios',{id:getNextId('usuarios'),nome,login,senha,perfil:document.getElementById('usr-perfil').value,ativo:parseInt(document.getElementById('usr-ativo').value)});
+    showToast('Usuário criado com sucesso!');
+  }
+  closeModal('modal-usuario'); renderUsuarios();
+  document.getElementById('usr-nome').value=''; document.getElementById('usr-login').value='';
+  document.getElementById('usr-senha').value=''; document.getElementById('usr-senha2').value='';
+  document.getElementById('usr-id').value='';
+}
+
+function openEditUsuario(id) {
+  const u = DB.get('usuarios').find(u=>u.id===id);
+  if (!u) return;
+  document.getElementById('modal-usuario-titulo').textContent='Editar Usuário';
+  document.getElementById('usr-id').value=u.id;
+  document.getElementById('usr-nome').value=u.nome;
+  document.getElementById('usr-login').value=u.login;
+  document.getElementById('usr-senha').value='';
+  document.getElementById('usr-senha2').value='';
+  document.getElementById('usr-perfil').value=u.perfil;
+  document.getElementById('usr-ativo').value=u.ativo;
+  openModal('modal-usuario');
+}
+
+function toggleUsuarioAtivo(id) {
+  const usuarios = DB.get('usuarios');
+  const idx = usuarios.findIndex(u=>u.id===id);
+  if (idx>=0) { usuarios[idx].ativo = usuarios[idx].ativo?0:1; DB.set('usuarios',usuarios); renderUsuarios(); showToast('Status atualizado!'); }
+}
+
+function alterarSenha() {
+  const atual=document.getElementById('senha-atual').value;
+  const nova=document.getElementById('senha-nova').value;
+  const nova2=document.getElementById('senha-nova2').value;
+  if (atual!==currentUser.senha) { alert('Senha atual incorreta'); return; }
+  if (!nova||nova.length<4) { alert('Nova senha deve ter pelo menos 4 caracteres'); return; }
+  if (nova!==nova2) { alert('As senhas não coincidem'); return; }
+  const usuarios = DB.get('usuarios');
+  const idx = usuarios.findIndex(u=>u.id===currentUser.id);
+  if (idx>=0) { usuarios[idx].senha=nova; DB.set('usuarios',usuarios); currentUser.senha=nova; }
+  closeModal('modal-alterar-senha');
+  document.getElementById('senha-atual').value=''; document.getElementById('senha-nova').value=''; document.getElementById('senha-nova2').value='';
+  showToast('Senha alterada com sucesso!');
+}
+
+// ===== TOAST =====
+function showToast(msg, color) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=color||'#27ae60'; t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+
+// ===== CHARTS =====
+let chartsInit = false;
+function initCharts() {
+  if (chartsInit) return; chartsInit=true;
+  const labels=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);return `${d.getDate()}/${d.getMonth()+1}`;});
+  new Chart(document.getElementById('chartProcedimentos'),{
+    type:'line',data:{labels,datasets:[{data:labels.map(()=>Math.floor(Math.random()*200+250)),borderColor:'#4a90d9',backgroundColor:'rgba(74,144,217,0.08)',fill:true,tension:0.4,pointRadius:0}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0}}}
+  });
+  const setores=DB.get('setores');
+  new Chart(document.getElementById('chartSetores'),{
+    type:'bar',data:{labels:setores.map(s=>s.nome),datasets:[{label:'Leitos',data:setores.map(s=>s.leitos),backgroundColor:'#4a90d9'},{label:'Ocupados',data:setores.map(s=>Math.floor(s.leitos*0.5)),backgroundColor:'#27ae60'}]},
+    options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}}}}
+  });
+}
+
+// ===== DADOS PACIENTE DETALHE =====
+let pacienteAtivo = null; // guia atual aberta
+
+const STATUS_PADRAO = [
+  {nome:'N1', cor:'#c8e6c9'},
+  {nome:'N2', cor:'#fff9c4'},
+  {nome:'Alta UTI', cor:'#fff176'},
+  {nome:'Atendimento Tarde', cor:'#80deea'},
+  {nome:'Avaliação de Fragilidade', cor:'#78909c'},
+  {nome:'Busca Ativa / Interconsulta', cor:'#a1887f'},
+];
+
+function abrirPacienteDetalhe(guiaId) {
+  const guias = DB.get('guias');
+  const guia = guias.find(g => g.id === guiaId);
+  if (!guia) return;
+  pacienteAtivo = guia;
+
+  const pacs = DB.get('pacientes');
+  const convs = DB.get('convenios');
+  const pac = pacs.find(p => p.id === guia.paciente_id) || {};
+  const conv = convs.find(c => c.id === guia.convenio_id) || {};
+
+  const idade = pac.nascimento ? Math.floor((new Date()-new Date(pac.nascimento))/31557600000) : '-';
+  const hoje = new Date();
+  const internacaoDate = guia.internacao ? new Date(guia.internacao.split('/').reverse().join('-')) : null;
+  const diasInt = internacaoDate ? Math.floor((hoje - internacaoDate)/86400000) : '-';
+
+  document.getElementById('det-setor-leito').textContent = guia.setor || '-';
+  document.getElementById('det-nome').textContent = pac.nome || '-';
+  document.getElementById('det-convenio').textContent = conv.nome || '-';
+  document.getElementById('det-num-at').textContent = guia.num_at || '-';
+  document.getElementById('det-tipo').textContent = guia.tipo_internacao || 'Clínico';
+  document.getElementById('det-diag').textContent = guia.diagnostico || 'Não informado';
+  document.getElementById('det-internacao').textContent = guia.internacao ? `${guia.internacao} (${diasInt} dias)` : '-';
+  document.getElementById('det-atend').textContent = guia.atend ? `${guia.atend} (${diasInt} dias)` : '-';
+  document.getElementById('det-nascimento').textContent = pac.nascimento ? `${pac.nascimento.split('-').reverse().join('/')} (${idade} anos)` : '-';
+
+  // Status
+  const hist = DB.get('hist_status_' + guia.id);
+  const statusAtual = hist && hist.length ? hist[hist.length-1] : {nome:'N1', cor:'#c8e6c9'};
+  document.getElementById('det-status').textContent = statusAtual.nome;
+  document.getElementById('det-status-box').style.background = statusAtual.cor;
+
+  // IMS
+  const histIMS = DB.get('hist_ims_' + guia.id);
+  const imsAtual = histIMS && histIMS.length ? histIMS[histIMS.length-1].valor : '-';
+  document.getElementById('det-ims-prev').textContent = guia.ims_previo || '-';
+  document.getElementById('det-ims-adm').textContent = guia.ims_admissao || '-';
+  document.getElementById('det-ims-atual').textContent = imsAtual;
+
+  // Tabelas históricas
+  renderDetProcs(guia.id);
+  renderDetStatus(guia.id);
+  renderDetMedidas(guia.id);
+  renderDetSetor(guia.id);
+
+  // Preencher modal editar
+  document.getElementById('edit-pac-id').value = pac.id;
+  document.getElementById('edit-pac-nome').value = pac.nome || '';
+  document.getElementById('edit-pac-nasc').value = pac.nascimento || '';
+  document.getElementById('edit-pac-cpf').value = pac.cpf || '';
+  document.getElementById('edit-pac-diag').value = guia.diagnostico || '';
+  document.getElementById('edit-pac-tipo').value = guia.tipo_internacao || 'Clinico';
+  // preencher convênios no select editar
+  const editConvSel = document.getElementById('edit-pac-conv');
+  editConvSel.innerHTML = '<option value="">Selecione</option>' + convs.map(c=>`<option value="${c.id}" ${c.id===pac.convenio_id?'selected':''}>${c.nome}</option>`).join('');
+
+  // Modal lançar proc
+  document.getElementById('proc-setor-label').textContent = guia.setor;
+  const hoje2 = new Date().toISOString().split('T')[0];
+  document.getElementById('proc-data').value = hoje2;
+  document.getElementById('proc-ims-prev').textContent = guia.ims_previo || '-';
+  document.getElementById('proc-ims-adm').textContent = guia.ims_admissao || '-';
+  const procs = DB.get('procedimentos');
+  document.getElementById('proc-lista').innerHTML = procs.map((p,i) => `
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.1s;" onmouseover="this.style.background='#f5f8ff'" onmouseout="this.style.background=''">
+      <input type="radio" name="proc-sel" value="${p.id}" style="width:16px;height:16px;" />
+      <span style="font-size:13px;">${p.nome}</span>
+    </label>`).join('');
+
+  // Modal status
+  document.getElementById('status-atual-display').textContent = statusAtual.nome;
+  document.getElementById('status-lista').innerHTML = STATUS_PADRAO.map(s => `
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;background:${s.cor}20;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+      <input type="radio" name="status-sel" value="${s.nome}" data-cor="${s.cor}" style="width:16px;height:16px;" />
+      <span style="font-size:13px;font-weight:600;">${s.nome}</span>
+      <span style="margin-left:auto;width:20px;height:20px;border-radius:3px;background:${s.cor};border:1px solid #ddd;"></span>
+    </label>`).join('');
+
+  // Modal transferir
+  document.getElementById('transfer-atual').textContent = guia.setor;
+  const setores = DB.get('setores');
+  document.getElementById('transfer-setor').innerHTML = '<option value="">Selecione o setor</option>' + setores.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+
+  // Modal medidas
+  const medidas = DB.get('medidas') || [];
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('medida-data').value = today;
+  document.getElementById('medidas-lista').innerHTML = medidas.map(m => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f9f9f9;border-radius:6px;">
+      <span style="flex:1;font-size:13px;font-weight:600;">${m.nome}</span>
+      <span style="font-size:11px;color:#888;">${m.unidade}</span>
+      <input type="number" id="med-val-${m.id}" placeholder="Valor" style="width:90px;padding:7px;border:1px solid #ddd;border-radius:5px;font-size:13px;" />
+    </div>`).join('') || '<p style="color:#aaa;font-size:13px;">Nenhuma medida cadastrada.</p>';
+
+  // Alta
+  document.getElementById('alta-data').value = today;
+
+  nav('paciente-detalhe');
+}
+
+function renderDetProcs(guiaId) {
+  const hist = DB.get('hist_procs_' + guiaId) || [];
+  const procs = DB.get('procedimentos');
+  document.getElementById('det-tb-procs').innerHTML = hist.length ? hist.slice().reverse().map(h => {
+    const proc = procs.find(p=>p.id===h.proc_id)||{};
+    return `<tr><td>${h.data}</td><td>${proc.nome||h.nome||'-'}</td><td>${h.usuario}</td></tr>`;
+  }).join('') : '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento lançado</td></tr>';
+}
+
+function renderDetStatus(guiaId) {
+  const hist = DB.get('hist_status_' + guiaId) || [];
+  document.getElementById('det-tb-status').innerHTML = hist.length ? hist.slice().reverse().map(h =>
+    `<tr><td>${h.data}</td><td><span style="background:${h.cor};padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;">${h.nome}</span></td><td>${h.usuario}</td></tr>`
+  ).join('') : '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:16px;">Sem histórico</td></tr>';
+}
+
+function renderDetMedidas(guiaId) {
+  const hist = DB.get('hist_medidas_' + guiaId) || [];
+  document.getElementById('det-tb-medidas').innerHTML = hist.length ? hist.slice().reverse().map(h =>
+    `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}</td><td>${h.usuario}</td></tr>`
+  ).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhuma medida lançada</td></tr>';
+}
+
+function renderDetSetor(guiaId) {
+  const hist = DB.get('hist_setor_' + guiaId) || [];
+  document.getElementById('det-tb-setor').innerHTML = hist.length ? hist.slice().reverse().map(h =>
+    `<tr><td>${h.data}</td><td>${h.setor}</td><td>${h.usuario}</td></tr>`
+  ).join('') : '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:16px;">Sem transferências</td></tr>';
+}
+
+function hoje() { return new Date().toLocaleDateString('pt-BR'); }
+function usuarioAtual() { return currentUser ? currentUser.nome.split(' ')[0] : 'Sistema'; }
+
+function mudarDataProc(delta) {
+  const input = document.getElementById('proc-data');
+  const d = new Date(input.value);
+  d.setDate(d.getDate() + delta);
+  input.value = d.toISOString().split('T')[0];
+}
+
+function salvarProcedimento() {
+  const sel = document.querySelector('input[name="proc-sel"]:checked');
+  if (!sel) { alert('Selecione um procedimento'); return; }
+  const procs = DB.get('procedimentos');
+  const proc = procs.find(p => p.id === parseInt(sel.value)) || {};
+  const dataVal = document.getElementById('proc-data').value;
+  const dataFmt = dataVal ? new Date(dataVal).toLocaleDateString('pt-BR') : hoje();
+  const imsAtual = document.getElementById('proc-ims-atual').value;
+
+  const hist = DB.get('hist_procs_' + pacienteAtivo.id) || [];
+  hist.push({proc_id: proc.id, nome: proc.nome, data: dataFmt, usuario: usuarioAtual()});
+  DB.set('hist_procs_' + pacienteAtivo.id, hist);
+
+  if (imsAtual !== '') {
+    const histIMS = DB.get('hist_ims_' + pacienteAtivo.id) || [];
+    histIMS.push({valor: parseInt(imsAtual), data: dataFmt, usuario: usuarioAtual()});
+    DB.set('hist_ims_' + pacienteAtivo.id, histIMS);
+    document.getElementById('det-ims-atual').textContent = imsAtual;
+  }
+
+  closeModal('modal-lancar-proc');
+  renderDetProcs(pacienteAtivo.id);
+  showToast('Procedimento lançado com sucesso!');
+}
+
+function salvarStatus() {
+  const sel = document.querySelector('input[name="status-sel"]:checked');
+  if (!sel) { alert('Selecione um status'); return; }
+  const cor = sel.getAttribute('data-cor');
+  const hist = DB.get('hist_status_' + pacienteAtivo.id) || [];
+  hist.push({nome: sel.value, cor, data: hoje(), usuario: usuarioAtual()});
+  DB.set('hist_status_' + pacienteAtivo.id, hist);
+
+  document.getElementById('det-status').textContent = sel.value;
+  document.getElementById('det-status-box').style.background = cor;
+  document.getElementById('status-atual-display').textContent = sel.value;
+
+  closeModal('modal-alterar-status');
+  renderDetStatus(pacienteAtivo.id);
+  showToast('Status atualizado!');
+}
+
+function salvarTransferencia() {
+  const novoSetor = document.getElementById('transfer-setor').value;
+  const novoLeito = document.getElementById('transfer-leito').value.trim();
+  if (!novoSetor || !novoLeito) { alert('Setor e Leito são obrigatórios'); return; }
+
+  const novoSetorLeito = `${novoSetor} - ${novoLeito}`;
+  const hist = DB.get('hist_setor_' + pacienteAtivo.id) || [];
+  hist.push({setor: novoSetorLeito, data: hoje(), usuario: usuarioAtual()});
+  DB.set('hist_setor_' + pacienteAtivo.id, hist);
+
+  const guias = DB.get('guias');
+  const idx = guias.findIndex(g => g.id === pacienteAtivo.id);
+  if (idx >= 0) { guias[idx].setor = novoSetorLeito; DB.set('guias', guias); pacienteAtivo = guias[idx]; }
+
+  document.getElementById('det-setor-leito').textContent = novoSetorLeito;
+  document.getElementById('transfer-atual').textContent = novoSetorLeito;
+
+  closeModal('modal-transferir');
+  renderDetSetor(pacienteAtivo.id);
+  showToast('Transferência realizada!');
+}
+
+function salvarMedidas() {
+  const medidas = DB.get('medidas') || [];
+  const dataVal = document.getElementById('medida-data').value;
+  const dataFmt = dataVal ? new Date(dataVal).toLocaleDateString('pt-BR') : hoje();
+  let salvou = false;
+  medidas.forEach(m => {
+    const input = document.getElementById('med-val-' + m.id);
+    if (input && input.value !== '') {
+      const hist = DB.get('hist_medidas_' + pacienteAtivo.id) || [];
+      hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: dataFmt, usuario: usuarioAtual()});
+      DB.set('hist_medidas_' + pacienteAtivo.id, hist);
+      salvou = true;
+    }
+  });
+  if (!salvou) { alert('Informe pelo menos uma medida'); return; }
+  closeModal('modal-lancar-medidas');
+  renderDetMedidas(pacienteAtivo.id);
+  showToast('Medidas salvas!');
+}
+
+function salvarAlta() {
+  const tipo = document.getElementById('alta-tipo').value;
+  if (!tipo) { alert('Selecione o Tipo da Alta'); return; }
+  const guias = DB.get('guias');
+  const idx = guias.findIndex(g => g.id === pacienteAtivo.id);
+  if (idx >= 0) { guias[idx].alta = document.getElementById('alta-data').value; guias[idx].tipo_alta = tipo; DB.set('guias', guias); }
+  closeModal('modal-alta');
+  showToast('Alta registrada com sucesso!', '#e74c3c');
+  setTimeout(() => nav('mapa-ocupacao'), 1500);
+}
+
+function salvarEdicaoPaciente() {
+  const id = parseInt(document.getElementById('edit-pac-id').value);
+  const pacs = DB.get('pacientes');
+  const idx = pacs.findIndex(p => p.id === id);
+  if (idx >= 0) {
+    pacs[idx].nome = document.getElementById('edit-pac-nome').value;
+    pacs[idx].nascimento = document.getElementById('edit-pac-nasc').value;
+    pacs[idx].cpf = document.getElementById('edit-pac-cpf').value;
+    pacs[idx].convenio_id = parseInt(document.getElementById('edit-pac-conv').value) || pacs[idx].convenio_id;
+    DB.set('pacientes', pacs);
+  }
+  const guias = DB.get('guias');
+  const gIdx = guias.findIndex(g => g.id === pacienteAtivo.id);
+  if (gIdx >= 0) {
+    guias[gIdx].diagnostico = document.getElementById('edit-pac-diag').value;
+    guias[gIdx].tipo_internacao = document.getElementById('edit-pac-tipo').value;
+    DB.set('guias', guias);
+    pacienteAtivo = guias[gIdx];
+  }
+  closeModal('modal-editar-paciente');
+  abrirPacienteDetalhe(pacienteAtivo.id);
+  showToast('Paciente atualizado!');
+}
+
+// ===== INIT =====
+function initApp() {
+  initData();
+  setTimeout(initCharts,100);
+  updateConvenioSelects();
+  // Abrir modal de novo usuário limpo
+  document.getElementById('modal-usuario-titulo').textContent='Novo Usuário';
+}
+</script>
+</body>
+</html>
