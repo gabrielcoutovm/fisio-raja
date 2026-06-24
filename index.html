@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FISIO RAJA - Gestão de Fisioterapia Hospitalar</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a1628; color: #333; display: flex; min-height: 100vh; }
@@ -1051,57 +1050,67 @@
 <div id="toast"></div>
 
 <script>
-// ===== SUPABASE =====
-const SUPABASE_URL = 'https://jmivnztamomufqysmgiz.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_yh0w6lopBj5jsVIaMGD8LQ_nt0YgMmA';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ===== SUPABASE (fetch direto, sem SDK) =====
+const SB_URL = 'https://jmivnztamomufqysmgiz.supabase.co/rest/v1';
+const SB_KEY = 'sb_publishable_yh0w6lopBj5jsVIaMGD8LQ_nt0YgMmA';
+const SB_HEADERS = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates,return=minimal' };
 
 const _mem = {};
 
+async function sbGet() {
+  try {
+    const r = await fetch(`${SB_URL}/store?select=key,value`, { headers: SB_HEADERS });
+    if (!r.ok) return;
+    const rows = await r.json();
+    rows.forEach(row => { _mem[row.key] = row.value; });
+  } catch(e) { console.warn('Supabase load error:', e.message); }
+}
+
+function sbSet(key, value) {
+  fetch(`${SB_URL}/store`, {
+    method: 'POST',
+    headers: SB_HEADERS,
+    body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
+  }).catch(e => console.warn('Supabase save error:', e.message));
+}
+
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
-  set: (k, v) => {
-    _mem[k] = v;
-    sb.from('store').upsert({key: k, value: v, updated_at: new Date().toISOString()}).then(() => {}).catch(e => console.warn('DB.set erro:', e));
-  },
+  set: (k, v) => { _mem[k] = v; sbSet(k, v); },
   push: (k, v) => { const a = DB.get(k); a.push(v); DB.set(k, a); return a; },
-  getItem: k => { const v = _mem['__'+k]; return v !== undefined ? v : null; },
-  setItem: (k, v) => {
-    _mem['__'+k] = v;
-    sb.from('store').upsert({key: '__'+k, value: v, updated_at: new Date().toISOString()}).then(() => {}).catch(() => {});
-  }
+  getItem: k => { const v = _mem['__'+k]; return v !== undefined ? String(v) : null; },
+  setItem: (k, v) => { _mem['__'+k] = v; sbSet('__'+k, v); }
 };
 
 async function carregarDados() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 6000);
   try {
-    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
-    const query = sb.from('store').select('*');
-    const { data, error } = await Promise.race([query, timeout]);
-    if (error) { console.warn('Supabase erro:', error); return; }
-    if (data) data.forEach(row => { _mem[row.key] = row.value; });
+    const r = await fetch(`${SB_URL}/store?select=key,value`, { headers: SB_HEADERS, signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!r.ok) { console.warn('Supabase retornou:', r.status); return; }
+    const rows = await r.json();
+    rows.forEach(row => { _mem[row.key] = row.value; });
   } catch(e) {
+    clearTimeout(timer);
     console.warn('Supabase indisponível, modo offline:', e.message);
   }
 }
 
 function assinarMudancas() {
-  try {
-    sb.channel('store-sync')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'store' }, payload => {
-        if (payload.new && payload.new.key) {
-          _mem[payload.new.key] = payload.new.value;
-          const activePage = document.querySelector('.page.active');
-          if (activePage) {
-            const pageId = activePage.id.replace('page-', '');
-            renderPage(pageId);
-            if (pageId === 'dashboard') renderKpis();
-          }
-        }
-      })
-      .subscribe();
-  } catch(e) {
-    console.warn('Realtime indisponível:', e.message);
-  }
+  // Polling a cada 30s para sincronizar entre dispositivos
+  setInterval(async () => {
+    const antes = JSON.stringify(_mem);
+    await sbGet();
+    if (JSON.stringify(_mem) !== antes) {
+      const activePage = document.querySelector('.page.active');
+      if (activePage) {
+        const pageId = activePage.id.replace('page-', '');
+        renderPage(pageId);
+        if (pageId === 'dashboard') renderKpis();
+      }
+    }
+  }, 30000);
 }
 
 // ===== DADOS INICIAIS =====
