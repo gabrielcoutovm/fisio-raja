@@ -443,9 +443,9 @@
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;">
-        <div class="kpi-card kpi-blue" style="border-radius:8px;"><div class="kpi-num">R$ 48.500,00</div><div class="kpi-label">Total (1.200 atend.)</div></div>
-        <div class="kpi-card kpi-green" style="border-radius:8px;"><div class="kpi-num">R$ 35.200,00</div><div class="kpi-label">Contabilizados (980)</div></div>
-        <div class="kpi-card kpi-gray" style="border-radius:8px;"><div class="kpi-num">R$ 13.300,00</div><div class="kpi-label">Não contabilizados (220)</div></div>
+        <div class="kpi-card kpi-blue" style="border-radius:8px;"><div class="kpi-num" id="prod-total-val">R$ 0,00</div><div class="kpi-label" id="prod-total-label">Total (0 atend.)</div></div>
+        <div class="kpi-card kpi-green" style="border-radius:8px;"><div class="kpi-num" id="prod-cont-val">R$ 0,00</div><div class="kpi-label" id="prod-cont-label">Contabilizados (0)</div></div>
+        <div class="kpi-card kpi-gray" style="border-radius:8px;"><div class="kpi-num" id="prod-ncont-val">R$ 0,00</div><div class="kpi-label" id="prod-ncont-label">Não contabilizados (0)</div></div>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Produtividade por Fisioterapeuta</h3></div>
@@ -1373,10 +1373,33 @@ function renderRelPacientes() {
 }
 
 function renderProdutividade() {
-  document.getElementById('tb-produtividade').innerHTML = DB.get('profissionais').map(p => `
-    <tr><td>${p.nome}</td><td>R$ ${(Math.random()*5000+500).toFixed(2)}</td><td>${Math.floor(Math.random()*200+20)}</td>
-    <td>R$ ${(Math.random()*4000+400).toFixed(2)}</td><td>${Math.floor(Math.random()*180+15)}</td>
-    <td>R$ ${(Math.random()*500+50).toFixed(2)}</td><td>${Math.floor(Math.random()*20)}</td></tr>`).join('');
+  const profissionais = DB.get('profissionais');
+  const guias = DB.get('guias');
+
+  function parseMoeda(v) { if (!v) return 0; return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim())||0; }
+  function fmtMoeda(v) { return 'R$ ' + v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+
+  let totalGeral = 0, totalCont = 0, totalNCont = 0, qtdTotal = 0, qtdCont = 0, qtdNCont = 0;
+
+  const rows = profissionais.map(p => {
+    const guiasFisio = guias.filter(g => g.profissional_id === p.id || g.profissional === p.nome);
+    const cont = guiasFisio.filter(g => g.contabilizado);
+    const ncont = guiasFisio.filter(g => !g.contabilizado);
+    const vTotal = guiasFisio.reduce((s,g) => s + parseMoeda(g.valor), 0);
+    const vCont  = cont.reduce((s,g) => s + parseMoeda(g.valor), 0);
+    const vNCont = ncont.reduce((s,g) => s + parseMoeda(g.valor), 0);
+    totalGeral += vTotal; totalCont += vCont; totalNCont += vNCont;
+    qtdTotal += guiasFisio.length; qtdCont += cont.length; qtdNCont += ncont.length;
+    return `<tr><td>${p.nome}</td><td>${fmtMoeda(vTotal)}</td><td>${guiasFisio.length}</td><td>${fmtMoeda(vCont)}</td><td>${cont.length}</td><td>${fmtMoeda(vNCont)}</td><td>${ncont.length}</td></tr>`;
+  });
+
+  document.getElementById('tb-produtividade').innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Nenhum dado encontrado</td></tr>';
+  document.getElementById('prod-total-val').textContent = fmtMoeda(totalGeral);
+  document.getElementById('prod-total-label').textContent = `Total (${qtdTotal} atend.)`;
+  document.getElementById('prod-cont-val').textContent = fmtMoeda(totalCont);
+  document.getElementById('prod-cont-label').textContent = `Contabilizados (${qtdCont})`;
+  document.getElementById('prod-ncont-val').textContent = fmtMoeda(totalNCont);
+  document.getElementById('prod-ncont-label').textContent = `Não contabilizados (${qtdNCont})`;
 }
 
 // ===== FILTRO =====
