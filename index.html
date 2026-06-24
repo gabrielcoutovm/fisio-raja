@@ -391,15 +391,15 @@
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;margin-bottom:20px;">
-        <div class="card" style="padding:18px;"><div style="font-size:12px;color:#888;">Total de altas</div><div style="font-size:28px;font-weight:700;color:#1a2a3a;">173</div><div style="font-size:11px;color:#aaa;">Período dos últimos 7 dias</div></div>
-        <div class="card" style="padding:18px;border-top:3px solid #f39c12;"><div style="font-size:12px;color:#888;">Não elegíveis</div><div style="font-size:28px;font-weight:700;color:#f39c12;">87</div><div style="font-size:11px;color:#aaa;">• Menos de 18 anos<br>• Menos de 3 dias internado</div></div>
-        <div class="card" style="padding:18px;border-top:3px solid #4a90d9;"><div style="font-size:12px;color:#888;">Excluídos</div><div style="font-size:28px;font-weight:700;color:#4a90d9;">25</div><div style="font-size:11px;color:#aaa;">• IMS Prévio de 0 a 5<br>• Óbito interhospitalar</div></div>
-        <div class="card" style="padding:18px;text-align:center;min-width:130px;"><div style="font-size:13px;color:#888;">Meta</div><div style="font-size:36px;font-weight:700;color:#27ae60;">93.44%</div></div>
+        <div class="card" style="padding:18px;"><div style="font-size:12px;color:#888;">Total de altas</div><div id="ims-total-altas" style="font-size:28px;font-weight:700;color:#1a2a3a;">0</div><div style="font-size:11px;color:#aaa;">Período dos últimos 7 dias</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #f39c12;"><div style="font-size:12px;color:#888;">Não elegíveis</div><div id="ims-nao-elegiveis" style="font-size:28px;font-weight:700;color:#f39c12;">0</div><div style="font-size:11px;color:#aaa;">• Menos de 18 anos<br>• Menos de 3 dias internado</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #4a90d9;"><div style="font-size:12px;color:#888;">Excluídos</div><div id="ims-excluidos" style="font-size:28px;font-weight:700;color:#4a90d9;">0</div><div style="font-size:11px;color:#aaa;">• IMS Prévio de 0 a 5<br>• Óbito interhospitalar</div></div>
+        <div class="card" style="padding:18px;text-align:center;min-width:130px;"><div style="font-size:13px;color:#888;">Meta</div><div id="ims-meta" style="font-size:36px;font-weight:700;color:#27ae60;">0%</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-        <div class="card" style="padding:18px;border-top:3px solid #1abc9c;"><div style="font-size:12px;color:#888;">Elegíveis</div><div style="font-size:28px;font-weight:700;">61</div></div>
-        <div class="card" style="padding:18px;border-top:3px solid #e74c3c;"><div style="font-size:12px;color:#888;">Para análise</div><div style="font-size:28px;font-weight:700;color:#e74c3c;">4</div></div>
-        <div class="card" style="padding:18px;border-top:3px solid #27ae60;"><div style="font-size:12px;color:#888;">IMS adequado</div><div style="font-size:28px;font-weight:700;color:#27ae60;">57</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #1abc9c;"><div style="font-size:12px;color:#888;">Elegíveis</div><div id="ims-elegiveis" style="font-size:28px;font-weight:700;">0</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #e74c3c;"><div style="font-size:12px;color:#888;">Para análise</div><div id="ims-analise" style="font-size:28px;font-weight:700;color:#e74c3c;">0</div></div>
+        <div class="card" style="padding:18px;border-top:3px solid #27ae60;"><div style="font-size:12px;color:#888;">IMS adequado</div><div id="ims-adequado" style="font-size:28px;font-weight:700;color:#27ae60;">0</div></div>
       </div>
     </div>
 
@@ -1121,6 +1121,70 @@ function nav(id) {
   return false;
 }
 
+function renderRelIMS() {
+  const guias = DB.get('guias');
+  const pacientes = DB.get('pacientes');
+  const hoje = new Date();
+  const seteDias = new Date(hoje); seteDias.setDate(hoje.getDate() - 7);
+
+  // altas nos últimos 7 dias
+  const comAlta = guias.filter(g => g.alta && g.data_alta);
+  const altasRecentes = comAlta.filter(g => {
+    const partes = g.data_alta.split('/');
+    if (partes.length < 3) return false;
+    const d = new Date(partes[2], partes[1]-1, partes[0]);
+    return d >= seteDias;
+  });
+
+  const totalAltas = altasRecentes.length;
+
+  const naoElegiveis = altasRecentes.filter(g => {
+    const pac = pacientes.find(p => p.id === g.paciente_id);
+    // menos de 18 anos
+    if (pac && pac.nascimento) {
+      const nasc = new Date(pac.nascimento);
+      const idade = (hoje - nasc) / (365.25 * 24 * 3600 * 1000);
+      if (idade < 18) return true;
+    }
+    // menos de 3 dias internado
+    if (g.internacao) {
+      const partes = g.internacao.split('/');
+      if (partes.length >= 3) {
+        const intern = new Date(partes[2], partes[1]-1, partes[0]);
+        const dataAlta = g.data_alta ? (() => { const p2=g.data_alta.split('/'); return new Date(p2[2],p2[1]-1,p2[0]); })() : hoje;
+        const dias = Math.round((dataAlta - intern) / (24*3600*1000));
+        if (dias < 3) return true;
+      }
+    }
+    return false;
+  });
+
+  const elegiveis = altasRecentes.filter(g => !naoElegiveis.includes(g));
+
+  const excluidos = elegiveis.filter(g => {
+    const imsPrevio = g.ims_previo != null ? parseInt(g.ims_previo) : null;
+    return (imsPrevio !== null && imsPrevio <= 5) || g.obito;
+  });
+
+  const paraAnalise = elegiveis.filter(g => !excluidos.includes(g) && !g.ims_alta);
+  const adequados = elegiveis.filter(g => {
+    if (excluidos.includes(g)) return false;
+    const imsAlta = g.ims_alta != null ? parseInt(g.ims_alta) : null;
+    return imsAlta !== null && imsAlta >= 6;
+  });
+
+  const base = elegiveis.length - excluidos.length;
+  const meta = base > 0 ? ((adequados.length / base) * 100).toFixed(2) + '%' : '0%';
+
+  document.getElementById('ims-total-altas').textContent = totalAltas;
+  document.getElementById('ims-nao-elegiveis').textContent = naoElegiveis.length;
+  document.getElementById('ims-excluidos').textContent = excluidos.length;
+  document.getElementById('ims-meta').textContent = meta;
+  document.getElementById('ims-elegiveis').textContent = elegiveis.length - excluidos.length;
+  document.getElementById('ims-analise').textContent = paraAnalise.length;
+  document.getElementById('ims-adequado').textContent = adequados.length;
+}
+
 function renderKpis() {
   const profissionais = DB.get('profissionais').filter(p => p.ativo == 1);
   const setores = DB.get('setores');
@@ -1147,6 +1211,7 @@ function renderKpis() {
 function renderPage(id) {
   const renders = {
     'dashboard': renderKpis,
+    'rel-ims': renderRelIMS,
     'cad-pacientes': renderPacientes,
     'cad-convenios': renderConvenios,
     'cad-profissionais': renderProfissionais,
