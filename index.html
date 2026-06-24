@@ -686,11 +686,12 @@
 <!-- Modal Setor -->
 <div class="modal-overlay" id="modal-setor">
   <div class="modal">
-    <h2>Novo Setor</h2>
+    <h2 id="modal-setor-titulo">Novo Setor</h2>
     <div class="form-group"><label>Nome *</label><input type="text" id="setor-nome" /></div>
-    <div class="form-row">
-      <div class="form-group"><label>Tipo</label><select id="setor-tipo"><option>Apartamento</option><option>UTI</option><option>Enfermaria</option></select></div>
-      <div class="form-group"><label>Número de Leitos *</label><input type="number" id="setor-leitos" /></div>
+    <div class="form-group"><label>Tipo</label><select id="setor-tipo"><option>Apartamento</option><option>UTI</option><option>Enfermaria</option></select></div>
+    <div class="form-group">
+      <label>Leitos * <span style="font-weight:400;color:#888;font-size:11px;">(um por linha, ex: 101, 102/1, UTI-01)</span></label>
+      <textarea id="setor-leitos-nomes" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;resize:vertical;" placeholder="101&#10;102&#10;103&#10;104"></textarea>
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-setor')">Cancelar</button>
@@ -824,7 +825,7 @@
     </div>
     <div class="form-group">
       <label>Novo Leito *</label>
-      <input type="text" id="transfer-leito" placeholder="Ex: 101/1" />
+      <select id="transfer-leito"><option value="">Selecione o leito</option></select>
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-transferir')">Cancelar</button>
@@ -1265,7 +1266,18 @@ function renderProcedimentos() {
 function renderSetores() {
   document.getElementById('tb-cad-setores').innerHTML = DB.get('setores').map(s => `
     <tr data-search="${s.nome.toLowerCase()}"><td>${s.nome}</td><td>${s.tipo}</td><td>${s.leitos}</td>
-    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+    <td><button class="btn btn-primary btn-sm" onclick="openEditSetor(${s.id})">Editar</button></td></tr>`).join('');
+}
+
+function openEditSetor(id) {
+  const s = DB.get('setores').find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('modal-setor-titulo').textContent = 'Editar Setor';
+  document.getElementById('setor-nome').value = s.nome;
+  document.getElementById('setor-tipo').value = s.tipo;
+  document.getElementById('setor-leitos-nomes').value = (s.leitos_nomes || []).join('\n');
+  document.getElementById('modal-setor').dataset.editId = id;
+  openModal('modal-setor');
 }
 
 function renderUsuarios() {
@@ -1309,18 +1321,21 @@ function renderLotesConcluida() {
     <td>${l.data}</td><td>${l.guias}</td><td>${l.valor}</td></tr>`).join('');
 }
 
+function getLeitosNomes(s) {
+  return s.leitos_nomes && s.leitos_nomes.length > 0 ? s.leitos_nomes : Array.from({length:s.leitos},(_,i)=>String(i+1));
+}
+
 function renderMapaGeral() {
   const setores = DB.get('setores'), pacs = DB.get('pacientes'), guias = DB.get('guias'), convs = DB.get('convenios');
   document.getElementById('mapa-geral-container').innerHTML = setores.map(s => {
-    const leitosHtml = Array.from({length:s.leitos},(_,i)=>{
-      const guia = i===0?guias.find(g=>g.setor.includes(s.nome)):null;
-      const pac = guia?pacs.find(p=>p.id===guia.paciente_id):null;
-      const conv = pac&&guia?convs.find(c=>c.id===guia.convenio_id):null;
-      const num = `${s.id*100+i+1}/${(i%3)+1}`;
-      return pac?`<div class="leito-cell ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-num">${num}</div>
-        <div class="leito-nome">${pac.nome.split(' ').slice(0,2).join(' ')}</div>
-        <div class="leito-conv">(${conv?conv.nome:''})</div></div>`:
-        `<div class="leito-cell"><div class="leito-num">${num}</div></div>`;
+    const nomes = getLeitosNomes(s);
+    const leitosHtml = nomes.map(num => {
+      const guia = guias.find(g => g.setor === `${s.nome} - ${num}`);
+      const pac = guia ? pacs.find(p => p.id === guia.paciente_id) : null;
+      const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
+      return pac
+        ? `<div class="leito-cell ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-num">${num}</div><div class="leito-nome">${pac.nome.split(' ').slice(0,2).join(' ')}</div><div class="leito-conv">(${conv?conv.nome:''})</div></div>`
+        : `<div class="leito-cell"><div class="leito-num">${num}</div></div>`;
     }).join('');
     return `<div class="mapa-setor"><div class="mapa-setor-title">${s.nome}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
   }).join('');
@@ -1329,18 +1344,16 @@ function renderMapaGeral() {
 function renderMapaOcupacao() {
   const setores = DB.get('setores'), pacs = DB.get('pacientes'), guias = DB.get('guias'), convs = DB.get('convenios');
   document.getElementById('mapa-ocupacao-container').innerHTML = setores.map(s => {
-    const ocup = guias.filter(g=>g.setor.includes(s.nome)).length;
-    const pct = Math.round(ocup/s.leitos*100);
-    const leitosHtml = Array.from({length:Math.min(s.leitos,8)},(_,i)=>{
-      const guia = i===0?guias.find(g=>g.setor.includes(s.nome)):null;
-      const pac = guia?pacs.find(p=>p.id===guia.paciente_id):null;
-      const conv = pac&&guia?convs.find(c=>c.id===guia.convenio_id):null;
-      const num = `${s.id*100+i+1}/${(i%3)+1}`;
-      return pac?`<div class="ocupacao-leito ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-id">${num}</div>
-        <div class="leito-info"><div class="nome">${pac.nome}</div>
-        <div class="detalhe">${conv?conv.nome:''} - NA: ${guia.num_at}</div></div>
-        <div class="leito-arrow">›</div></div>`:
-        `<div class="ocupacao-leito"><div class="leito-id">${num}</div><div class="leito-info"></div><div class="leito-arrow">›</div></div>`;
+    const nomes = getLeitosNomes(s);
+    const ocup = guias.filter(g => g.setor && g.setor.startsWith(s.nome+' - ')).length;
+    const pct = nomes.length > 0 ? Math.round(ocup / nomes.length * 100) : 0;
+    const leitosHtml = nomes.map(num => {
+      const guia = guias.find(g => g.setor === `${s.nome} - ${num}`);
+      const pac = guia ? pacs.find(p => p.id === guia.paciente_id) : null;
+      const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
+      return pac
+        ? `<div class="ocupacao-leito ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-id">${num}</div><div class="leito-info"><div class="nome">${pac.nome}</div><div class="detalhe">${conv?conv.nome:''} - NA: ${guia.num_at||''}</div></div><div class="leito-arrow">›</div></div>`
+        : `<div class="ocupacao-leito"><div class="leito-id">${num}</div><div class="leito-info"></div><div class="leito-arrow">›</div></div>`;
     }).join('');
     return `<div class="ocupacao-setor"><div class="ocupacao-setor-header"><span>${s.nome} (${ocup} pacientes - ${pct}% ocupado)</span><span>🖨</span></div>${leitosHtml}</div>`;
   }).join('');
@@ -1459,11 +1472,23 @@ function saveProcedimento() {
 }
 
 function saveSetor() {
-  const nome=document.getElementById('setor-nome').value.trim(), leitos=parseInt(document.getElementById('setor-leitos').value);
-  if (!nome||!leitos) { alert('Nome e Leitos são obrigatórios'); return; }
-  DB.push('setores',{id:getNextId('setores'),nome,tipo:document.getElementById('setor-tipo').value,leitos});
+  const nome = document.getElementById('setor-nome').value.trim();
+  const leitosRaw = document.getElementById('setor-leitos-nomes').value;
+  const leitosNomes = leitosRaw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  if (!nome || leitosNomes.length === 0) { alert('Nome e pelo menos um leito são obrigatórios'); return; }
+  const editId = document.getElementById('modal-setor').dataset.editId;
+  if (editId) {
+    const setores = DB.get('setores');
+    const idx = setores.findIndex(s => s.id === parseInt(editId));
+    if (idx >= 0) { setores[idx] = {...setores[idx], nome, tipo: document.getElementById('setor-tipo').value, leitos: leitosNomes.length, leitos_nomes: leitosNomes}; DB.set('setores', setores); }
+    delete document.getElementById('modal-setor').dataset.editId;
+  } else {
+    DB.push('setores',{id:getNextId('setores'),nome,tipo:document.getElementById('setor-tipo').value,leitos:leitosNomes.length,leitos_nomes:leitosNomes});
+  }
   closeModal('modal-setor'); renderSetores(); showToast('Setor salvo!');
   document.getElementById('setor-nome').value='';
+  document.getElementById('setor-leitos-nomes').value='';
+  document.getElementById('modal-setor-titulo').textContent='Novo Setor';
 }
 
 function saveUsuario() {
@@ -1654,6 +1679,7 @@ function abrirPacienteDetalhe(guiaId) {
   document.getElementById('transfer-atual').textContent = guia.setor;
   const setores = DB.get('setores');
   document.getElementById('transfer-setor').innerHTML = '<option value="">Selecione o setor</option>' + setores.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  document.getElementById('transfer-leito').innerHTML = '<option value="">Selecione o leito</option>';
 
   // Modal medidas
   const medidas = DB.get('medidas') || [];
@@ -1752,6 +1778,19 @@ function salvarStatus() {
   closeModal('modal-alterar-status');
   renderDetStatus(pacienteAtivo.id);
   showToast('Status atualizado!');
+}
+
+function gerarLeitosTransfer() {
+  const nomeSetor = document.getElementById('transfer-setor').value;
+  const setor = DB.get('setores').find(s => s.nome === nomeSetor);
+  const sel = document.getElementById('transfer-leito');
+  if (!setor) { sel.innerHTML = '<option value="">Selecione o leito</option>'; return; }
+  const nomes = getLeitosNomes(setor);
+  const guias = DB.get('guias');
+  sel.innerHTML = '<option value="">Selecione o leito</option>' + nomes.map(n => {
+    const ocupado = guias.some(g => g.setor === `${setor.nome} - ${n}`);
+    return `<option value="${n}" ${ocupado ? 'disabled style="color:#ccc"' : ''}>${n}${ocupado ? ' (ocupado)' : ''}</option>`;
+  }).join('');
 }
 
 function salvarTransferencia() {
