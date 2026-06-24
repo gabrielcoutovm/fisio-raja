@@ -927,6 +927,14 @@ const DB = {
 
 // ===== DADOS INICIAIS =====
 function initData() {
+  // limpa dados de demonstração de versões anteriores
+  if (!DB.getItem('raja_v2')) {
+    ['convenios','setores','profissionais','procedimentos','pacientes','lotes','guias'].forEach(k => {
+      if (DB.get(k).length > 0) DB.set(k, []);
+    });
+    DB.setItem('raja_v2','1');
+  }
+
   // garante sempre que existe pelo menos um admin
   const usuarios = DB.get('usuarios');
   const temAdmin = usuarios.find(u => u.login === 'admin');
@@ -934,8 +942,8 @@ function initData() {
     usuarios.unshift({id:1, nome:'ADMINISTRADOR', login:'admin', senha:'1234', perfil:'Gestão', ativo:1});
     DB.set('usuarios', usuarios);
   }
-  // migração: garante medidas sempre existam
-  if (!DB.getItem('raja_medidas') || DB.get('medidas').length === 0) {
+  // garante medidas padrão sempre existam
+  if (DB.get('medidas').length === 0) {
     DB.set('medidas',[
       {id:1,nome:'PE MAX',unidade:'cmH2O',valor_base:20},
       {id:2,nome:'PI MAX',unidade:'cmH2O',valor_base:48},
@@ -943,60 +951,6 @@ function initData() {
       {id:4,nome:'IMS',unidade:'pts',valor_base:6},
       {id:5,nome:'MRC',unidade:'pts',valor_base:36},
     ]);
-    DB.setItem('raja_medidas','1');
-  }
-  if (!DB.getItem('raja_init')) {
-    DB.set('convenios',[
-      {id:1,nome:'UNIMED',ans:'314668',cod:'73284036000118',ativo:1},
-      {id:2,nome:'AMIL / ONE HEALTH',ans:'326305',cod:'47376686',ativo:1},
-      {id:3,nome:'POLICIA MILITAR',ans:'001',cod:'73284036000118',ativo:1},
-      {id:4,nome:'SUS',ans:'000',cod:'73284036000118',ativo:1},
-      {id:5,nome:'CEMIG SAUDE',ans:'316350',cod:'73284036000118',ativo:1},
-    ]);
-    DB.set('setores',[
-      {id:1,nome:'Setor C',tipo:'Apartamento',leitos:31},
-      {id:2,nome:'Setor D',tipo:'Apartamento',leitos:32},
-      {id:3,nome:'UTI 1',tipo:'UTI',leitos:10},
-      {id:4,nome:'UTI 3',tipo:'UTI',leitos:8},
-    ]);
-    DB.set('profissionais',[
-      {id:1,nome:'Ana Cristina',cpf:'',conselho:'CREFITO',numconselho:'12345',ativo:1},
-      {id:2,nome:'Lucas Jesus',cpf:'',conselho:'CREFITO',numconselho:'22853',ativo:1},
-      {id:3,nome:'Livia Ávila',cpf:'',conselho:'CREFITO',numconselho:'64755',ativo:1},
-    ]);
-    DB.set('procedimentos',[
-      {id:1,codigo:'80116876',nome:'DIÁRIA SEM VM APTO/ENF',abrev:'DIÁRIA APT'},
-      {id:2,codigo:'80116868',nome:'DIÁRIA COM VM UTI/APTO/ENF',abrev:'DIÁRIA VM'},
-      {id:3,codigo:'80116850',nome:'DIÁRIA SEM VM UTI',abrev:'DIÁRIA UTI'},
-      {id:4,codigo:'20103913',nome:'Avaliação',abrev:'AVAL'},
-    ]);
-    DB.set('pacientes',[
-      {id:1,nome:'MARINA CAMARGOS TYMBURIBA',nascimento:'1934-10-29',cpf:'',convenio_id:1},
-      {id:2,nome:'ILDEU ALVES LOPES',nascimento:'1960-03-15',cpf:'',convenio_id:3},
-      {id:3,nome:'ELIZEU DE SOUZA PRADOS',nascimento:'1955-07-22',cpf:'',convenio_id:3},
-    ]);
-    DB.set('lotes',[
-      {id:630,convenio:'CEMIG SAUDE',status:'Arquivo Gerado',data:'18/06/2026 09:11',guias:1,valor:'R$ 131,09',concluido:0},
-      {id:629,convenio:'CEMIG SAUDE',status:'Arquivo Gerado',data:'15/06/2026 10:07',guias:1,valor:'R$ 447,20',concluido:0},
-      {id:566,convenio:'CEMIG SAUDE',status:'Finalizada',data:'02/02/2026 09:17',guias:1,valor:'R$ 574,20',concluido:1},
-    ]);
-    DB.set('guias',[
-      {id:1,num_at:'7448097',setor:'Setor C - 151/1',num_guia:1,paciente_id:1,convenio_id:1,internacao:'18/06/2026',atend:'18/06/2026',valor:'R$ 45,20',dias:1,tipo_internacao:'Clínico',diagnostico:'DOR TORÁCICA',ims_previo:9,ims_admissao:3},
-      {id:2,num_at:'7443206',setor:'Setor C - 153/2',num_guia:3,paciente_id:2,convenio_id:3,internacao:'14/04/2026',atend:'15/04/2026',valor:'R$ 498,16',dias:4,tipo_internacao:'Cirúrgico',diagnostico:'FRATURA DE FÊMUR',ims_previo:7,ims_admissao:2},
-      {id:3,num_at:'7404854',setor:'Setor C - 155/1',num_guia:2,paciente_id:3,convenio_id:3,internacao:'10/05/2026',atend:'10/05/2026',valor:'R$ 276,99',dias:2,tipo_internacao:'Clínico',diagnostico:'PNEUMONIA',ims_previo:8,ims_admissao:4},
-    ]);
-    DB.set('medidas',[
-      {id:1,nome:'PE MAX',unidade:'cmH2O',valor_base:20},
-      {id:2,nome:'PI MAX',unidade:'cmH2O',valor_base:48},
-      {id:3,nome:'PEAK FLOW',unidade:'L/Min',valor_base:160},
-      {id:4,nome:'IMS',unidade:'pts',valor_base:6},
-      {id:5,nome:'MRC',unidade:'pts',valor_base:36},
-    ]);
-    // Usuário admin padrão
-    DB.set('usuarios',[
-      {id:1,nome:'ADMINISTRADOR',login:'admin',senha:'1234',perfil:'Gestão',ativo:1},
-    ]);
-    DB.setItem('raja_init','1');
   }
 }
 
