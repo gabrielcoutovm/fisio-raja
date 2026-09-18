@@ -396,6 +396,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Gerenciar Usuários
         </a>
+        <a href="#" onclick="atualizarDados();closeMenu();return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Atualizar Dados
+        </a>
         <a href="#" onclick="openModal('modal-alterar-senha');closeMenu();return false;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Alterar Senha
@@ -2075,6 +2079,14 @@ function doLogout() {
 // ===== MENU DROPDOWN =====
 function toggleMenu() { document.getElementById('topbar-menu').classList.toggle('open'); }
 function closeMenu() { document.getElementById('topbar-menu').classList.remove('open'); }
+async function atualizarDados() {
+  showToast('Atualizando dados...', '#4a90d9');
+  await carregarDados();
+  renderPage(document.querySelector('.page.active')?.id?.replace('page-','') || 'dashboard');
+  renderKpis();
+  gerarNotificacoes();
+  showToast('Dados atualizados!', '#27ae60');
+}
 document.addEventListener('click', e => {
   if (!e.target.closest('.topbar-user')) closeMenu();
 });
