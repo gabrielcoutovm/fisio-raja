@@ -112,10 +112,47 @@
     .topbar-menu a:last-child svg { color: #e74c3c; }
 
     .main-content { margin-left: 210px; padding-top: 52px; min-height: 100vh; background: #f0f2f5; }
-    @media (max-width: 768px) { .main-content { margin-left: 0; } }
     .page { display: none; padding: 28px; }
     .page.active { display: block; }
     .page-title { font-size: 26px; font-weight: 700; color: #1a2a3a; margin-bottom: 24px; }
+
+    @media (max-width: 768px) {
+      body { background: #f0f2f5; display: block; }
+      .main-content { margin-left: 0; width: 100%; overflow-x: hidden; }
+      .page { padding: 14px; }
+      .page-title { font-size: 20px; margin-bottom: 16px; }
+      /* KPI grid 2 colunas no mobile */
+      .kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+      /* Charts full width */
+      .chart-card { min-width: 0 !important; }
+      /* Tabelas com scroll horizontal */
+      .card { overflow-x: auto; }
+      table { min-width: 500px; }
+      /* Grids de 2+ colunas viram 1 coluna */
+      div[style*="grid-template-columns: 1fr 1fr"],
+      div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+      div[style*="grid-template-columns: repeat(2"],
+      div[style*="grid-template-columns:repeat(2"] { grid-template-columns: 1fr !important; }
+      div[style*="grid-template-columns: repeat(3"],
+      div[style*="grid-template-columns:repeat(3"] { grid-template-columns: 1fr 1fr !important; }
+      div[style*="grid-template-columns: repeat(4"],
+      div[style*="grid-template-columns:repeat(4"] { grid-template-columns: 1fr 1fr !important; }
+      div[style*="grid-template-columns: repeat(5"],
+      div[style*="grid-template-columns:repeat(5"] { grid-template-columns: 1fr 1fr !important; }
+      /* Botões na ficha do paciente */
+      .page#page-paciente-detalhe > div > div[style*="display:grid"] { grid-template-columns: 1fr !important; }
+      /* Ficha paciente layout */
+      div[style*="grid-template-columns: 1fr 2fr"],
+      div[style*="grid-template-columns:1fr 2fr"] { grid-template-columns: 1fr !important; }
+      /* Busca global menor */
+      .busca-global-wrap { max-width: 160px !important; }
+      /* Topbar compacto */
+      .topbar-breadcrumb { display: none; }
+      /* Modal ocupa quase tudo na tela */
+      .modal { width: 95vw !important; max-width: 95vw !important; margin: 10px; max-height: 90vh; overflow-y: auto; }
+      /* Mapa de leitos */
+      .leito-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    }
 
     /* ===== KPI CARDS ===== */
     .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 24px; }
@@ -253,6 +290,38 @@
     }
     .toggle-switch input:checked + .toggle-slider { background:#27ae60; }
     .toggle-switch input:checked + .toggle-slider:before { transform:translateX(20px); }
+    /* ===== MAPA STATUS FISIO ===== */
+    .leito-cell.sem-atend { background:#fff3e0!important; border-color:#ff9800!important; }
+    .leito-cell.sem-atend .leito-nome { color:#e65100!important; }
+    .leito-cell.alta-fisio { background:#f5f5f5!important; border-color:#bdbdbd!important; opacity:0.7; }
+    .ocupacao-leito.sem-atend { background:#fff8f0!important; border-left:3px solid #ff9800!important; }
+    .ocupacao-leito.alta-fisio { background:#fafafa!important; border-left:3px solid #9e9e9e!important; opacity:0.75; }
+    /* ===== SEM ATEND BANNER ===== */
+    .sem-atend-card { background:#fff3e0; border-radius:8px; padding:16px 20px; margin-bottom:18px; border-left:4px solid #ff9800; }
+    .sem-atend-card h4 { color:#e65100; font-size:14px; margin-bottom:10px; }
+    .sem-atend-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #ffe0b2; font-size:13px; }
+    /* Busca global */
+    .busca-global-wrap { position:relative; flex:1; max-width:340px; }
+    .busca-global-input { width:100%; padding:7px 14px 7px 34px; border:1px solid #dde4f0; border-radius:20px; font-size:13px; background:#f5f8ff; color:#333; outline:none; transition:border 0.2s; }
+    .busca-global-input:focus { border-color:#4a90d9; background:#fff; }
+    .busca-global-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#aaa; pointer-events:none; }
+    .busca-global-results { position:absolute; top:calc(100% + 6px); left:0; right:0; background:#fff; border:1px solid #dde4f0; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:500; max-height:300px; overflow-y:auto; display:none; }
+    .busca-global-results.aberto { display:block; }
+    .busca-result-item { padding:10px 14px; cursor:pointer; font-size:13px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; }
+    .busca-result-item:hover { background:#f5f8ff; }
+    .busca-result-item:last-child { border-bottom:none; }
+    .busca-result-badge { font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; }
+    /* Glosa */
+    .glosa-badge { background:#fdecea; color:#e74c3c; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+    .glosa-status { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; cursor:pointer; border:none; }
+    .glosa-status-pendente { background:#fff3cd; color:#856404; }
+    .glosa-status-recorrida { background:#cce5ff; color:#004085; }
+    .glosa-status-aceita { background:#f8d7da; color:#721c24; }
+    .glosa-status-revertida { background:#d4edda; color:#155724; }
+    /* Alerta sem-atend X dias */
+    .alerta-card { background:#fff3e0; border-radius:8px; padding:14px 18px; margin-bottom:16px; border-left:4px solid #e67e22; }
+    .alerta-card h4 { color:#d35400; font-size:13px; margin-bottom:8px; }
+    .alerta-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #ffe0b2; font-size:13px; }
   </style>
 </head>
 <body>
@@ -297,6 +366,25 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <div class="topbar-breadcrumb">Sistemas / <span id="breadcrumb-text">Dashboard</span></div>
+    <!-- Busca global -->
+    <div class="busca-global-wrap" style="margin:0 16px;">
+      <svg class="busca-global-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" class="busca-global-input" id="busca-global-input" placeholder="Buscar paciente..." oninput="buscaGlobal(this.value)" onblur="setTimeout(()=>fecharBuscaGlobal(),200)" autocomplete="off" />
+      <div class="busca-global-results" id="busca-global-results"></div>
+    </div>
+    <!-- Notificações -->
+    <div style="position:relative;margin-right:8px;">
+      <button id="notif-btn" onclick="toggleNotificacoes()" style="background:none;border:none;cursor:pointer;padding:6px;position:relative;display:flex;align-items:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;background:#e74c3c;color:#fff;font-size:9px;font-weight:700;border-radius:50%;width:15px;height:15px;line-height:15px;text-align:center;">0</span>
+      </button>
+      <div id="notif-dropdown" style="display:none;position:absolute;top:44px;right:0;width:320px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:300;max-height:400px;overflow-y:auto;">
+        <div style="padding:12px 16px;font-size:13px;font-weight:700;color:#0a1628;border-bottom:1px solid #eee;display:flex;justify-content:space-between;">
+          🔔 Notificações <span id="notif-count-label" style="color:#e74c3c;font-size:12px;"></span>
+        </div>
+        <div id="notif-lista" style="padding:8px 0;"></div>
+      </div>
+    </div>
     <div class="topbar-user" onclick="toggleMenu()">
       <div class="topbar-user-name">
         <div class="topbar-user-badge" id="user-badge">A</div>
@@ -344,6 +432,19 @@
         <div class="chart-header"><div class="chart-title">Setores × Pacientes</div></div>
         <canvas id="chartSetores" height="60"></canvas>
       </div>
+      <div style="margin-bottom:16px;text-align:right;">
+        <button class="btn btn-navy btn-sm" onclick="gerarRelatorioExecutivoPDF()">&#128438; Relatório Executivo PDF</button>
+      </div>
+      <div class="sem-atend-card" id="sem-atend-card" style="display:none;">
+        <h4>⚠ Pacientes sem atendimento hoje (<span id="sem-atend-count">0</span>)</h4>
+        <div id="sem-atend-lista"></div>
+      </div>
+      <div class="alerta-card" id="alerta-dias-card" style="display:none;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <h4 style="margin:0;">🔔 Pacientes sem atendimento há mais de <input type="number" id="alerta-dias-input" value="3" min="1" max="30" style="width:54px;padding:3px 6px;border:1px solid #e67e22;border-radius:5px;font-size:13px;font-weight:700;color:#d35400;text-align:center;" onchange="renderAlertaSemAtend()" /> dias (<span id="alerta-dias-count">0</span>)</h4>
+        </div>
+        <div id="alerta-dias-lista"></div>
+      </div>
     </div>
 
     <!-- GUIAS EM ABERTO (só Gestão) -->
@@ -360,7 +461,7 @@
       </div>
       <div class="card">
         <table>
-          <thead><tr><th>Nº At.</th><th>Setor/Leito</th><th>Nº Guia</th><th>Paciente</th><th>Convênio</th><th>Internação</th><th>Atend.</th><th>R$</th><th>Dias</th></tr></thead>
+          <thead><tr><th>Nº At.</th><th>Setor/Leito</th><th>Nº Guia</th><th>Paciente</th><th>Convênio</th><th>Internação</th><th>Atend.</th><th>R$</th><th>Dias</th><th>Glosa</th></tr></thead>
           <tbody id="tb-guias-abertas"></tbody>
         </table>
       </div>
@@ -393,9 +494,9 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Pendentes</h3></div>
+        <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Pendentes</h3><button class="btn btn-success btn-sm" onclick="abrirModalCriarLote()">+ Criar Lote</button></div>
         <table>
-          <thead><tr><th>Convênio</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor</th></tr></thead>
+          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor Total</th><th>Ações</th></tr></thead>
           <tbody id="tb-lotes-pendente"></tbody>
         </table>
       </div>
@@ -414,7 +515,7 @@
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Concluídas</h3></div>
         <table>
-          <thead><tr><th>Convênio</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor</th></tr></thead>
+          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor Total</th></tr></thead>
           <tbody id="tb-lotes-concluida"></tbody>
         </table>
       </div>
@@ -442,7 +543,7 @@
         <div class="filter-row">
           <div class="filter-group"><label>Exibir</label><select><option>Últimos 7 dias</option><option>Últimos 30 dias</option><option>Este mês</option></select></div>
           <div class="filter-group"><label>Convênios</label><input type="text" placeholder="Todos" /></div>
-          <div class="filter-group" style="justify-content:flex-end;flex:0"><button class="btn btn-primary" style="white-space:nowrap">Atualizar</button></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0;gap:8px;display:flex;"><button class="btn btn-primary" style="white-space:nowrap">Atualizar</button><button class="btn btn-success" style="white-space:nowrap" onclick="exportarCSV('ims')">&#8659; CSV</button></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;margin-bottom:20px;">
@@ -466,6 +567,7 @@
           <div class="filter-group"><label>Setor</label><select><option>Todos</option></select></div>
           <div class="filter-group"><label>Convênio</label><select><option>Todos</option></select></div>
           <div class="filter-group"><label>Data</label><input type="text" value="17/06/2026 - 19/06/2026" /></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0"><button class="btn btn-success" style="white-space:nowrap" onclick="exportarCSV('atendimentos')">&#8659; CSV</button></div>
         </div>
       </div>
       <div id="rel-atend-container"></div>
@@ -483,7 +585,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><h3>&#9776; Relatório de Pacientes</h3><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm">Imprimir</button><button class="btn btn-success btn-sm">Exportar</button></div></div>
+        <div class="card-header"><h3>&#9776; Relatório de Pacientes</h3><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="window.print()">Imprimir</button><button class="btn btn-success btn-sm" onclick="exportarCSV('pacientes')">&#8659; CSV</button></div></div>
         <table><thead><tr><th>Nome</th><th>Nº Atendimento</th><th>Convênio</th><th>Status Guia</th><th>Valor</th><th>Data Internação</th><th>Data Alta</th></tr></thead><tbody id="tb-rel-pacientes"></tbody></table>
       </div>
     </div>
@@ -503,8 +605,294 @@
         <div class="kpi-card kpi-gray" style="border-radius:8px;"><div class="kpi-num" id="prod-ncont-val">R$ 0,00</div><div class="kpi-label" id="prod-ncont-label">Não contabilizados (0)</div></div>
       </div>
       <div class="card">
-        <div class="card-header"><h3>&#9776; Produtividade por Fisioterapeuta</h3></div>
+        <div class="card-header"><h3>&#9776; Produtividade por Fisioterapeuta</h3><button class="btn btn-success btn-sm" onclick="exportarCSV('produtividade')">&#8659; CSV</button></div>
         <table><thead><tr><th>Nome</th><th>Total</th><th>Qtd</th><th>Contabilizado</th><th>Qtd</th><th>N. Contabilizado</th><th>Qtd</th></tr></thead><tbody id="tb-produtividade"></tbody></table>
+      </div>
+    </div>
+
+    <!-- PAINEL FINANCEIRO -->
+    <div class="page" id="page-painel-financeiro">
+      <div class="page-title">Painel Financeiro</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Convênio</label><select id="fin-convenio"><option value="">Todos</option></select></div>
+          <div class="filter-group"><label>De</label><input type="date" id="fin-de" /></div>
+          <div class="filter-group"><label>Até</label><input type="date" id="fin-ate" /></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0"><button class="btn btn-primary" onclick="renderPainelFinanceiro()">Atualizar</button></div>
+        </div>
+      </div>
+      <!-- KPI Cards Row 1 -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;">
+        <div class="card" style="padding:18px;border-top:3px solid #4a90d9;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Produção Bruta</div>
+          <div id="fin-bruta" style="font-size:24px;font-weight:700;color:#0a1628;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Total de guias (excl. canceladas)</div>
+        </div>
+        <div class="card" style="padding:18px;border-top:3px solid #27ae60;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Produção Contabilizada</div>
+          <div id="fin-contab" style="font-size:24px;font-weight:700;color:#27ae60;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;"><span id="fin-contab-qtd">0</span> guias contabilizadas</div>
+        </div>
+        <div class="card" style="padding:18px;border-top:3px solid #f39c12;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Produção Pendente</div>
+          <div id="fin-pendente" style="font-size:24px;font-weight:700;color:#f39c12;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;"><span id="fin-pendente-qtd">0</span> guias não contabilizadas</div>
+        </div>
+        <div class="card" style="padding:18px;border-top:3px solid #9b59b6;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Valor em Lotes</div>
+          <div id="fin-lotes" style="font-size:24px;font-weight:700;color:#9b59b6;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;"><span id="fin-lotes-qtd">0</span> lotes gerados</div>
+        </div>
+      </div>
+      <!-- KPI Cards Row 2 -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+        <div class="card" style="padding:18px;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Guias Abertas</div>
+          <div id="fin-abertas" style="font-size:28px;font-weight:700;color:#4a90d9;">0</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Pacientes em atendimento ativo</div>
+        </div>
+        <div class="card" style="padding:18px;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Guias Fechadas</div>
+          <div id="fin-fechadas" style="font-size:28px;font-weight:700;color:#555;">0</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Altas registradas</div>
+        </div>
+        <div class="card" style="padding:18px;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Ticket Médio / Guia</div>
+          <div id="fin-ticket" style="font-size:28px;font-weight:700;color:#1abc9c;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Valor médio por atendimento</div>
+        </div>
+        <div class="card" style="padding:18px;border-top:3px solid #e74c3c;">
+          <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;margin-bottom:6px;">Valor Glosado</div>
+          <div id="fin-glosa" style="font-size:24px;font-weight:700;color:#e74c3c;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;"><span id="fin-glosa-qtd">0</span> glosas registradas</div>
+        </div>
+      </div>
+      <!-- Meta mensal -->
+      <div class="card" style="padding:18px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="font-size:13px;font-weight:600;color:#0a1628;white-space:nowrap;">🎯 Meta Mensal de Produção:</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:13px;color:#888;">R$</span>
+            <input type="number" id="fin-meta-valor" placeholder="50000" min="0" step="100"
+              style="width:130px;padding:6px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;"
+              oninput="atualizarMeta()" />
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:4px;">
+              <span id="fin-meta-label">0% atingido</span>
+              <span id="fin-meta-falta"></span>
+            </div>
+            <div style="background:#f0f0f0;border-radius:20px;height:12px;overflow:hidden;">
+              <div id="fin-meta-barra" style="height:100%;border-radius:20px;background:#27ae60;width:0%;transition:width 0.5s;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Charts row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Produção por Convênio</div><button class="btn btn-success btn-sm" onclick="exportarCSV('financeiro')">&#8659; CSV</button></div>
+          <canvas id="chartFinanceiro" height="120"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><div class="chart-title">Evolução Mensal</div></div>
+          <canvas id="chartEvolucaoMensal" height="120"></canvas>
+        </div>
+      </div>
+      <!-- Produção por fisioterapeuta -->
+      <div class="chart-card" style="margin-bottom:16px;">
+        <div class="chart-header"><div class="chart-title">Produção por Fisioterapeuta</div></div>
+        <canvas id="chartFisioProd" height="60"></canvas>
+      </div>
+      <!-- Tabela por convênio -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#9776; Detalhamento por Convênio</h3></div>
+        <table><thead><tr><th>Convênio</th><th>Guias</th><th>Produção Bruta</th><th>Contabilizado</th><th>Pendente</th><th>Glosas</th><th>Valor Glosado</th><th>Taxa Glosa</th></tr></thead>
+        <tbody id="tb-fin-convenios"></tbody></table>
+      </div>
+      <!-- Tabela de glosas detalhada -->
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Controle de Glosas</h3></div>
+        <table><thead><tr><th>Data</th><th>Paciente</th><th>Convênio</th><th>Motivo</th><th>Valor</th><th>Status</th><th>Obs.</th><th>Ação</th></tr></thead>
+        <tbody id="tb-fin-glosas"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ALTA FISIOTERAPÊUTICA -->
+    <div class="page" id="page-rel-alta-fisio">
+      <div class="page-title">Alta Fisioterapêutica</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>Convênio</label><select id="altafisio-convenio"><option value="">Todos</option></select></div>
+          <div class="filter-group"><label>Tipo de Alta</label>
+            <select id="altafisio-tipo">
+              <option value="">Todos</option>
+              <option>Fisioterapêutica</option>
+              <option>Hospitalar</option>
+              <option>Óbito</option>
+              <option>Transferência</option>
+              <option>A pedido</option>
+            </select>
+          </div>
+          <div class="filter-group"><label>De (data alta)</label><input type="date" id="altafisio-de" /></div>
+          <div class="filter-group"><label>Até (data alta)</label><input type="date" id="altafisio-ate" /></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0;gap:8px;display:flex;">
+            <button class="btn btn-primary" onclick="renderRelAltaFisio()">Filtrar</button>
+            <button class="btn btn-success" onclick="exportarCSV('alta-fisio')">&#8659; CSV</button>
+          </div>
+        </div>
+      </div>
+      <!-- KPI Summary -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+        <div class="card" style="padding:16px;border-top:3px solid #27ae60;text-align:center;">
+          <div style="font-size:11px;color:#888;">Total de Altas</div>
+          <div id="altafisio-total" style="font-size:28px;font-weight:700;color:#27ae60;">0</div>
+        </div>
+        <div class="card" style="padding:16px;border-top:3px solid #4a90d9;text-align:center;">
+          <div style="font-size:11px;color:#888;">Alta Fisioterapêutica</div>
+          <div id="altafisio-qtd-fisio" style="font-size:28px;font-weight:700;color:#4a90d9;">0</div>
+        </div>
+        <div class="card" style="padding:16px;border-top:3px solid #e74c3c;text-align:center;">
+          <div style="font-size:11px;color:#888;">Óbitos</div>
+          <div id="altafisio-qtd-obito" style="font-size:28px;font-weight:700;color:#e74c3c;">0</div>
+        </div>
+        <div class="card" style="padding:16px;border-top:3px solid #f39c12;text-align:center;">
+          <div style="font-size:11px;color:#888;">Média Dias Internado</div>
+          <div id="altafisio-media-dias" style="font-size:28px;font-weight:700;color:#f39c12;">0</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Pacientes com Alta Registrada</h3></div>
+        <table>
+          <thead><tr><th>Paciente</th><th>Setor</th><th>Convênio</th><th>Internação</th><th>Data Alta</th><th>Dias Internado</th><th>Tipo Alta</th><th>IMS Prévio</th><th>IMS Admissão</th><th>IMS Alta</th></tr></thead>
+          <tbody id="tb-rel-alta-fisio"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- COBERTURA ASSISTENCIAL -->
+    <div class="page" id="page-cobertura-assistencial">
+      <div class="page-title">Cobertura Assistencial</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="font-size:13px;color:#555;">Data de referência: <strong id="cobertura-data-ref"></strong></div>
+        <select id="cobertura-setor" onchange="renderCoberturaAssistencial()" style="padding:6px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;">
+          <option value="">Todos os setores</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="renderCoberturaAssistencial()">Atualizar</button>
+        <button class="btn btn-navy btn-sm" onclick="gerarRelatorioCoberturaExec()">&#128438; Relatório Executivo PDF</button>
+      </div>
+      <!-- KPIs cobertura -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
+        <div class="card" style="padding:14px;border-top:3px solid #4a90d9;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">TOTAL INTERNADOS</div>
+          <div id="cob-total" style="font-size:26px;font-weight:700;color:#0a1628;">0</div>
+        </div>
+        <div class="card" style="padding:14px;border-top:3px solid #27ae60;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">META ATINGIDA</div>
+          <div id="cob-ok" style="font-size:26px;font-weight:700;color:#27ae60;">0</div>
+        </div>
+        <div class="card" style="padding:14px;border-top:3px solid #f39c12;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">ABAIXO DA META</div>
+          <div id="cob-parcial" style="font-size:26px;font-weight:700;color:#f39c12;">0</div>
+        </div>
+        <div class="card" style="padding:14px;border-top:3px solid #e74c3c;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">NÃO ATENDIDO</div>
+          <div id="cob-zero" style="font-size:26px;font-weight:700;color:#e74c3c;">0</div>
+        </div>
+        <div class="card" style="padding:14px;border-top:3px solid #1abc9c;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">COBERTURA %</div>
+          <div id="cob-pct" style="font-size:26px;font-weight:700;color:#1abc9c;">0%</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Situação por Paciente</h3></div>
+        <table>
+          <thead><tr><th>Paciente</th><th>Setor/Leito</th><th>Meta Diária</th><th>Realizados Hoje</th><th>Pendentes</th><th>Último Atend.</th><th>Profissional</th><th>Situação</th><th></th></tr></thead>
+          <tbody id="tb-cobertura"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPORTUNIDADE FINANCEIRA -->
+    <div class="page" id="page-oportunidade-financeira">
+      <div class="page-title">Oportunidade Financeira</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;">
+        <div class="card" style="padding:16px;border-top:3px solid #27ae60;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">RECEITA POTENCIAL</div>
+          <div id="of-potencial" style="font-size:22px;font-weight:700;color:#27ae60;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Se 100% das metas fossem atingidas</div>
+        </div>
+        <div class="card" style="padding:16px;border-top:3px solid #4a90d9;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">RECEITA PRODUZIDA</div>
+          <div id="of-produzida" style="font-size:22px;font-weight:700;color:#4a90d9;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Atendimentos realizados</div>
+        </div>
+        <div class="card" style="padding:16px;border-top:3px solid #f39c12;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">RECEITA FATURADA</div>
+          <div id="of-faturada" style="font-size:22px;font-weight:700;color:#f39c12;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Guias contabilizadas</div>
+        </div>
+        <div class="card" style="padding:16px;border-top:3px solid #e74c3c;text-align:center;">
+          <div style="font-size:10px;color:#888;font-weight:600;">RECEITA PERDIDA</div>
+          <div id="of-perdida" style="font-size:22px;font-weight:700;color:#e74c3c;">R$ 0,00</div>
+          <div style="font-size:11px;color:#aaa;margin-top:4px;">Potencial − Produzido</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+        <div class="card" style="padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:#0a1628;margin-bottom:12px;">⚠ Pendências Críticas</div>
+          <div id="of-pendencias"></div>
+        </div>
+        <div class="card" style="padding:16px;">
+          <div style="font-size:12px;font-weight:700;color:#0a1628;margin-bottom:12px;">📊 Déficit por Setor</div>
+          <canvas id="chartOfSetor" height="160"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Pacientes com Déficit de Meta</h3></div>
+        <table><thead><tr><th>Paciente</th><th>Setor</th><th>Convênio</th><th>Meta</th><th>Realizados Hoje</th><th>Déficit</th><th>Valor em Risco/dia</th></tr></thead>
+        <tbody id="tb-of-deficit"></tbody></table>
+      </div>
+    </div>
+
+    <!-- INDICADORES DE COBERTURA -->
+    <div class="page" id="page-indicadores-cobertura">
+      <div class="page-title">Indicadores de Cobertura</div>
+      <div class="filter-card">
+        <div class="filter-row">
+          <div class="filter-group"><label>De</label><input type="date" id="ind-de" /></div>
+          <div class="filter-group"><label>Até</label><input type="date" id="ind-ate" /></div>
+          <div class="filter-group"><label>Setor</label><select id="ind-setor"><option value="">Todos</option></select></div>
+          <div class="filter-group" style="flex:0"><button class="btn btn-primary" onclick="renderIndicadoresCobertura()">Calcular</button></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;">
+        <div class="card" style="padding:16px;text-align:center;border-top:3px solid #4a90d9;">
+          <div style="font-size:10px;color:#888;font-weight:600;">ELEGÍVEIS ATENDIDOS</div>
+          <div id="ind-elegíveis" style="font-size:26px;font-weight:700;color:#4a90d9;">0%</div>
+        </div>
+        <div class="card" style="padding:16px;text-align:center;border-top:3px solid #27ae60;">
+          <div style="font-size:10px;color:#888;font-weight:600;">ATEND. / PACIENTE / DIA</div>
+          <div id="ind-atend-dia" style="font-size:26px;font-weight:700;color:#27ae60;">0</div>
+        </div>
+        <div class="card" style="padding:16px;text-align:center;border-top:3px solid #f39c12;">
+          <div style="font-size:10px;color:#888;font-weight:600;">DÉFICIT ASSISTENCIAL</div>
+          <div id="ind-deficit" style="font-size:26px;font-weight:700;color:#f39c12;">0</div>
+          <div style="font-size:11px;color:#aaa;">atend. não realizados</div>
+        </div>
+        <div class="card" style="padding:16px;text-align:center;border-top:3px solid #1abc9c;">
+          <div style="font-size:10px;color:#888;font-weight:600;">COBERTURA MÉDIA</div>
+          <div id="ind-cobertura-media" style="font-size:26px;font-weight:700;color:#1abc9c;">0%</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Cobertura Diária (%)</div></div><canvas id="chartIndCoberturaDia" height="120"></canvas></div>
+        <div class="chart-card"><div class="chart-header"><div class="chart-title">Atendimentos por Setor</div></div><canvas id="chartIndSetor" height="120"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>&#9776; Detalhamento por Setor</h3></div>
+        <table><thead><tr><th>Setor</th><th>Pac. Ativos</th><th>Total Atend.</th><th>Atend./Pac./Dia</th><th>Meta Total</th><th>Cobertura %</th></tr></thead>
+        <tbody id="tb-ind-setor"></tbody></table>
       </div>
     </div>
 
@@ -554,8 +942,20 @@
           <div class="form-group"><label>Nome Completo do Paciente *</label><input type="text" id="novoat-nome" /></div>
           <div class="form-group"><label>Data de Nascimento</label><input type="date" id="novoat-nascimento" /></div>
           <div class="form-group"><label>CPF</label><input type="text" id="novoat-cpf" placeholder="000.000.000-00" /></div>
+          <div class="form-group"><label>Nº Carteirinha</label><input type="text" id="novoat-carteirinha" placeholder="Número da carteirinha do convênio" /></div>
+          <div class="form-group"><label>Nº Autorização</label><input type="text" id="novoat-autorizacao" placeholder="Nº da autorização prévia (se houver)" /></div>
           <div class="form-group"><label>Status do Paciente</label>
             <select id="novoat-status"><option value="">Selecione...</option></select>
+          </div>
+          <div class="form-group"><label>Meta Diária de Atendimentos</label>
+            <select id="novoat-meta-diaria">
+              <option value="1x">1x ao dia</option>
+              <option value="2x">2x ao dia</option>
+              <option value="3x">3x ao dia</option>
+              <option value="conforme_necessidade">Conforme necessidade</option>
+              <option value="sem_atendimento">Sem atendimento no momento</option>
+              <option value="alta_fisio">Alta fisioterapêutica</option>
+            </select>
           </div>
         </div>
 
@@ -759,6 +1159,7 @@
       <div class="search-bar">
         <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-usuarios', this.value)" />
         <button class="btn btn-success" onclick="openModal('modal-usuario')">+ Novo Usuário</button>
+        <button class="btn btn-navy" onclick="exportarBackup()" style="margin-left:8px;">&#128190; Exportar Backup (JSON)</button>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Usuários</h3></div>
@@ -815,14 +1216,46 @@
           <button class="btn btn-primary" style="padding:14px;font-size:14px;" onclick="openModal('modal-alterar-status')">Alterar Status Paciente</button>
           <button class="btn btn-primary" style="padding:14px;font-size:14px;" onclick="openModal('modal-transferir')">Transferir de Setor/Leito</button>
           <button class="btn btn-primary" style="padding:14px;font-size:14px;" onclick="openModal('modal-lancar-medidas')">Lançar Medidas</button>
+          <button class="btn btn-primary" style="padding:14px;font-size:14px;background:#7b5ea7;" onclick="abrirModalMobilizacao()">&#128694; Registrar Mobilização</button>
+          <button class="btn btn-warning" style="padding:14px;font-size:14px;" onclick="abrirChecklist()">&#9989; Checklist Segurança</button>
+          <button class="btn btn-primary" style="padding:14px;font-size:14px;background:#17a2b8;" onclick="abrirModalAlterarMeta()">&#127919; Alterar Meta Diária</button>
+          <button class="btn btn-navy" style="padding:14px;font-size:14px;" onclick="imprimirProntuario()">&#128438; Imprimir Prontuário (PDF)</button>
+          <button class="btn btn-danger" style="padding:14px;font-size:14px;border-color:#e74c3c;" onclick="abrirModalGlosaDetalhe()">&#9888; Registrar Glosa</button>
           <button class="btn btn-danger" style="padding:14px;font-size:14px;" onclick="openModal('modal-alta')">Alta do Paciente</button>
+          <button class="btn btn-sm" style="padding:10px 14px;font-size:13px;background:#6c757d;color:#fff;margin-top:4px;" onclick="abrirModalExcluirPaciente()">&#128465; Excluir Paciente</button>
         </div>
       </div>
+      <!-- Gráfico Evolução IMS -->
+      <div class="card" style="margin-bottom:16px;padding:20px;">
+        <div class="card-header" style="margin-bottom:14px;"><h3>&#128200; Evolução IMS ao longo dos atendimentos</h3></div>
+        <canvas id="chartEvolucaoIMS" height="60"></canvas>
+        <div id="evolucao-ims-vazio" style="text-align:center;color:#aaa;font-size:13px;padding:20px;display:none;">Nenhum registro de IMS encontrado nos atendimentos</div>
+      </div>
+      <!-- Resumo Diário -->
+      <div class="card" id="resumo-diario-card" style="margin-bottom:16px;padding:16px;">
+        <div class="card-header" style="margin-bottom:12px;"><h3>&#128203; Resumo Diário do Paciente</h3></div>
+        <div id="resumo-diario-content" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;"></div>
+      </div>
+
+      <!-- Linha do Tempo -->
+      <div class="card" style="margin-bottom:16px;padding:16px;">
+        <div class="card-header" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+          <h3>&#128336; Linha do Tempo (últimos 10 dias)</h3>
+          <select id="linha-tempo-filtro" onchange="renderLinhaTempo(pacienteAtivo&&pacienteAtivo.id)" style="padding:4px 8px;border:1px solid #ddd;border-radius:5px;font-size:12px;">
+            <option value="tudo">Todos os eventos</option>
+            <option value="procs">Procedimentos</option>
+            <option value="status">Status</option>
+            <option value="medidas">Medidas</option>
+          </select>
+        </div>
+        <div id="linha-tempo-content" style="max-height:320px;overflow-y:auto;"></div>
+      </div>
+
       <!-- Históricos -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="card">
           <div class="card-header"><h3>Procedimentos</h3></div>
-          <table><thead><tr><th>Data</th><th>Procedimento</th><th>Usuário</th></tr></thead>
+          <table><thead><tr><th>Data</th><th>Procedimento</th><th>Usuário</th><th></th></tr></thead>
           <tbody id="det-tb-procs"></tbody></table>
         </div>
         <div class="card">
@@ -832,6 +1265,10 @@
         </div>
         <div class="card">
           <div class="card-header"><h3>Medidas</h3></div>
+          <div style="padding:10px 0 0;">
+            <canvas id="chartEvolucaoMedidas" height="80"></canvas>
+            <div id="medidas-grafico-vazio" style="text-align:center;color:#aaa;font-size:12px;padding:10px;display:none;">Nenhuma medida para graficar</div>
+          </div>
           <table><thead><tr><th>Data</th><th>Medida</th><th>Valor</th><th>Usuário</th></tr></thead>
           <tbody id="det-tb-medidas"></tbody></table>
         </div>
@@ -840,6 +1277,20 @@
           <table><thead><tr><th>Data</th><th>Setor/Leito</th><th>Usuário</th></tr></thead>
           <tbody id="det-tb-setor"></tbody></table>
         </div>
+      </div>
+
+      <!-- Gestão de Mobilização -->
+      <div class="card" style="margin-top:16px;padding:16px;">
+        <div class="card-header" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+          <h3>&#128694; Gestão de Mobilização</h3>
+          <button class="btn btn-primary btn-sm" style="background:#7b5ea7;" onclick="abrirModalMobilizacao()">+ Registrar</button>
+        </div>
+        <!-- Escada de progressão -->
+        <div id="mob-escada" style="display:flex;align-items:flex-end;gap:8px;margin-bottom:16px;padding:12px;background:#f8faff;border-radius:8px;overflow-x:auto;"></div>
+        <canvas id="chartMobilizacao" height="70"></canvas>
+        <div id="mob-vazio" style="text-align:center;color:#aaa;font-size:13px;padding:20px;display:none;">Nenhuma mobilização registrada</div>
+        <table style="margin-top:12px;"><thead><tr><th>Data</th><th>Nível</th><th>Distância/Tempo</th><th>Observação</th><th>Profissional</th></tr></thead>
+        <tbody id="tb-mob-hist"></tbody></table>
       </div>
     </div>
 
@@ -1021,7 +1472,7 @@
       <strong>Níveis de acesso:</strong><br>
       🔐 <strong>Gestão</strong> — Dashboard, Guias, Lotes, Mapas, Relatórios, Cadastros, Usuários<br>
       🩺 <strong>Fisioterapeuta</strong> — Dashboard, Mapas, Relatórios, Cadastros<br>
-      📋 <strong>Secretaria</strong> — Dashboard, Mapas, Cadastros
+      📋 <strong>Secretaria</strong> — Acesso total igual à Gestão (Guias, Lotes, Mapas, Relatórios, XML TISS, Cadastros, Usuários)
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-usuario')">Cancelar</button>
@@ -1040,6 +1491,135 @@
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-alterar-senha')">Cancelar</button>
       <button class="btn btn-navy" onclick="alterarSenha()">Alterar Senha</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Mobilização -->
+<div class="modal-overlay" id="modal-mobilizacao">
+  <div class="modal" style="max-width:480px;">
+    <h2>&#128694; Registrar Mobilização</h2>
+    <div class="form-group">
+      <label>Nível alcançado *</label>
+      <div id="mobilizacao-niveis" style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #eee;border-radius:8px;cursor:pointer;" onclick="selecionarNivelMob(this,'leito')">
+          <input type="radio" name="mob-nivel" value="leito" style="display:none;"> <span style="font-size:18px;">🛏</span> <span style="font-weight:600;">Leito</span> <span style="font-size:12px;color:#888;margin-left:auto;">Decúbito / exercícios no leito</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #eee;border-radius:8px;cursor:pointer;" onclick="selecionarNivelMob(this,'sedestacao')">
+          <input type="radio" name="mob-nivel" value="sedestacao" style="display:none;"> <span style="font-size:18px;">🪑</span> <span style="font-weight:600;">Sedestação</span> <span style="font-size:12px;color:#888;margin-left:auto;">Sentado na beira do leito</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #eee;border-radius:8px;cursor:pointer;" onclick="selecionarNivelMob(this,'ortostatismo')">
+          <input type="radio" name="mob-nivel" value="ortostatismo" style="display:none;"> <span style="font-size:18px;">🧍</span> <span style="font-weight:600;">Ortostatismo</span> <span style="font-size:12px;color:#888;margin-left:auto;">Em pé ao lado do leito</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #eee;border-radius:8px;cursor:pointer;" onclick="selecionarNivelMob(this,'poltrona')">
+          <input type="radio" name="mob-nivel" value="poltrona" style="display:none;"> <span style="font-size:18px;">🪑</span> <span style="font-weight:600;">Poltrona</span> <span style="font-size:12px;color:#888;margin-left:auto;">Transferência para poltrona</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #eee;border-radius:8px;cursor:pointer;" onclick="selecionarNivelMob(this,'marcha')">
+          <input type="radio" name="mob-nivel" value="marcha" style="display:none;"> <span style="font-size:18px;">🚶</span> <span style="font-weight:600;">Marcha</span> <span style="font-size:12px;color:#888;margin-left:auto;">Deambulação ativa</span>
+        </label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Distância / Tempo (opcional)</label>
+      <input type="text" id="mob-distancia" placeholder="Ex: 10 metros, 5 minutos..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;" />
+    </div>
+    <div class="form-group">
+      <label>Observação</label>
+      <textarea id="mob-obs" rows="2" placeholder="Intercorrências, assistência necessária, tolerância..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;resize:vertical;"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-mobilizacao')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#7b5ea7;" onclick="salvarMobilizacao()">&#128694; Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Checklist Segurança -->
+<div class="modal-overlay" id="modal-checklist">
+  <div class="modal" style="max-width:440px;">
+    <h2>&#9989; Checklist de Segurança Pré-Mobilização</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:16px;">Confirme todos os itens antes de iniciar a mobilização</p>
+    <div id="checklist-itens" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div class="form-group" style="margin-top:16px;">
+      <label>Observação (opcional)</label>
+      <textarea id="checklist-obs" rows="2" placeholder="Alguma condição especial observada..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;resize:vertical;"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-checklist')">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmarChecklist()">&#10003; Confirmar e Prosseguir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Alterar Meta Diária -->
+<div class="modal-overlay" id="modal-alterar-meta">
+  <div class="modal" style="max-width:380px;">
+    <h2>&#127919; Alterar Meta Diária</h2>
+    <p id="alterar-meta-pac" style="font-size:14px;color:#555;margin-bottom:16px;"></p>
+    <div class="form-group">
+      <label>Nova meta diária *</label>
+      <select id="alterar-meta-valor" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:5px;font-size:14px;">
+        <option value="1x">1x ao dia</option>
+        <option value="2x">2x ao dia</option>
+        <option value="3x">3x ao dia</option>
+        <option value="conforme_necessidade">Conforme necessidade</option>
+        <option value="sem_atendimento">Sem atendimento no momento</option>
+        <option value="alta_fisio">Alta fisioterapêutica</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Motivo da alteração</label>
+      <input type="text" id="alterar-meta-motivo" placeholder="Ex: Piora clínica, alta, transferência..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;" />
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-alterar-meta')">Cancelar</button>
+      <button class="btn btn-primary" style="background:#17a2b8;" onclick="salvarAlterarMeta()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Criar Lote -->
+<!-- Modal Registrar Glosa -->
+<div class="modal-overlay" id="modal-glosa">
+  <div class="modal" style="max-width:440px;">
+    <h2>Registrar Glosa</h2>
+    <input type="hidden" id="glosa-guia-id" />
+    <div class="form-group"><label>Valor Glosado (R$) *</label><input type="number" id="glosa-valor" placeholder="0,00" min="0" step="0.01" /></div>
+    <div class="form-group"><label>Motivo da Glosa *</label>
+      <select id="glosa-motivo">
+        <option value="">Selecione...</option>
+        <option>Procedimento não autorizado</option>
+        <option>Documentação incompleta</option>
+        <option>Código incorreto</option>
+        <option>Quantidade excedida</option>
+        <option>Prazo vencido</option>
+        <option>Outro</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Observação</label><textarea id="glosa-obs" rows="2" placeholder="Detalhes adicionais..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;font-size:13px;resize:vertical;"></textarea></div>
+    <div class="form-group"><label>Status</label>
+      <select id="glosa-status">
+        <option value="Pendente">Pendente</option>
+        <option value="Recorrida">Recorrida</option>
+        <option value="Aceita">Aceita</option>
+        <option value="Revertida">Revertida</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-glosa')">Cancelar</button>
+      <button class="btn btn-danger" onclick="salvarGlosa()">Registrar Glosa</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-criar-lote">
+  <div class="modal" style="max-width:420px;">
+    <h2>Criar Novo Lote</h2>
+    <div class="form-group"><label>Convênio *</label><select id="lote-convenio"><option value="">Selecione...</option></select></div>
+    <div class="form-group"><label>Competência * <small style="color:#888;">(MM/AAAA)</small></label><input type="text" id="lote-competencia" placeholder="06/2026" maxlength="7" /></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-criar-lote')">Cancelar</button>
+      <button class="btn btn-success" onclick="salvarNovoLote()">Criar Lote</button>
     </div>
   </div>
 </div>
@@ -1143,6 +1723,40 @@
   </div>
 </div>
 
+<!-- Modal Excluir Paciente -->
+<div class="modal-overlay" id="modal-excluir-paciente">
+  <div class="modal" style="max-width:420px;">
+    <h2 style="color:#e74c3c;">&#128465; Excluir Paciente</h2>
+    <div style="background:#fdecea;border:1px solid #e74c3c;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#c0392b;">
+      ⚠️ <strong>Atenção:</strong> Esta ação é irreversível. O paciente e todo o seu histórico (procedimentos, medidas, status) serão permanentemente removidos do sistema.
+    </div>
+    <p id="excluir-pac-nome" style="font-size:15px;font-weight:600;color:#0a1628;margin-bottom:16px;"></p>
+    <div class="form-group">
+      <label>Motivo da exclusão *</label>
+      <select id="excluir-pac-motivo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
+        <option value="">Selecione...</option>
+        <option value="Cadastro duplicado">Cadastro duplicado</option>
+        <option value="Paciente cadastrado incorretamente">Paciente cadastrado incorretamente</option>
+        <option value="Não chegou a ser atendido">Não chegou a ser atendido</option>
+        <option value="Erro de admissão">Erro de admissão</option>
+        <option value="Outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group" id="excluir-outro-wrap" style="display:none;">
+      <label>Especifique o motivo</label>
+      <input type="text" id="excluir-pac-outro" placeholder="Descreva o motivo..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;" />
+    </div>
+    <div class="form-group">
+      <label style="font-weight:600;color:#e74c3c;">Para confirmar, digite EXCLUIR abaixo:</label>
+      <input type="text" id="excluir-pac-confirm" placeholder="Digite EXCLUIR" style="width:100%;padding:8px;border:2px solid #e74c3c;border-radius:5px;font-size:14px;" />
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-excluir-paciente')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarExcluirPaciente()">&#128465; Excluir Definitivamente</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Alta -->
 <div class="modal-overlay" id="modal-alta">
   <div class="modal">
@@ -1217,7 +1831,7 @@ const _mem = {};
 
 async function sbGet() {
   try {
-    const r = await fetch(`${SB_URL}/store?select=key,value`, { headers: SB_HEADERS });
+    const r = await fetch(`${SB_URL}/store?select=key,value,updated_at&order=updated_at.asc`, { headers: SB_HEADERS });
     if (!r.ok) return;
     const rows = await r.json();
     rows.forEach(row => { _mem[row.key] = row.value; });
@@ -1225,7 +1839,7 @@ async function sbGet() {
 }
 
 function sbSet(key, value) {
-  fetch(`${SB_URL}/store`, {
+  fetch(`${SB_URL}/store?on_conflict=key`, {
     method: 'POST',
     headers: SB_HEADERS,
     body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
@@ -1244,7 +1858,7 @@ async function carregarDados() {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 6000);
   try {
-    const r = await fetch(`${SB_URL}/store?select=key,value`, { headers: SB_HEADERS, signal: ctrl.signal });
+    const r = await fetch(`${SB_URL}/store?select=key,value,updated_at&order=updated_at.asc`, { headers: SB_HEADERS, signal: ctrl.signal });
     clearTimeout(timer);
     if (!r.ok) { console.warn('Supabase retornou:', r.status); return; }
     const rows = await r.json();
@@ -1319,7 +1933,19 @@ const MENUS = {
     <a href="#" onclick="nav('lotes-concluida')" id="nav-lotes-concluida">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Lotes Concluídas
     </a>
+    <a href="#" onclick="nav('painel-financeiro')" id="nav-painel-financeiro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Painel Financeiro
+    </a>
+    <a href="#" onclick="nav('oportunidade-financeira')" id="nav-oportunidade-financeira">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Oportunidade Financeira
+    </a>
+    <a href="#" onclick="nav('indicadores-cobertura')" id="nav-indicadores-cobertura">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Indicadores de Cobertura
+    </a>
     <div class="sidebar-section">Mapas</div>
+    <a href="#" onclick="nav('cobertura-assistencial')" id="nav-cobertura-assistencial">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Cobertura Assistencial
+    </a>
     <a href="#" onclick="nav('mapa-geral')" id="nav-mapa-geral">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Mapa Geral
     </a>
@@ -1338,6 +1964,9 @@ const MENUS = {
     </a>
     <a href="#" onclick="nav('rel-produtividade')" id="nav-rel-produtividade">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Produtividade
+    </a>
+    <a href="#" onclick="nav('rel-alta-fisio')" id="nav-rel-alta-fisio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Alta Fisioterapêutica
     </a>
     <div class="sidebar-section">Cadastros</div>
     <a href="#" onclick="nav('cad-pacientes')" id="nav-cad-pacientes">
@@ -1361,6 +1990,9 @@ const MENUS = {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
     </a>
     <div class="sidebar-section">Mapas</div>
+    <a href="#" onclick="nav('cobertura-assistencial')" id="nav-cobertura-assistencial">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Cobertura Assistencial
+    </a>
     <a href="#" onclick="nav('mapa-geral')" id="nav-mapa-geral">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Mapa Geral
     </a>
@@ -1379,6 +2011,9 @@ const MENUS = {
     </a>
     <a href="#" onclick="nav('rel-produtividade')" id="nav-rel-produtividade">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Produtividade
+    </a>
+    <a href="#" onclick="nav('rel-alta-fisio')" id="nav-rel-alta-fisio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Alta Fisioterapêutica
     </a>
     <div class="sidebar-section">Cadastros</div>
     <a href="#" onclick="nav('cad-pacientes')" id="nav-cad-pacientes">
@@ -1569,7 +2204,7 @@ function renderKpis() {
 
 function renderPage(id) {
   const renders = {
-    'dashboard': renderKpis,
+    'dashboard': ()=>{renderKpis();renderSemAtendHoje();},
     'rel-ims': renderRelIMS,
     'cad-pacientes': renderPacientes,
     'cad-convenios': renderConvenios,
@@ -1584,7 +2219,12 @@ function renderPage(id) {
     'rel-atend': renderRelAtend,
     'rel-pacientes': renderRelPacientes,
     'rel-produtividade': renderProdutividade,
+    'rel-alta-fisio': renderRelAltaFisio,
+    'painel-financeiro': renderPainelFinanceiro,
     'config-usuarios': renderUsuarios,
+    'cobertura-assistencial': renderCoberturaAssistencial,
+    'oportunidade-financeira': renderOportunidadeFinanceira,
+    'indicadores-cobertura': renderIndicadoresCobertura,
   };
   if (renders[id]) renders[id]();
 }
@@ -1693,24 +2333,43 @@ function renderGuiasAbertas() {
   document.getElementById('tb-guias-abertas').innerHTML = guias.map(g => {
     const pac = pacs.find(p=>p.id===g.paciente_id)||{};
     const conv = convs.find(c=>c.id===g.convenio_id)||{};
+    const glosas = (DB.get('glosas')||[]).filter(gl=>gl.guia_id===g.id);
+    const glosaCell = glosas.length ? `<span class="glosa-badge">${glosas.length} glosa${glosas.length>1?'s':''}</span>` : '';
     return `<tr><td>${g.num_at}</td><td>${g.setor}</td><td>${g.num_guia}</td>
       <td>${pac.nome||'-'}</td><td>${conv.nome||'-'}</td>
-      <td>${g.internacao}</td><td>${g.atend}</td><td>${g.valor}</td><td>${g.dias}</td></tr>`;
+      <td>${g.internacao}</td><td>${g.atend}</td><td>${g.valor}</td><td>${g.dias}</td>
+      <td>${glosaCell} <button style="background:none;border:1px solid #e74c3c;color:#e74c3c;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" onclick="abrirModalGlosa(${g.id})">+ Glosa</button></td></tr>`;
   }).join('');
 }
 
+function calcTotalLote(lote) {
+  const guias = DB.get('guias');
+  function parseMoeda(v){if(!v)return 0;return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;}
+  function fmtMoeda(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+  const guiasLote = guias.filter(g => g.lote_id === lote.id);
+  const total = guiasLote.reduce((s,g)=>s+parseMoeda(g.valor),0);
+  return {total: fmtMoeda(total), qtd: guiasLote.length || lote.guias || 0};
+}
+
 function renderLotesPendente() {
-  document.getElementById('tb-lotes-pendente').innerHTML = DB.get('lotes').filter(l=>!l.concluido).map(l => `
-    <tr><td>${l.convenio}</td><td>${l.id}</td>
+  const lotes = DB.get('lotes').filter(l=>!l.concluido);
+  document.getElementById('tb-lotes-pendente').innerHTML = lotes.length ? lotes.map(l => {
+    const {total, qtd} = calcTotalLote(l);
+    return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
     <td><span style="color:#f39c12;font-weight:600;">${l.status}</span></td>
-    <td>${l.data}</td><td>${l.guias}</td><td>${l.valor}</td></tr>`).join('');
+    <td>${l.data}</td><td>${qtd}</td><td>${total}</td>
+    <td><button class="btn btn-sm" style="background:#0a1628;color:#fff;font-size:11px;" onclick="gerarXMLLote(${l.id})">XML TISS</button></td></tr>`;
+  }).join('') : '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote pendente</td></tr>';
 }
 
 function renderLotesConcluida() {
-  document.getElementById('tb-lotes-concluida').innerHTML = DB.get('lotes').filter(l=>l.concluido).map(l => `
-    <tr><td>${l.convenio}</td><td>${l.id}</td>
+  const lotes = DB.get('lotes').filter(l=>l.concluido);
+  document.getElementById('tb-lotes-concluida').innerHTML = lotes.length ? lotes.map(l => {
+    const {total, qtd} = calcTotalLote(l);
+    return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
     <td><span style="color:#27ae60;font-weight:600;">Finalizada</span></td>
-    <td>${l.data}</td><td>${l.guias}</td><td>${l.valor}</td></tr>`).join('');
+    <td>${l.data}</td><td>${qtd}</td><td>${total}</td></tr>`;
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote concluído</td></tr>';
 }
 
 function getLeitosNomes(s) {
@@ -1719,15 +2378,19 @@ function getLeitosNomes(s) {
 
 function renderMapaGeral() {
   const setores = DB.get('setores'), pacs = DB.get('pacientes'), guias = DB.get('guias'), convs = DB.get('convenios');
+  const hojeStr = new Date().toLocaleDateString('pt-BR');
   document.getElementById('mapa-geral-container').innerHTML = setores.map(s => {
     const nomes = getLeitosNomes(s);
     const leitosHtml = nomes.map(num => {
       const guia = guias.find(g => g.setor === `${s.nome} - ${num}`);
       const pac = guia ? pacs.find(p => p.id === guia.paciente_id) : null;
       const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
-      return pac
-        ? `<div class="leito-cell ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-num">${num}</div><div class="leito-nome">${pac.nome.split(' ').slice(0,2).join(' ')}</div><div class="leito-conv">(${conv?conv.nome:''})</div></div>`
-        : `<div class="leito-cell livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${num}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`;
+      if (!pac) return `<div class="leito-cell livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${num}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`;
+      const hist = DB.get('hist_procs_'+guia.id)||[];
+      const atendidoHoje = hist.some(h=>!h.cancelado&&h.data===hojeStr);
+      const classeExtra = guia.alta ? 'alta-fisio' : (atendidoHoje ? '' : 'sem-atend');
+      const titulo = guia.alta ? 'Alta fisioterapêutica' : (atendidoHoje ? '' : 'Sem atendimento hoje');
+      return `<div class="leito-cell ocupado ${classeExtra}" onclick="abrirPacienteDetalhe(${guia.id})" title="${titulo}"><div class="leito-num">${num}</div><div class="leito-nome">${pac.nome.split(' ').slice(0,2).join(' ')}</div><div class="leito-conv">(${conv?conv.nome:''})</div></div>`;
     }).join('');
     return `<div class="mapa-setor"><div class="mapa-setor-title">${s.nome}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
   }).join('');
@@ -1735,46 +2398,63 @@ function renderMapaGeral() {
 
 function renderMapaOcupacao() {
   const setores = DB.get('setores'), pacs = DB.get('pacientes'), guias = DB.get('guias'), convs = DB.get('convenios');
+  const hojeStr = new Date().toLocaleDateString('pt-BR');
   document.getElementById('mapa-ocupacao-container').innerHTML = setores.map(s => {
     const nomes = getLeitosNomes(s);
-    const ocup = guias.filter(g => g.setor && g.setor.startsWith(s.nome+' - ')).length;
+    const ocup = guias.filter(g => g.setor && g.setor.startsWith(s.nome+' - ') && !g.alta).length;
     const pct = nomes.length > 0 ? Math.round(ocup / nomes.length * 100) : 0;
     const leitosHtml = nomes.map(num => {
       const guia = guias.find(g => g.setor === `${s.nome} - ${num}`);
       const pac = guia ? pacs.find(p => p.id === guia.paciente_id) : null;
       const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
-      return pac
-        ? `<div class="ocupacao-leito ocupado" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-id">${num}</div><div class="leito-info"><div class="nome">${pac.nome}</div><div class="detalhe">${conv?conv.nome:''} - NA: ${guia.num_at||''}</div></div><div class="leito-arrow">›</div></div>`
-        : `<div class="ocupacao-leito livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-ocupacao')" style="cursor:pointer;opacity:0.6;" title="Clique para internar paciente"><div class="leito-id">${num}</div><div class="leito-info" style="font-size:11px;color:#aaa;">Leito livre — clique para internar</div><div class="leito-arrow">+</div></div>`;
+      if (!pac) return `<div class="ocupacao-leito livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-ocupacao')" style="cursor:pointer;opacity:0.6;" title="Clique para internar paciente"><div class="leito-id">${num}</div><div class="leito-info" style="font-size:11px;color:#aaa;">Leito livre — clique para internar</div><div class="leito-arrow">+</div></div>`;
+      const hist = DB.get('hist_procs_'+guia.id)||[];
+      const atendidoHoje = hist.some(h=>!h.cancelado&&h.data===hojeStr);
+      const classeExtra = guia.alta ? 'alta-fisio' : (atendidoHoje ? '' : 'sem-atend');
+      const badge = guia.alta ? '<span style="font-size:10px;color:#9e9e9e;margin-left:4px;">[alta]</span>' : (!atendidoHoje ? '<span style="font-size:10px;color:#e65100;margin-left:4px;">⚠ sem atend.</span>' : '');
+      return `<div class="ocupacao-leito ocupado ${classeExtra}" onclick="abrirPacienteDetalhe(${guia.id})"><div class="leito-id">${num}</div><div class="leito-info"><div class="nome">${pac.nome}${badge}</div><div class="detalhe">${conv?conv.nome:''} - NA: ${guia.num_at||''}</div></div><div class="leito-arrow">›</div></div>`;
     }).join('');
     return `<div class="ocupacao-setor"><div class="ocupacao-setor-header"><span>${s.nome} (${ocup} pacientes - ${pct}% ocupado)</span><span>🖨</span></div>${leitosHtml}</div>`;
   }).join('');
 }
 
 function renderRelAtend() {
-  const guias = DB.get('guias'), pacs = DB.get('pacientes'), convs = DB.get('convenios');
-  document.getElementById('rel-atend-container').innerHTML = guias.map(g => {
+  const guias = DB.get('guias'), pacs = DB.get('pacientes'), convs = DB.get('convenios'), procs = DB.get('procedimentos');
+  let html = '';
+  guias.forEach(g => {
     const pac = pacs.find(p=>p.id===g.paciente_id)||{};
     const conv = convs.find(c=>c.id===g.convenio_id)||{};
-    return `<div style="margin-bottom:20px;">
-      <div style="color:#e74c3c;font-weight:700;font-size:13px;margin-bottom:8px;">${g.setor} - ${pac.nome} (${conv.nome})
-      <span style="float:right;color:#333;font-weight:400;font-size:12px;">Internação: ${g.internacao} - Nº: ${g.num_at}</span></div>
+    const hist = (DB.get('hist_procs_'+g.id)||[]).filter(h=>!h.cancelado);
+    if (!hist.length) return;
+    const rows = hist.map(h => {
+      const proc = procs.find(p=>p.id===h.proc_id)||{};
+      return `<tr><td>${h.data||'-'}</td><td>${proc.codigo||'-'}</td><td>${proc.nome||h.nome||'-'}</td><td>1</td>
+        <td><span style="background:#4a90d9;color:#fff;border-radius:20px;padding:2px 12px;font-size:12px;">✓</span></td>
+        <td>${h.usuario||'-'}</td></tr>`;
+    }).join('');
+    html += `<div style="margin-bottom:20px;">
+      <div style="color:#e74c3c;font-weight:700;font-size:13px;margin-bottom:8px;">${g.setor||'-'} - ${pac.nome||'-'} (${conv.nome||'-'})
+      <span style="float:right;color:#333;font-weight:400;font-size:12px;">Internação: ${g.internacao||'-'} - Nº: ${g.num_at||'-'}</span></div>
       <div class="card"><table><thead><tr><th>Data</th><th>Código</th><th>Nome</th><th>Qtd.</th><th>Verificado</th><th>Usuário</th></tr></thead>
-      <tbody><tr><td>19/06</td><td>80116876</td><td>DIÁRIA SEM VM APTO/ENF</td><td>1</td>
-      <td><span style="background:#4a90d9;color:#fff;border-radius:20px;padding:2px 12px;font-size:12px;">✓</span></td>
-      <td>LUCAS JESUS</td></tr></tbody></table></div></div>`;
-  }).join('');
+      <tbody>${rows}</tbody></table></div></div>`;
+  });
+  document.getElementById('rel-atend-container').innerHTML = html || '<div style="text-align:center;padding:40px;color:#888;">Nenhum atendimento registrado.</div>';
 }
 
 function renderRelPacientes() {
   const pacs = DB.get('pacientes'), convs = DB.get('convenios'), guias = DB.get('guias');
-  document.getElementById('tb-rel-pacientes').innerHTML = pacs.map(p => {
-    const conv = convs.find(c=>c.id===p.convenio_id)||{};
+  const rows = pacs.map(p => {
     const guia = guias.find(g=>g.paciente_id===p.id)||{};
+    const conv = convs.find(c=>c.id===(p.convenio_id||guia.convenio_id))||{};
+    const temAlta = !!guia.alta;
+    const badgeHtml = temAlta
+      ? `<span class="badge" style="background:#e0e0e0;color:#555;">Alta</span>`
+      : `<span class="badge badge-success">Em Aberto</span>`;
     return `<tr><td>${p.nome}</td><td>${guia.num_at||'-'}</td><td>${conv.nome||'-'}</td>
-      <td><span class="badge badge-success">Em Aberto</span></td>
-      <td>${guia.valor||'-'}</td><td>${guia.internacao||'-'}</td><td>-</td></tr>`;
+      <td>${badgeHtml}</td>
+      <td>${guia.valor||'-'}</td><td>${guia.internacao||'-'}</td><td>${guia.alta||'-'}</td></tr>`;
   }).join('');
+  document.getElementById('tb-rel-pacientes').innerHTML = rows || '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Nenhum paciente cadastrado</td></tr>';
 }
 
 function renderProdutividade() {
@@ -2215,13 +2895,26 @@ let chartsInit = false;
 function initCharts() {
   if (chartsInit) return; chartsInit=true;
   const labels=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);return `${d.getDate()}/${d.getMonth()+1}`;});
+  // Contar procedimentos reais por dia (últimos 30 dias)
+  const guiasAll = DB.get('guias');
+  const contsPorDia = {};
+  labels.forEach(l=>contsPorDia[l]=0);
+  guiasAll.forEach(g=>{
+    (DB.get('hist_procs_'+g.id)||[]).forEach(h=>{
+      if (!h.cancelado && h.data && contsPorDia[h.data]!==undefined) contsPorDia[h.data]++;
+    });
+  });
   new Chart(document.getElementById('chartProcedimentos'),{
-    type:'line',data:{labels,datasets:[{data:labels.map(()=>Math.floor(Math.random()*200+250)),borderColor:'#4a90d9',backgroundColor:'rgba(74,144,217,0.08)',fill:true,tension:0.4,pointRadius:0}]},
-    options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0}}}
+    type:'line',data:{labels,datasets:[{data:labels.map(l=>contsPorDia[l]),borderColor:'#4a90d9',backgroundColor:'rgba(74,144,217,0.08)',fill:true,tension:0.4,pointRadius:0}]},
+    options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0,beginAtZero:true}}}
   });
   const setores=DB.get('setores');
+  const guiasAtivas=DB.get('guias').filter(g=>!g.alta);
   new Chart(document.getElementById('chartSetores'),{
-    type:'bar',data:{labels:setores.map(s=>s.nome),datasets:[{label:'Leitos',data:setores.map(s=>s.leitos),backgroundColor:'#4a90d9'},{label:'Ocupados',data:setores.map(s=>Math.floor(s.leitos*0.5)),backgroundColor:'#27ae60'}]},
+    type:'bar',data:{labels:setores.map(s=>s.nome),datasets:[
+      {label:'Leitos',data:setores.map(s=>s.leitos),backgroundColor:'#4a90d9'},
+      {label:'Ocupados',data:setores.map(s=>guiasAtivas.filter(g=>g.setor&&g.setor.startsWith(s.nome+' - ')).length),backgroundColor:'#27ae60'}
+    ]},
     options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}}}}
   });
 }
@@ -2277,11 +2970,16 @@ function abrirPacienteDetalhe(guiaId) {
   document.getElementById('det-ims-adm').textContent = guia.ims_admissao || '-';
   document.getElementById('det-ims-atual').textContent = imsAtual;
 
-  // Tabelas históricas
+  // Tabelas históricas e gráfico evolução IMS
   renderDetProcs(guia.id);
   renderDetStatus(guia.id);
   renderDetMedidas(guia.id);
   renderDetSetor(guia.id);
+  setTimeout(() => renderGraficoEvolucaoIMS(guia.id), 80);
+  setTimeout(() => renderResumoDiario(guia.id), 80);
+  setTimeout(() => renderLinhaTempo(guia.id), 80);
+  setTimeout(() => renderMobilizacao(guia.id), 80);
+  setTimeout(() => renderGraficoMedidas(guia.id), 80);
 
   // Preencher modal editar
   document.getElementById('edit-pac-id').value = pac.id;
@@ -2342,10 +3040,17 @@ function abrirPacienteDetalhe(guiaId) {
 function renderDetProcs(guiaId) {
   const hist = DB.get('hist_procs_' + guiaId) || [];
   const procs = DB.get('procedimentos');
-  document.getElementById('det-tb-procs').innerHTML = hist.length ? hist.slice().reverse().map(h => {
+  document.getElementById('det-tb-procs').innerHTML = hist.length ? hist.slice().reverse().map((h, displayIdx) => {
+    const realIdx = hist.length - 1 - displayIdx;
     const proc = procs.find(p=>p.id===h.proc_id)||{};
-    return `<tr><td>${h.data}</td><td>${proc.nome||h.nome||'-'}</td><td>${h.usuario}</td></tr>`;
-  }).join('') : '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento lançado</td></tr>';
+    const nomeCell = h.cancelado
+      ? `<span style="text-decoration:line-through;color:#aaa;">${proc.nome||h.nome||'-'}</span> <span style="font-size:11px;color:#e74c3c;">(cancelado: ${h.motivo_cancelamento||''})</span>`
+      : (proc.nome||h.nome||'-');
+    const cancelBtn = !h.cancelado
+      ? `<button style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;" title="Cancelar" onclick="cancelarProcedimento(${guiaId},${realIdx})">✕</button>`
+      : '';
+    return `<tr><td>${h.data}</td><td>${nomeCell}</td><td>${h.usuario}</td><td>${cancelBtn}</td></tr>`;
+  }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento lançado</td></tr>';
 }
 
 function renderDetStatus(guiaId) {
@@ -2356,10 +3061,11 @@ function renderDetStatus(guiaId) {
 }
 
 function renderDetMedidas(guiaId) {
-  const hist = DB.get('hist_medidas_' + guiaId) || [];
+  const hist = DB.getItem('hist_medidas_' + guiaId) || [];
   document.getElementById('det-tb-medidas').innerHTML = hist.length ? hist.slice().reverse().map(h =>
     `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}</td><td>${h.usuario}</td></tr>`
   ).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhuma medida lançada</td></tr>';
+  setTimeout(() => renderGraficoMedidas(guiaId), 80);
 }
 
 function renderDetSetor(guiaId) {
@@ -2401,6 +3107,7 @@ function salvarProcedimento() {
 
   closeModal('modal-lancar-proc');
   renderDetProcs(pacienteAtivo.id);
+  setTimeout(() => renderGraficoEvolucaoIMS(pacienteAtivo.id), 80);
   showToast('Procedimento lançado com sucesso!');
 }
 
@@ -2430,7 +3137,7 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
   _novoatOrigem = origem || 'cad-pacientes';
 
   // Limpar campos
-  ['novoat-num-at','novoat-nome','novoat-cpf','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
+  ['novoat-num-at','novoat-nome','novoat-cpf','novoat-carteirinha','novoat-autorizacao','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
   ['novoat-nascimento','novoat-data-intern','novoat-data-atend'].forEach(id => document.getElementById(id).value = new Date().toISOString().split('T')[0]);
   document.getElementById('novoat-convenio').value='';
   document.getElementById('novoat-status').value='';
@@ -2527,15 +3234,20 @@ function saveNovoAtendimento() {
   DB.push('pacientes', {id:pacId, nome, nascimento, cpf, convenio_id:convenioId});
 
   // Salvar guia/atendimento
+  const carteirinha = document.getElementById('novoat-carteirinha').value.trim();
+  const num_autorizacao = document.getElementById('novoat-autorizacao').value.trim();
+
   const guiaId = getNextId('guias');
   DB.push('guias', {
     id:guiaId, num_at:numAt, setor:setorLeito,
     paciente_id:pacId, convenio_id:convenioId,
+    carteirinha, num_autorizacao,
     internacao:fmtDate(dataIntern), atend:fmtDate(dataAtend),
     tipo_internacao:tipo, diagnostico:diag, clinica,
     status, obs, paliativo,
     ims_previo: imsPrev !== '' ? parseInt(imsPrev) : null,
     ims_admissao: imsAdm !== '' ? parseInt(imsAdm) : null,
+    meta_diaria: document.getElementById('novoat-meta-diaria').value || '1x',
     dias:0, valor:'R$ 0,00'
   });
 
@@ -2587,9 +3299,9 @@ function salvarMedidas() {
   medidas.forEach(m => {
     const input = document.getElementById('med-val-' + m.id);
     if (input && input.value !== '') {
-      const hist = DB.get('hist_medidas_' + pacienteAtivo.id) || [];
-      hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: dataFmt, usuario: usuarioAtual()});
-      DB.set('hist_medidas_' + pacienteAtivo.id, hist);
+      const hist = DB.getItem('hist_medidas_' + pacienteAtivo.id) || [];
+      hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: new Date().toISOString().split('T')[0], usuario: usuarioAtual()});
+      DB.setItem('hist_medidas_' + pacienteAtivo.id, hist);
       salvou = true;
     }
   });
@@ -2608,6 +3320,52 @@ function salvarAlta() {
   closeModal('modal-alta');
   showToast('Alta registrada com sucesso!', '#e74c3c');
   setTimeout(() => nav('mapa-ocupacao'), 1500);
+}
+
+function confirmarExcluirPaciente() {
+  const motivo = document.getElementById('excluir-pac-motivo').value;
+  if (!motivo) { alert('Selecione o motivo da exclusão.'); return; }
+  const confirmText = document.getElementById('excluir-pac-confirm').value.trim();
+  if (confirmText !== 'EXCLUIR') { alert('Digite EXCLUIR (em maiúsculas) para confirmar.'); return; }
+  if (!pacienteAtivo) return;
+
+  const guiaId = pacienteAtivo.id;
+  const pacId = pacienteAtivo.paciente_id;
+
+  // Remove guia
+  let guias = DB.get('guias').filter(g => g.id !== guiaId);
+  DB.set('guias', guias);
+
+  // Remove históricos desta guia
+  ['hist_procs_', 'hist_ims_', 'hist_status_', 'hist_medidas_'].forEach(prefix => {
+    DB.setItem(prefix + guiaId, null);
+  });
+
+  // Remove paciente se não tiver outras guias vinculadas
+  const outrasGuias = guias.filter(g => g.paciente_id === pacId);
+  if (outrasGuias.length === 0) {
+    let pacs = DB.get('pacientes').filter(p => p.id !== pacId);
+    DB.set('pacientes', pacs);
+  }
+
+  closeModal('modal-excluir-paciente');
+  pacienteAtivo = null;
+  showToast('Paciente excluído do sistema.', '#6c757d');
+  setTimeout(() => nav('mapa-ocupacao'), 1200);
+}
+
+function abrirModalExcluirPaciente() {
+  if (!pacienteAtivo) return;
+  const pacs = DB.get('pacientes');
+  const pac = pacs.find(p => p.id === pacienteAtivo.paciente_id);
+  document.getElementById('excluir-pac-nome').textContent = pac ? pac.nome : 'Paciente';
+  document.getElementById('excluir-pac-motivo').value = '';
+  document.getElementById('excluir-pac-confirm').value = '';
+  document.getElementById('excluir-outro-wrap').style.display = 'none';
+  document.getElementById('excluir-pac-motivo').onchange = function() {
+    document.getElementById('excluir-outro-wrap').style.display = this.value === 'Outro' ? 'block' : 'none';
+  };
+  openModal('modal-excluir-paciente');
 }
 
 function salvarEdicaoPaciente() {
@@ -2634,6 +3392,1511 @@ function salvarEdicaoPaciente() {
   showToast('Paciente atualizado!');
 }
 
+// ===== MOBILIZAÇÃO =====
+const MOB_NIVEIS = ['leito','sedestacao','ortostatismo','poltrona','marcha'];
+const MOB_LABELS = {leito:'🛏 Leito', sedestacao:'🪑 Sedestação', ortostatismo:'🧍 Ortostatismo', poltrona:'🪑 Poltrona', marcha:'🚶 Marcha'};
+const MOB_CORES = {leito:'#adb5bd', sedestacao:'#74b9ff', ortostatismo:'#0984e3', poltrona:'#6c5ce7', marcha:'#00b894'};
+let chartMobInstance = null;
+
+function selecionarNivelMob(el, valor) {
+  document.querySelectorAll('#mobilizacao-niveis label').forEach(l => l.style.borderColor = '#eee');
+  el.style.borderColor = '#7b5ea7';
+  el.querySelector('input').checked = true;
+}
+
+function abrirModalMobilizacao() {
+  document.querySelectorAll('#mobilizacao-niveis label').forEach(l => l.style.borderColor = '#eee');
+  document.getElementById('mob-distancia').value = '';
+  document.getElementById('mob-obs').value = '';
+  openModal('modal-mobilizacao');
+}
+
+function salvarMobilizacao() {
+  const nivel = document.querySelector('input[name="mob-nivel"]:checked');
+  if (!nivel) { alert('Selecione o nível de mobilização.'); return; }
+  if (!pacienteAtivo) return;
+  const registro = {
+    id: Date.now(),
+    data: new Date().toISOString().split('T')[0],
+    hora: new Date().toTimeString().slice(0,5),
+    nivel: nivel.value,
+    distancia: document.getElementById('mob-distancia').value,
+    obs: document.getElementById('mob-obs').value,
+    usuario: currentUser?.nome || 'Sistema'
+  };
+  const hist = DB.getItem('hist_mob_' + pacienteAtivo.id) || [];
+  hist.push(registro);
+  DB.setItem('hist_mob_' + pacienteAtivo.id, hist);
+  closeModal('modal-mobilizacao');
+  renderMobilizacao(pacienteAtivo.id);
+  renderLinhaTempo(pacienteAtivo.id);
+  showToast('Mobilização registrada!', '#7b5ea7');
+}
+
+function renderMobilizacao(guiaId) {
+  const hist = DB.getItem('hist_mob_' + guiaId) || [];
+  const vazio = document.getElementById('mob-vazio');
+  const canvas = document.getElementById('chartMobilizacao');
+
+  // Escada de progressão — nível máximo atingido
+  const nivelMax = hist.length ? MOB_NIVEIS.indexOf(hist.reduce((a,b) => MOB_NIVEIS.indexOf(a.nivel) > MOB_NIVEIS.indexOf(b.nivel) ? a : b).nivel) : -1;
+  const escada = document.getElementById('mob-escada');
+  if (escada) {
+    escada.innerHTML = MOB_NIVEIS.map((n, i) => {
+      const atingido = i <= nivelMax;
+      const atual = hist.length && hist[hist.length-1].nivel === n;
+      return `<div style="flex:1;text-align:center;">
+        <div style="height:${30+(i*12)}px;background:${atingido?MOB_CORES[n]:'#e9ecef'};border-radius:6px 6px 0 0;transition:all 0.3s;border:${atual?'2px solid #0a1628':'2px solid transparent'};"></div>
+        <div style="font-size:10px;color:${atingido?MOB_CORES[n]:'#aaa'};font-weight:${atual?700:500};margin-top:4px;">${MOB_LABELS[n].split(' ')[1]}</div>
+      </div>`;
+    }).join('');
+  }
+
+  if (!hist.length) {
+    if (vazio) vazio.style.display = 'block';
+    if (canvas) canvas.style.display = 'none';
+    document.getElementById('tb-mob-hist').innerHTML = '<tr><td colspan="5" style="text-align:center;color:#aaa;">Nenhuma mobilização registrada</td></tr>';
+    return;
+  }
+  if (vazio) vazio.style.display = 'none';
+  if (canvas) canvas.style.display = 'block';
+
+  // Gráfico de evolução
+  if (chartMobInstance) chartMobInstance.destroy();
+  const ultimos = hist.slice(-15);
+  chartMobInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: ultimos.map(h => h.data.slice(5).replace('-','/')),
+      datasets: [{
+        label: 'Nível de Mobilização',
+        data: ultimos.map(h => MOB_NIVEIS.indexOf(h.nivel)),
+        borderColor: '#7b5ea7', backgroundColor: 'rgba(123,94,167,0.1)',
+        tension: 0.3, fill: true, pointBackgroundColor: ultimos.map(h => MOB_CORES[h.nivel])
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 4, ticks: { callback: v => ['Leito','Sedestat.','Ortost.','Poltrona','Marcha'][v] || '' } }
+      }
+    }
+  });
+
+  document.getElementById('tb-mob-hist').innerHTML = hist.slice().reverse().map(h =>
+    `<tr><td>${h.data} ${h.hora||''}</td><td>${MOB_LABELS[h.nivel]||h.nivel}</td><td>${h.distancia||'-'}</td><td>${h.obs||'-'}</td><td>${h.usuario}</td></tr>`
+  ).join('');
+}
+
+// ===== CHECKLIST DE SEGURANÇA =====
+const CHECKLIST_PADRAO = [
+  { id:'pa', label:'Pressão arterial estável (≤ 180/110 mmHg)' },
+  { id:'spo2', label:'SpO2 ≥ 90%' },
+  { id:'fc', label:'Frequência cardíaca entre 50-120 bpm' },
+  { id:'fr', label:'Frequência respiratória ≤ 30 irpm' },
+  { id:'temp', label:'Temperatura sem febre intensa (≤ 38,5°C)' },
+  { id:'consciencia', label:'Paciente responsivo / colaborativo' },
+  { id:'via', label:'Via aérea segura (sem risco de extubação acidental)' },
+  { id:'cateter', label:'Acessos venosos e cateteres fixados' },
+];
+
+function abrirChecklist() {
+  const itens = DB.get('checklist_config') || CHECKLIST_PADRAO;
+  document.getElementById('checklist-itens').innerHTML = itens.map(item =>
+    `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #eee;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='#f5f8ff'" onmouseout="this.style.background=''">
+      <input type="checkbox" id="ck_${item.id}" style="width:16px;height:16px;cursor:pointer;" />
+      <span style="font-size:13px;">${item.label}</span>
+    </label>`
+  ).join('');
+  document.getElementById('checklist-obs').value = '';
+  openModal('modal-checklist');
+}
+
+function confirmarChecklist() {
+  const itens = DB.get('checklist_config') || CHECKLIST_PADRAO;
+  const naoMarcados = itens.filter(i => !document.getElementById('ck_'+i.id)?.checked).map(i => i.label);
+  if (naoMarcados.length > 0) {
+    if (!confirm(`Atenção! Os seguintes itens NÃO foram confirmados:\n\n${naoMarcados.map(i=>'• '+i).join('\n')}\n\nDeseja prosseguir mesmo assim?`)) return;
+  }
+  // Salvar registro do checklist
+  if (pacienteAtivo) {
+    const reg = {
+      data: new Date().toISOString().split('T')[0],
+      hora: new Date().toTimeString().slice(0,5),
+      itens_ok: itens.filter(i => document.getElementById('ck_'+i.id)?.checked).map(i=>i.id),
+      itens_nao: naoMarcados,
+      obs: document.getElementById('checklist-obs').value,
+      usuario: currentUser?.nome || 'Sistema'
+    };
+    const hist = DB.getItem('hist_checklist_' + pacienteAtivo.id) || [];
+    hist.push(reg);
+    DB.setItem('hist_checklist_' + pacienteAtivo.id, hist);
+  }
+  closeModal('modal-checklist');
+  showToast('Checklist confirmado! Pode iniciar a mobilização.', '#27ae60');
+  setTimeout(() => abrirModalMobilizacao(), 400);
+}
+
+// ===== ALTERAR META DIÁRIA =====
+function abrirModalAlterarMeta() {
+  if (!pacienteAtivo) return;
+  const pacs = DB.get('pacientes');
+  const pac = pacs.find(p => p.id === pacienteAtivo.paciente_id);
+  document.getElementById('alterar-meta-pac').textContent = 'Paciente: ' + (pac?.nome || 'N/A') + ' | Meta atual: ' + (pacienteAtivo.meta_diaria || '1x').replace(/_/g,' ');
+  document.getElementById('alterar-meta-valor').value = pacienteAtivo.meta_diaria || '1x';
+  document.getElementById('alterar-meta-motivo').value = '';
+  openModal('modal-alterar-meta');
+}
+
+function salvarAlterarMeta() {
+  const nova = document.getElementById('alterar-meta-valor').value;
+  const motivo = document.getElementById('alterar-meta-motivo').value;
+  if (!pacienteAtivo) return;
+  const guias = DB.get('guias');
+  const idx = guias.findIndex(g => g.id === pacienteAtivo.id);
+  if (idx < 0) return;
+  const anterior = guias[idx].meta_diaria;
+  guias[idx].meta_diaria = nova;
+  DB.set('guias', guias);
+  pacienteAtivo = guias[idx];
+  // Registra no histórico de status
+  const histStatus = DB.getItem('hist_status_' + pacienteAtivo.id) || [];
+  histStatus.push({ data: new Date().toISOString().split('T')[0], status: `Meta alterada: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, usuario: currentUser?.nome || 'Sistema' });
+  DB.setItem('hist_status_' + pacienteAtivo.id, histStatus);
+  closeModal('modal-alterar-meta');
+  renderResumoDiario(pacienteAtivo.id);
+  renderLinhaTempo(pacienteAtivo.id);
+  // Atualiza label de meta na ficha
+  document.getElementById('det-meta-diaria') && (document.getElementById('det-meta-diaria').textContent = nova.replace(/_/g,' '));
+  showToast('Meta diária atualizada!', '#17a2b8');
+}
+
+// ===== NOTIFICAÇÕES =====
+let notifAberta = false;
+function toggleNotificacoes() {
+  const dd = document.getElementById('notif-dropdown');
+  notifAberta = !notifAberta;
+  dd.style.display = notifAberta ? 'block' : 'none';
+  if (notifAberta) gerarNotificacoes();
+  document.addEventListener('click', fecharNotifFora, {once: true});
+}
+function fecharNotifFora(e) {
+  if (!document.getElementById('notif-btn').contains(e.target)) {
+    document.getElementById('notif-dropdown').style.display = 'none';
+    notifAberta = false;
+  }
+}
+
+function gerarNotificacoes() {
+  const hoje = new Date().toISOString().split('T')[0];
+  const agora = new Date();
+  const horaAtual = agora.getHours();
+  // Turno: manhã 7-13, tarde 13-19, noite 19-7
+  const turno = horaAtual >= 7 && horaAtual < 13 ? 'manhã' : horaAtual >= 13 && horaAtual < 19 ? 'tarde' : 'noite';
+
+  const guias = DB.get('guias').filter(g => !g.alta);
+  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
+  const notifs = [];
+
+  // Pacientes sem atendimento hoje
+  guias.forEach(g => {
+    const meta = metaMap[g.meta_diaria] ?? 1;
+    if (meta === 0) return;
+    const procs = (DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hoje&&p.status!=='cancelado');
+    if (procs.length === 0) {
+      notifs.push({ tipo: 'sem-atend', cor: '#e74c3c', icon: '🔴', texto: `<strong>${g.nome_pac||'Paciente'}</strong> sem atendimento hoje`, sub: `Leito ${g.leito||'-'} — Meta: ${g.meta_diaria||'1x'}`, guiaId: g.id });
+    } else if (procs.length < meta) {
+      notifs.push({ tipo: 'parcial', cor: '#f39c12', icon: '🟡', texto: `<strong>${g.nome_pac||'Paciente'}</strong> abaixo da meta`, sub: `${procs.length}/${meta} atendimentos — Leito ${g.leito||'-'}`, guiaId: g.id });
+    }
+  });
+
+  // Glosas pendentes
+  const glosaPend = (DB.get('glosas')||[]).filter(g=>g.status==='Pendente').length;
+  if (glosaPend > 0) notifs.push({ tipo: 'glosa', cor: '#9b59b6', icon: '💜', texto: `<strong>${glosaPend} glosa${glosaPend>1?'s':''} pendente${glosaPend>1?'s':''}</strong>`, sub: 'Clique para ver o Painel Financeiro', onclick: "nav('painel-financeiro')" });
+
+  // Badge
+  const total = notifs.length;
+  const badge = document.getElementById('notif-badge');
+  badge.style.display = total > 0 ? 'block' : 'none';
+  badge.textContent = total > 9 ? '9+' : total;
+  document.getElementById('notif-count-label').textContent = total > 0 ? `${total} pendente${total>1?'s':''}` : '';
+
+  const lista = document.getElementById('notif-lista');
+  if (!notifs.length) {
+    lista.innerHTML = '<div style="padding:16px;text-align:center;color:#aaa;font-size:13px;">✅ Sem pendências no momento</div>';
+    return;
+  }
+  lista.innerHTML = notifs.map(n =>
+    `<div onclick="${n.onclick||`abrirPacienteDetalhe(${n.guiaId})`};document.getElementById('notif-dropdown').style.display='none';notifAberta=false;"
+     style="padding:10px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:background 0.15s;"
+     onmouseover="this.style.background='#f8faff'" onmouseout="this.style.background=''">
+      <span style="font-size:18px;">${n.icon}</span>
+      <div><div style="font-size:13px;color:#0a1628;">${n.texto}</div><div style="font-size:11px;color:#aaa;margin-top:2px;">${n.sub}</div></div>
+    </div>`
+  ).join('');
+}
+
+// Atualiza badge a cada 60s
+setInterval(() => {
+  if (!notifAberta) gerarNotificacoes();
+}, 60000);
+
+// ===== GRÁFICO DE MEDIDAS =====
+let chartMedidasInstance = null;
+function renderGraficoMedidas(guiaId) {
+  const hist = DB.getItem('hist_medidas_'+guiaId) || [];
+  const canvas = document.getElementById('chartEvolucaoMedidas');
+  const vazio = document.getElementById('medidas-grafico-vazio');
+  if (chartMedidasInstance) { chartMedidasInstance.destroy(); chartMedidasInstance = null; }
+  if (!canvas) return;
+
+  // Agrupa por nome de medida
+  const grupos = {};
+  hist.forEach(h => {
+    const v = parseFloat(h.valor);
+    if (isNaN(v)) return;
+    if (!grupos[h.medida]) grupos[h.medida] = [];
+    grupos[h.medida].push({ data: h.data, valor: v });
+  });
+
+  if (Object.keys(grupos).length === 0) {
+    canvas.style.display = 'none';
+    if (vazio) vazio.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  if (vazio) vazio.style.display = 'none';
+
+  const cores = ['#4a90d9','#27ae60','#f39c12','#e74c3c','#9b59b6','#1abc9c'];
+  const labels = [...new Set(hist.map(h=>h.data))].sort();
+
+  chartMedidasInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels.map(d=>d.slice(5).replace('-','/')),
+      datasets: Object.entries(grupos).map(([nome, pts], i) => ({
+        label: nome,
+        data: labels.map(d => { const p = pts.find(x=>x.data===d); return p ? p.valor : null; }),
+        borderColor: cores[i % cores.length], tension: 0.3, fill: false, spanGaps: true,
+        pointRadius: 4
+      }))
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }, scales: { y: { beginAtZero: false } } }
+  });
+}
+
+// ===== RELATÓRIO EXECUTIVO PDF =====
+function gerarRelatorioExecutivoPDF() {
+  const hoje = new Date();
+  const mes = hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const guias = DB.get('guias') || [];
+  const guiasAtivas = guias.filter(g=>!g.alta);
+  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
+  const hojeISO = hoje.toISOString().split('T')[0];
+
+  // KPIs principais
+  let atendHoje = 0, metaHoje = 0, altasMes = 0;
+  guiasAtivas.forEach(g => {
+    const meta = metaMap[g.meta_diaria]??1;
+    metaHoje += meta;
+    atendHoje += (DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
+  });
+  guias.filter(g=>g.alta&&g.alta.startsWith(hojeISO.slice(0,7))).forEach(()=>altasMes++);
+  const cobHoje = metaHoje > 0 ? Math.round(atendHoje/metaHoje*100) : 0;
+
+  const glosas = DB.get('glosas') || [];
+  const valorGlosado = glosas.reduce((s,g)=>s+(parseFloat(g.valor)||0),0);
+  const setores = DB.get('setores') || [];
+  const convenios = DB.get('convenios') || [];
+
+  // Por convênio
+  const porConv = {};
+  guias.forEach(g => {
+    const c = convenios.find(c=>c.id===g.convenio_id);
+    const nome = c?.nome||'Sem convênio';
+    if (!porConv[nome]) porConv[nome] = {ativos:0,altas:0};
+    if (!g.alta) porConv[nome].ativos++;
+    else porConv[nome].altas++;
+  });
+
+  const w = window.open('','_blank','width=900,height=700');
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório Executivo — ${mes}</title>
+  <style>
+    *{box-sizing:border-box;}body{font-family:Arial,sans-serif;color:#222;padding:30px;margin:0;font-size:13px;}
+    h1{color:#0a1628;font-size:22px;margin-bottom:4px;}h2{font-size:15px;color:#0a1628;margin:24px 0 10px;border-bottom:2px solid #4a90d9;padding-bottom:4px;}
+    .kpi-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
+    .kpi{flex:1;min-width:140px;border:2px solid #e0e7ef;border-radius:8px;padding:14px 18px;text-align:center;}
+    .kpi-num{font-size:28px;font-weight:700;color:#0a1628;}.kpi-label{font-size:11px;color:#888;font-weight:600;margin-top:2px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px;}
+    th{background:#0a1628;color:#fff;padding:8px 10px;text-align:left;}td{border:1px solid #ddd;padding:7px 10px;}
+    tr:nth-child(even){background:#f8faff;}.badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
+    .verde{background:#d4edda;color:#155724;}.vermelho{background:#f8d7da;color:#721c24;}.amarelo{background:#fff3cd;color:#856404;}
+    @media print{body{padding:16px;}button{display:none;}}
+  </style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+    <div><h1>📋 Relatório Executivo de Fisioterapia</h1><p style="color:#888;margin:0;">Gerado em ${hoje.toLocaleDateString('pt-BR')} às ${hoje.toTimeString().slice(0,5)} | Período de referência: ${mes}</p></div>
+    <button onclick="window.print()" style="padding:8px 16px;background:#0a1628;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px;">🖨 Imprimir</button>
+  </div>
+
+  <h2>Indicadores do Dia</h2>
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-num">${guiasAtivas.length}</div><div class="kpi-label">PACIENTES ATIVOS</div></div>
+    <div class="kpi"><div class="kpi-num" style="color:${cobHoje>=80?'#27ae60':cobHoje>=50?'#f39c12':'#e74c3c'};">${cobHoje}%</div><div class="kpi-label">COBERTURA HOJE</div></div>
+    <div class="kpi"><div class="kpi-num">${atendHoje}</div><div class="kpi-label">ATEND. REALIZADOS</div></div>
+    <div class="kpi"><div class="kpi-num">${metaHoje - atendHoje}</div><div class="kpi-label">DÉFICIT DO DIA</div></div>
+    <div class="kpi"><div class="kpi-num">${altasMes}</div><div class="kpi-label">ALTAS NO MÊS</div></div>
+    <div class="kpi"><div class="kpi-num" style="color:#e74c3c;">R$ ${valorGlosado.toFixed(2).replace('.',',')}</div><div class="kpi-label">VALOR GLOSADO</div></div>
+  </div>
+
+  <h2>Pacientes por Convênio</h2>
+  <table><thead><tr><th>Convênio</th><th>Ativos</th><th>Altas no Mês</th></tr></thead><tbody>
+  ${Object.entries(porConv).map(([n,d])=>`<tr><td>${n}</td><td>${d.ativos}</td><td>${d.altas}</td></tr>`).join('')}
+  </tbody></table>
+
+  <h2>Glosas — Resumo</h2>
+  <table><thead><tr><th>Status</th><th>Qtd</th><th>Valor</th></tr></thead><tbody>
+  ${['Pendente','Recorrida','Aceita','Revertida'].map(s=>{
+    const gs=glosas.filter(g=>g.status===s);
+    const val=gs.reduce((v,g)=>v+(parseFloat(g.valor)||0),0);
+    return gs.length?`<tr><td>${s}</td><td>${gs.length}</td><td>R$ ${val.toFixed(2).replace('.',',')}</td></tr>`:'';
+  }).join('')}
+  </tbody></table>
+
+  <h2>Situação dos Pacientes (hoje)</h2>
+  <table><thead><tr><th>Paciente</th><th>Setor/Leito</th><th>Meta</th><th>Realizados</th><th>Situação</th></tr></thead><tbody>
+  ${guiasAtivas.map(g=>{
+    const meta=metaMap[g.meta_diaria]??1;
+    const real=(DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
+    const setor=(setores.find(s=>s.id===g.setor_id)||{}).nome||'-';
+    const sit=meta===0?'Dispensado':real>=meta?'Meta atingida':real>0?'Parcial':'Não atendido';
+    const cls=meta===0?'':'';
+    return `<tr><td>${g.nome_pac||g.paciente_id}</td><td>${setor}/${g.leito||'-'}</td><td>${(g.meta_diaria||'1x').replace(/_/g,' ')}</td><td>${real}</td><td><span class="badge ${sit==='Meta atingida'?'verde':sit==='Não atendido'?'vermelho':'amarelo'}">${sit}</span></td></tr>`;
+  }).join('')}
+  </tbody></table>
+  </body></html>`);
+  w.document.close();
+}
+
+// ===== COBERTURA ASSISTENCIAL =====
+let chartOfSetorInstance = null;
+function renderCoberturaAssistencial() {
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('cobertura-data-ref').textContent = new Date().toLocaleDateString('pt-BR');
+
+  const guias = DB.get('guias').filter(g => !g.alta);
+  const setores = DB.get('setores');
+  const profs = DB.get('profissionais');
+
+  // populate setor filter
+  const sel = document.getElementById('cobertura-setor');
+  const filtroSetor = sel.value;
+  if (sel.options.length <= 1) {
+    setores.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.nome; sel.appendChild(o); });
+  }
+
+  const metaMap = { '1x': 1, '2x': 2, '3x': 3, 'conforme_necessidade': 1, 'sem_atendimento': 0, 'alta_fisio': 0 };
+
+  let total = 0, ok = 0, parcial = 0, zero = 0;
+  const rows = [];
+
+  guias.forEach(g => {
+    if (filtroSetor && String(g.setor_id) !== String(filtroSetor)) return;
+    const procs = (DB.getItem('hist_procs_' + g.id) || []).filter(p => p.data === hoje && p.status !== 'cancelado');
+    const realizados = procs.length;
+    const meta = metaMap[g.meta_diaria] ?? 1;
+    const pendentes = Math.max(0, meta - realizados);
+    const setor = setores.find(s => s.id === g.setor_id) || {};
+    const profNome = g.profissional_id ? (profs.find(p => p.id === g.profissional_id) || {}).nome || '-' : '-';
+    const ultProc = (DB.getItem('hist_procs_' + g.id) || []).filter(p => p.status !== 'cancelado').sort((a,b)=>b.data.localeCompare(a.data)).pop();
+    const ultAtend = ultProc ? ultProc.data : '-';
+
+    let situacao, cor;
+    if (g.meta_diaria === 'sem_atendimento' || g.meta_diaria === 'alta_fisio') { situacao = 'Dispensado'; cor = '#6c757d'; }
+    else if (realizados >= meta) { situacao = 'Meta atingida'; cor = '#27ae60'; ok++; }
+    else if (realizados > 0) { situacao = 'Parcial'; cor = '#f39c12'; parcial++; }
+    else { situacao = 'Não atendido'; cor = '#e74c3c'; zero++; }
+
+    total++;
+    rows.push(`<tr>
+      <td>${g.nome_pac || g.paciente_id}</td>
+      <td>${setor.nome||'-'} / ${g.leito||'-'}</td>
+      <td>${g.meta_diaria ? g.meta_diaria.replace('_',' ') : '1x'}</td>
+      <td style="font-weight:600;">${realizados}</td>
+      <td style="color:${pendentes>0?'#e74c3c':'#27ae60'};font-weight:600;">${pendentes}</td>
+      <td>${ultAtend !== '-' ? new Date(ultAtend+'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
+      <td>${profNome}</td>
+      <td><span style="background:${cor};color:#fff;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">${situacao}</span></td>
+      <td><button class="btn btn-primary btn-sm" onclick="abrirPacienteDetalhe(${g.id})">Ver</button></td>
+    </tr>`);
+  });
+
+  document.getElementById('cob-total').textContent = total;
+  document.getElementById('cob-ok').textContent = ok;
+  document.getElementById('cob-parcial').textContent = parcial;
+  document.getElementById('cob-zero').textContent = zero;
+  const eligible = ok + parcial + zero;
+  document.getElementById('cob-pct').textContent = eligible > 0 ? Math.round((ok/eligible)*100)+'%' : '0%';
+  document.getElementById('tb-cobertura').innerHTML = rows.join('') || '<tr><td colspan="9" style="text-align:center;color:#aaa;">Nenhum paciente ativo</td></tr>';
+}
+
+// ===== OPORTUNIDADE FINANCEIRA =====
+function renderOportunidadeFinanceira() {
+  const hoje = new Date().toISOString().split('T')[0];
+  const guias = DB.get('guias').filter(g => !g.alta);
+  const setores = DB.get('setores');
+  const procs = DB.get('procedimentos');
+  const metaMap = { '1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0 };
+
+  let potencial = 0, produzida = 0, faturada = 0;
+  const deficitRows = [];
+  const setorDeficit = {};
+
+  guias.forEach(g => {
+    const histProcs = (DB.getItem('hist_procs_' + g.id) || []);
+    const realizadosHoje = histProcs.filter(p => p.data === hoje && p.status !== 'cancelado');
+    const meta = metaMap[g.meta_diaria] ?? 1;
+    const deficit = Math.max(0, meta - realizadosHoje.length);
+
+    // valor médio por atendimento
+    const valorMedio = realizadosHoje.reduce((s, p) => {
+      const proc = procs.find(pr => pr.id === p.proc_id);
+      return s + (proc ? (parseFloat(proc.valor)||0) : 0);
+    }, 0) / Math.max(realizadosHoje.length, 1);
+
+    const valorPotDia = meta * valorMedio;
+    const valorProdDia = realizadosHoje.length * valorMedio;
+    potencial += valorPotDia;
+    produzida += valorProdDia;
+
+    // faturado = guias com lote
+    if (g.lote_id) faturada += valorProdDia;
+
+    if (deficit > 0 && meta > 0) {
+      const setor = setores.find(s => s.id === g.setor_id) || {};
+      const conv = (DB.get('convenios')||[]).find(c => c.id === g.convenio_id) || {};
+      deficitRows.push(`<tr>
+        <td>${g.nome_pac || g.paciente_id}</td>
+        <td>${setor.nome||'-'}</td>
+        <td>${conv.nome||'-'}</td>
+        <td>${g.meta_diaria ? g.meta_diaria.replace('_',' ') : '1x'}</td>
+        <td>${realizadosHoje.length}</td>
+        <td style="color:#e74c3c;font-weight:600;">${deficit}</td>
+        <td style="color:#e74c3c;font-weight:600;">R$ ${(deficit*valorMedio).toFixed(2).replace('.',',')}</td>
+      </tr>`);
+      setorDeficit[setor.nome||'Sem setor'] = (setorDeficit[setor.nome||'Sem setor']||0) + deficit;
+    }
+  });
+
+  const perdida = potencial - produzida;
+  const fmt = v => 'R$ ' + v.toFixed(2).replace('.', ',');
+  document.getElementById('of-potencial').textContent = fmt(potencial);
+  document.getElementById('of-produzida').textContent = fmt(produzida);
+  document.getElementById('of-faturada').textContent = fmt(faturada);
+  document.getElementById('of-perdida').textContent = fmt(perdida);
+
+  // pendências críticas
+  const glosas = DB.get('glosas') || [];
+  const pendencias = [];
+  const semAutorizacao = DB.get('guias').filter(g=>!g.alta && !g.n_autorizacao).length;
+  if (semAutorizacao > 0) pendencias.push(`<div style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;">&#9888; <strong>${semAutorizacao}</strong> guias sem nº de autorização</div>`);
+  const glosaPendente = glosas.filter(g=>g.status==='Pendente').length;
+  if (glosaPendente > 0) pendencias.push(`<div style="padding:8px 0;border-bottom:1px solid #eee;font-size:13px;">&#9888; <strong>${glosaPendente}</strong> glosas pendentes de revisão</div>`);
+  if (perdida > 0) pendencias.push(`<div style="padding:8px 0;font-size:13px;">&#9888; <strong>${fmt(perdida)}</strong> em receita não produzida hoje</div>`);
+  document.getElementById('of-pendencias').innerHTML = pendencias.join('') || '<div style="color:#aaa;font-size:13px;">Sem pendências críticas</div>';
+
+  document.getElementById('tb-of-deficit').innerHTML = deficitRows.join('') || '<tr><td colspan="7" style="text-align:center;color:#aaa;">Todos os pacientes com meta atingida</td></tr>';
+
+  // chart setor
+  if (chartOfSetorInstance) chartOfSetorInstance.destroy();
+  const ctx = document.getElementById('chartOfSetor');
+  if (ctx && Object.keys(setorDeficit).length > 0) {
+    chartOfSetorInstance = new Chart(ctx, { type:'bar', data:{ labels: Object.keys(setorDeficit), datasets:[{label:'Déficit de atend.',data:Object.values(setorDeficit),backgroundColor:'#e74c3c'}]}, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+  }
+}
+
+// ===== INDICADORES DE COBERTURA =====
+let chartIndCobDiaInst = null, chartIndSetorInst = null;
+function renderIndicadoresCobertura() {
+  const deEl = document.getElementById('ind-de');
+  const ateEl = document.getElementById('ind-ate');
+  if (!deEl.value) { const d = new Date(); d.setDate(d.getDate()-30); deEl.value = d.toISOString().split('T')[0]; }
+  if (!ateEl.value) ateEl.value = new Date().toISOString().split('T')[0];
+  const de = deEl.value, ate = ateEl.value;
+  const filtroSetor = document.getElementById('ind-setor').value;
+
+  const guias = DB.get('guias');
+  const setores = DB.get('setores');
+  // populate filter
+  const selInd = document.getElementById('ind-setor');
+  if (selInd.options.length <= 1) {
+    setores.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.nome; selInd.appendChild(o); });
+  }
+
+  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
+
+  // gera lista de dias
+  const dias = [];
+  let cur = new Date(de+'T00:00:00');
+  const fim = new Date(ate+'T00:00:00');
+  while (cur <= fim) { dias.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
+
+  let totalAtend = 0, totalMeta = 0, deficitTotal = 0;
+  const cobPorDia = {}, setorData = {};
+
+  guias.forEach(g => {
+    if (filtroSetor && String(g.setor_id) !== String(filtroSetor)) return;
+    const meta = metaMap[g.meta_diaria] ?? 1;
+    const hist = DB.getItem('hist_procs_' + g.id) || [];
+    const setor = setores.find(s => s.id === g.setor_id) || {};
+    const sNome = setor.nome || 'Sem setor';
+
+    dias.forEach(d => {
+      const realizados = hist.filter(p => p.data === d && p.status !== 'cancelado').length;
+      totalAtend += realizados;
+      totalMeta += meta;
+      deficitTotal += Math.max(0, meta - realizados);
+      cobPorDia[d] = (cobPorDia[d]||{r:0,m:0});
+      cobPorDia[d].r += realizados;
+      cobPorDia[d].m += meta;
+      if (!setorData[sNome]) setorData[sNome] = {r:0,pac:0};
+      setorData[sNome].r += realizados;
+      setorData[sNome].pac += 1;
+    });
+  });
+
+  const nPac = guias.filter(g => !filtroSetor || String(g.setor_id)===String(filtroSetor)).length;
+  const nDias = dias.length || 1;
+  document.getElementById('ind-elegíveis').textContent = totalMeta > 0 ? Math.round((totalAtend/totalMeta)*100)+'%' : '0%';
+  document.getElementById('ind-atend-dia').textContent = (totalAtend/(nPac*nDias||1)).toFixed(1);
+  document.getElementById('ind-deficit').textContent = deficitTotal;
+  const cobMedia = totalMeta > 0 ? Math.round((totalAtend/totalMeta)*100) : 0;
+  document.getElementById('ind-cobertura-media').textContent = cobMedia+'%';
+
+  // chart cobertura por dia
+  if (chartIndCobDiaInst) chartIndCobDiaInst.destroy();
+  const ctxDia = document.getElementById('chartIndCoberturaDia');
+  if (ctxDia) {
+    chartIndCobDiaInst = new Chart(ctxDia, { type:'line', data:{
+      labels: dias.map(d=>d.split('-').slice(1).join('/')),
+      datasets:[{label:'Cobertura %', data: dias.map(d=>cobPorDia[d]&&cobPorDia[d].m>0?Math.round(cobPorDia[d].r/cobPorDia[d].m*100):0), borderColor:'#4a90d9', tension:0.3, fill:false}]
+    }, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}});
+  }
+
+  // chart por setor
+  if (chartIndSetorInst) chartIndSetorInst.destroy();
+  const ctxSetor = document.getElementById('chartIndSetor');
+  if (ctxSetor && Object.keys(setorData).length > 0) {
+    chartIndSetorInst = new Chart(ctxSetor, { type:'bar', data:{
+      labels: Object.keys(setorData),
+      datasets:[{label:'Atendimentos', data:Object.values(setorData).map(s=>s.r), backgroundColor:'#27ae60'}]
+    }, options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+  }
+
+  // tabela por setor
+  document.getElementById('tb-ind-setor').innerHTML = Object.entries(setorData).map(([nome, d]) => {
+    const guiasSetor = guias.filter(g => (setores.find(s=>s.id===g.setor_id)||{}).nome===nome);
+    const metaTotal = guiasSetor.reduce((s,g)=>(metaMap[g.meta_diaria]??1)*nDias+s,0);
+    const realTotal = d.r;
+    const cob = metaTotal > 0 ? Math.round(realTotal/metaTotal*100) : 0;
+    return `<tr><td>${nome}</td><td>${guiasSetor.length}</td><td>${realTotal}</td><td>${(realTotal/(guiasSetor.length*nDias||1)).toFixed(1)}</td><td>${metaTotal}</td><td style="font-weight:600;color:${cob>=80?'#27ae60':cob>=50?'#f39c12':'#e74c3c'};">${cob}%</td></tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:#aaa;">Sem dados no período</td></tr>';
+}
+
+function gerarRelatorioCoberturaExec() {
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  const guias = DB.get('guias').filter(g => !g.alta);
+  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
+  const hojeISO = new Date().toISOString().split('T')[0];
+  let atendidos = 0, total = 0;
+  guias.forEach(g => {
+    const meta = metaMap[g.meta_diaria]??1;
+    if (meta === 0) return;
+    total++;
+    const r = (DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
+    if (r >= meta) atendidos++;
+  });
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Relatório Executivo - ${hoje}</title>
+  <style>body{font-family:Arial,sans-serif;padding:30px;color:#222;}h1{color:#0a1628;}table{width:100%;border-collapse:collapse;margin-top:20px;}th,td{border:1px solid #ddd;padding:8px 12px;font-size:13px;}th{background:#0a1628;color:#fff;}.kpi{display:inline-block;border:2px solid #4a90d9;border-radius:8px;padding:12px 24px;margin:8px;text-align:center;}</style></head>
+  <body><h1>Relatório Executivo de Cobertura Assistencial</h1><p>Data: ${hoje}</p>
+  <div><span class="kpi"><div style="font-size:10px;color:#888;">TOTAL INTERNADOS</div><strong style="font-size:22px;">${total}</strong></span>
+  <span class="kpi"><div style="font-size:10px;color:#888;">META ATINGIDA</div><strong style="font-size:22px;color:#27ae60;">${atendidos}</strong></span>
+  <span class="kpi"><div style="font-size:10px;color:#888;">COBERTURA</div><strong style="font-size:22px;color:#4a90d9;">${total>0?Math.round(atendidos/total*100):0}%</strong></span></div>
+  <script>window.print();<\/script></body></html>`);
+  w.document.close();
+}
+
+// ===== PAINEL FINANCEIRO =====
+let chartFinanceiroInstance = null;
+let chartEvolucaoMensalInstance = null;
+let chartFisioProdInstance = null;
+function renderPainelFinanceiro() {
+  const convs = DB.get('convenios');
+  const sel = document.getElementById('fin-convenio');
+  if (sel && sel.options.length <= 1) {
+    sel.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  }
+  function parseMoeda(v){if(!v)return 0;return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;}
+  function fmtMoeda(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+  function parseDataBR(s){if(!s)return null;const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
+
+  const filtConv = parseInt(document.getElementById('fin-convenio').value)||0;
+  const filtDe = document.getElementById('fin-de').value ? new Date(document.getElementById('fin-de').value) : null;
+  const filtAte = document.getElementById('fin-ate').value ? new Date(document.getElementById('fin-ate').value) : null;
+  if (filtAte) filtAte.setHours(23,59,59);
+
+  let guias = DB.get('guias');
+  if (filtConv) guias = guias.filter(g=>g.convenio_id===filtConv);
+  if (filtDe) guias = guias.filter(g=>{const d=parseDataBR(g.internacao);return d&&d>=filtDe;});
+  if (filtAte) guias = guias.filter(g=>{const d=parseDataBR(g.internacao);return d&&d<=filtAte;});
+
+  const abertas = guias.filter(g=>!g.alta);
+  const fechadas = guias.filter(g=>g.alta);
+  const contab = guias.filter(g=>g.contabilizado);
+  const ncont = guias.filter(g=>!g.contabilizado);
+  const vBruta = guias.reduce((s,g)=>s+parseMoeda(g.valor),0);
+  const vCont = contab.reduce((s,g)=>s+parseMoeda(g.valor),0);
+  const vPend = ncont.reduce((s,g)=>s+parseMoeda(g.valor),0);
+  const ticket = guias.length ? vBruta/guias.length : 0;
+
+  const lotes = DB.get('lotes').filter(l=>!filtConv||l.convenio_id===filtConv);
+  const vLotes = lotes.reduce((s,l)=>s+parseMoeda(l.valor),0);
+
+  // Glosas
+  const todasGlosas = DB.get('glosas') || [];
+  const glosasFiltradas = todasGlosas.filter(gl => {
+    if (!filtConv) return true;
+    const g = DB.get('guias').find(x=>x.id===gl.guia_id);
+    return g && g.convenio_id === filtConv;
+  });
+  const vGlosa = glosasFiltradas.reduce((s,gl)=>s+(gl.valor||0),0);
+
+  document.getElementById('fin-bruta').textContent = fmtMoeda(vBruta);
+  document.getElementById('fin-contab').textContent = fmtMoeda(vCont);
+  document.getElementById('fin-contab-qtd').textContent = contab.length;
+  document.getElementById('fin-pendente').textContent = fmtMoeda(vPend);
+  document.getElementById('fin-pendente-qtd').textContent = ncont.length;
+  document.getElementById('fin-lotes').textContent = fmtMoeda(vLotes);
+  document.getElementById('fin-lotes-qtd').textContent = lotes.length;
+  document.getElementById('fin-abertas').textContent = abertas.length;
+  document.getElementById('fin-fechadas').textContent = fechadas.length;
+  document.getElementById('fin-ticket').textContent = fmtMoeda(ticket);
+  document.getElementById('fin-glosa').textContent = fmtMoeda(vGlosa);
+  document.getElementById('fin-glosa-qtd').textContent = glosasFiltradas.length;
+
+  // Tabela e gráfico por convênio
+  const porConv = {};
+  guias.forEach(g=>{
+    const conv = convs.find(c=>c.id===g.convenio_id)||{nome:'Sem convênio'};
+    if (!porConv[conv.nome]) porConv[conv.nome]={qtd:0,bruta:0,cont:0,pend:0,glosaQtd:0,glosaVal:0};
+    porConv[conv.nome].qtd++;
+    porConv[conv.nome].bruta+=parseMoeda(g.valor);
+    if (g.contabilizado) porConv[conv.nome].cont+=parseMoeda(g.valor);
+    else porConv[conv.nome].pend+=parseMoeda(g.valor);
+    // glosas desta guia
+    (DB.get('glosas')||[]).filter(gl=>gl.guia_id===g.id).forEach(gl=>{
+      porConv[conv.nome].glosaQtd++;
+      porConv[conv.nome].glosaVal+=(gl.valor||0);
+    });
+  });
+  const nomes = Object.keys(porConv);
+  document.getElementById('tb-fin-convenios').innerHTML = nomes.length
+    ? nomes.map(n => {
+        const taxaGlosa = porConv[n].bruta > 0 ? (porConv[n].glosaVal / porConv[n].bruta * 100) : 0;
+        const taxaCor = taxaGlosa >= 10 ? '#e74c3c' : taxaGlosa >= 5 ? '#f39c12' : '#27ae60';
+        return `<tr>
+          <td>${n}</td><td>${porConv[n].qtd}</td>
+          <td>${fmtMoeda(porConv[n].bruta)}</td>
+          <td style="color:#27ae60;">${fmtMoeda(porConv[n].cont)}</td>
+          <td style="color:#f39c12;">${fmtMoeda(porConv[n].pend)}</td>
+          <td>${porConv[n].glosaQtd ? `<span class="glosa-badge">${porConv[n].glosaQtd} glosa${porConv[n].glosaQtd>1?'s':''}</span>` : '-'}</td>
+          <td style="color:#e74c3c;">${porConv[n].glosaVal ? fmtMoeda(porConv[n].glosaVal) : '-'}</td>
+          <td style="font-weight:700;color:${taxaCor};">${taxaGlosa.toFixed(1)}%</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Nenhum dado no período</td></tr>';
+
+  // Gráfico convênio
+  if (chartFinanceiroInstance) { chartFinanceiroInstance.destroy(); chartFinanceiroInstance = null; }
+  const ctx = document.getElementById('chartFinanceiro');
+  if (ctx && nomes.length) {
+    chartFinanceiroInstance = new Chart(ctx, {
+      type:'bar',
+      data:{labels:nomes,datasets:[
+        {label:'Contabilizado',data:nomes.map(n=>porConv[n].cont),backgroundColor:'#27ae60'},
+        {label:'Pendente',data:nomes.map(n=>porConv[n].pend),backgroundColor:'#f39c12'},
+        {label:'Glosado',data:nomes.map(n=>porConv[n].glosaVal),backgroundColor:'#e74c3c'}
+      ]},
+      options:{plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,beginAtZero:true}}}
+    });
+  }
+
+  // Gráfico evolução mensal (todos os dados, ignorando filtro de convênio para mostrar tendência)
+  const todasGuias = DB.get('guias');
+  const porMes = {};
+  const mesesNome = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  todasGuias.forEach(g => {
+    const d = g.internacao ? new Date(g.internacao.split('/').reverse().join('-')) : null;
+    if (!d || isNaN(d)) return;
+    const chave = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if (!porMes[chave]) porMes[chave] = {label: mesesNome[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), bruta:0, cont:0};
+    porMes[chave].bruta += parseMoeda(g.valor);
+    if (g.contabilizado) porMes[chave].cont += parseMoeda(g.valor);
+  });
+  const mesesKeys = Object.keys(porMes).sort();
+  if (chartEvolucaoMensalInstance) { chartEvolucaoMensalInstance.destroy(); chartEvolucaoMensalInstance = null; }
+  const ctxMensal = document.getElementById('chartEvolucaoMensal');
+  if (ctxMensal && mesesKeys.length) {
+    chartEvolucaoMensalInstance = new Chart(ctxMensal, {
+      type:'line',
+      data:{labels:mesesKeys.map(k=>porMes[k].label),datasets:[
+        {label:'Produção Bruta',data:mesesKeys.map(k=>porMes[k].bruta),borderColor:'#4a90d9',backgroundColor:'rgba(74,144,217,0.1)',tension:0.3,fill:true,borderWidth:2,pointRadius:4},
+        {label:'Contabilizado',data:mesesKeys.map(k=>porMes[k].cont),borderColor:'#27ae60',backgroundColor:'rgba(39,174,96,0.08)',tension:0.3,fill:true,borderWidth:2,pointRadius:4}
+      ]},
+      options:{plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}
+    });
+  }
+
+  // Gráfico produção por fisioterapeuta
+  const profissionais = DB.get('profissionais');
+  const porFisio = {};
+  todasGuias.forEach(g => {
+    const hist = DB.get('hist_procs_'+g.id)||[];
+    hist.filter(h=>!h.cancelado).forEach(h => {
+      const nome = h.usuario || 'Desconhecido';
+      if (!porFisio[nome]) porFisio[nome] = {qtd:0, valor:0};
+      porFisio[nome].qtd++;
+      porFisio[nome].valor += parseMoeda(g.valor) / Math.max(hist.filter(x=>!x.cancelado).length,1);
+    });
+  });
+  const fisioNomes = Object.keys(porFisio).sort((a,b)=>porFisio[b].valor-porFisio[a].valor);
+  if (chartFisioProdInstance) { chartFisioProdInstance.destroy(); chartFisioProdInstance = null; }
+  const ctxFisio = document.getElementById('chartFisioProd');
+  if (ctxFisio && fisioNomes.length) {
+    chartFisioProdInstance = new Chart(ctxFisio, {
+      type:'bar',
+      data:{labels:fisioNomes,datasets:[
+        {label:'Valor Proporcional (R$)',data:fisioNomes.map(n=>Math.round(porFisio[n].valor)),backgroundColor:'#4a90d9',borderRadius:4},
+        {label:'Qtd Procedimentos',data:fisioNomes.map(n=>porFisio[n].qtd),backgroundColor:'#1abc9c',borderRadius:4,yAxisID:'y2'}
+      ]},
+      options:{plugins:{legend:{position:'bottom'}},scales:{
+        x:{grid:{display:false}},
+        y:{beginAtZero:true,position:'left'},
+        y2:{beginAtZero:true,position:'right',grid:{display:false}}
+      }}
+    });
+  }
+
+  // Meta mensal
+  atualizarMeta(vBruta);
+
+  // Tabela de glosas detalhada
+  const todasGlosasDetalhe = DB.get('glosas')||[];
+  const guiasAll = DB.get('guias');
+  const pacsAll = DB.get('pacientes');
+  const statusClasse = {Pendente:'glosa-status-pendente',Recorrida:'glosa-status-recorrida',Aceita:'glosa-status-aceita',Revertida:'glosa-status-revertida'};
+  document.getElementById('tb-fin-glosas').innerHTML = todasGlosasDetalhe.length
+    ? todasGlosasDetalhe.slice().reverse().map(gl => {
+        const g = guiasAll.find(x=>x.id===gl.guia_id)||{};
+        const p = pacsAll.find(x=>x.id===g.paciente_id)||{};
+        const c = convs.find(x=>x.id===g.convenio_id)||{nome:'-'};
+        const cls = statusClasse[gl.status]||'glosa-status-pendente';
+        return `<tr>
+          <td>${gl.data||'-'}</td>
+          <td>${p.nome||'-'}</td>
+          <td>${c.nome}</td>
+          <td>${gl.motivo||'-'}</td>
+          <td style="color:#e74c3c;font-weight:600;">R$ ${(gl.valor||0).toFixed(2).replace('.',',')}</td>
+          <td><button class="glosa-status ${cls}" onclick="alterarStatusGlosa(${gl.id})">${gl.status||'Pendente'}</button></td>
+          <td style="font-size:12px;color:#888;">${gl.obs||'-'}</td>
+          <td><button style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:13px;" onclick="excluirGlosa(${gl.id})" title="Excluir">✕</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Nenhuma glosa registrada</td></tr>';
+}
+
+function atualizarMeta(valorAtual) {
+  const metaInput = document.getElementById('fin-meta-valor');
+  if (!metaInput) return;
+  const meta = parseFloat(metaInput.value) || 0;
+  // Se valor não passado, lê da tela
+  if (valorAtual === undefined) {
+    const bruta = document.getElementById('fin-bruta');
+    if (!bruta) return;
+    const txt = bruta.textContent.replace('R$','').replace(/\./g,'').replace(',','.').trim();
+    valorAtual = parseFloat(txt)||0;
+  }
+  const pct = meta > 0 ? Math.min((valorAtual/meta)*100, 100) : 0;
+  const barra = document.getElementById('fin-meta-barra');
+  const label = document.getElementById('fin-meta-label');
+  const falta = document.getElementById('fin-meta-falta');
+  if (!barra) return;
+  barra.style.width = pct.toFixed(1) + '%';
+  barra.style.background = pct >= 100 ? '#27ae60' : pct >= 70 ? '#f39c12' : '#e74c3c';
+  if (label) label.textContent = pct.toFixed(1) + '% atingido';
+  if (falta && meta > 0) {
+    const diff = meta - valorAtual;
+    falta.textContent = diff > 0 ? `Faltam R$ ${diff.toFixed(2).replace('.',',')}` : '✔ Meta atingida!';
+    falta.style.color = diff > 0 ? '#888' : '#27ae60';
+  }
+}
+
+function alterarStatusGlosa(id) {
+  const glosas = DB.get('glosas')||[];
+  const idx = glosas.findIndex(g=>g.id===id);
+  if (idx<0) return;
+  const ciclo = ['Pendente','Recorrida','Aceita','Revertida'];
+  const atual = glosas[idx].status||'Pendente';
+  glosas[idx].status = ciclo[(ciclo.indexOf(atual)+1)%ciclo.length];
+  DB.set('glosas', glosas);
+  renderPainelFinanceiro();
+}
+
+function excluirGlosa(id) {
+  if (!confirm('Excluir esta glosa?')) return;
+  const glosas = (DB.get('glosas')||[]).filter(g=>g.id!==id);
+  DB.set('glosas', glosas);
+  renderPainelFinanceiro();
+  showToast('Glosa excluída.');
+}
+
+// ===== ALTA FISIOTERAPÊUTICA =====
+function renderRelAltaFisio() {
+  const convs = DB.get('convenios');
+  const selConv = document.getElementById('altafisio-convenio');
+  if (selConv && selConv.options.length <= 1) {
+    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  }
+  function parseDataBR(s){if(!s)return null;const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
+
+  const filtConv = parseInt(document.getElementById('altafisio-convenio').value)||0;
+  const filtTipo = document.getElementById('altafisio-tipo').value;
+  const filtDe = document.getElementById('altafisio-de').value ? new Date(document.getElementById('altafisio-de').value) : null;
+  const filtAte = document.getElementById('altafisio-ate').value ? new Date(document.getElementById('altafisio-ate').value) : null;
+  if (filtAte) filtAte.setHours(23,59,59);
+
+  const pacs = DB.get('pacientes');
+  let guias = DB.get('guias').filter(g=>g.alta);
+
+  if (filtConv) guias = guias.filter(g=>g.convenio_id===filtConv);
+  if (filtTipo) guias = guias.filter(g=>g.tipo_alta===filtTipo);
+  if (filtDe) guias = guias.filter(g=>{const d=parseDataBR(g.alta);return d&&d>=filtDe;});
+  if (filtAte) guias = guias.filter(g=>{const d=parseDataBR(g.alta);return d&&d<=filtAte;});
+
+  // KPIs
+  const totalAltas = guias.length;
+  const qtdFisio = guias.filter(g=>g.tipo_alta==='Fisioterapêutica').length;
+  const qtdObito = guias.filter(g=>g.tipo_alta==='Óbito').length;
+  let somaDias = 0, countDias = 0;
+  guias.forEach(g=>{
+    const intern = parseDataBR(g.internacao), alta = parseDataBR(g.alta);
+    if (intern && alta) { somaDias += Math.floor((alta-intern)/86400000); countDias++; }
+  });
+  const mediaDias = countDias ? Math.round(somaDias/countDias) : 0;
+
+  document.getElementById('altafisio-total').textContent = totalAltas;
+  document.getElementById('altafisio-qtd-fisio').textContent = qtdFisio;
+  document.getElementById('altafisio-qtd-obito').textContent = qtdObito;
+  document.getElementById('altafisio-media-dias').textContent = mediaDias;
+
+  // Tabela
+  const rows = guias.map(g=>{
+    const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+    const conv = convs.find(c=>c.id===g.convenio_id)||{};
+    const intern = parseDataBR(g.internacao), alta = parseDataBR(g.alta);
+    const dias = intern && alta ? Math.floor((alta-intern)/86400000) : '-';
+    const histIMS = DB.get('hist_ims_'+g.id)||[];
+    const imsAlta = histIMS.length ? histIMS[histIMS.length-1].valor : '-';
+    const tipoBadge = g.tipo_alta === 'Óbito'
+      ? `<span style="background:#fde8e8;color:#e74c3c;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">Óbito</span>`
+      : g.tipo_alta === 'Fisioterapêutica'
+      ? `<span style="background:#e8f5e9;color:#27ae60;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">Fisio</span>`
+      : `<span style="background:#f0f0f0;color:#555;padding:2px 8px;border-radius:4px;font-size:11px;">${g.tipo_alta||'-'}</span>`;
+    return `<tr><td><strong>${pac.nome||'-'}</strong></td><td>${g.setor||'-'}</td><td>${conv.nome||'-'}</td>
+      <td>${g.internacao||'-'}</td><td>${g.alta||'-'}</td>
+      <td style="text-align:center;font-weight:600;">${dias}</td>
+      <td>${tipoBadge}</td>
+      <td style="text-align:center;">${g.ims_previo??'-'}</td>
+      <td style="text-align:center;">${g.ims_admissao??'-'}</td>
+      <td style="text-align:center;font-weight:700;color:#27ae60;">${imsAlta}</td></tr>`;
+  }).join('');
+
+  document.getElementById('tb-rel-alta-fisio').innerHTML = rows || '<tr><td colspan="10" style="text-align:center;color:#aaa;padding:30px;">Nenhuma alta registrada no período</td></tr>';
+}
+
+// ===== CANCELAR PROCEDIMENTO =====
+function cancelarProcedimento(guiaId, realIdx) {
+  const motivo = prompt('Motivo do cancelamento (obrigatório):');
+  if (!motivo || !motivo.trim()) return;
+  const hist = DB.get('hist_procs_'+guiaId)||[];
+  if (hist[realIdx]) {
+    hist[realIdx].cancelado = true;
+    hist[realIdx].motivo_cancelamento = motivo.trim();
+    hist[realIdx].cancelado_em = hoje();
+    hist[realIdx].cancelado_por = usuarioAtual();
+    DB.set('hist_procs_'+guiaId, hist);
+    renderDetProcs(guiaId);
+    showToast('Procedimento cancelado com registro.', '#e74c3c');
+  }
+}
+
+// ===== EXPORTAR CSV =====
+function exportarCSV(tipo) {
+  function parseMoeda(v){if(!v)return 0;return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;}
+  function fmtMoeda(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+  const hojeStr = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  let rows = [], filename = '';
+
+  if (tipo === 'ims') {
+    filename = `ims_${hojeStr}.csv`;
+    rows.push(['Paciente','Convênio','IMS Prévio','IMS Admissão','IMS Alta','Data Alta','Dias Internado','Elegível','Adequado']);
+    const guias = DB.get('guias').filter(g=>g.alta);
+    const pacs = DB.get('pacientes'), convs = DB.get('convenios');
+    guias.forEach(g => {
+      const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+      const conv = convs.find(c=>c.id===g.convenio_id)||{};
+      const histIMS = DB.get('hist_ims_'+g.id)||[];
+      const imsAlta = histIMS.length ? histIMS[histIMS.length-1].valor : '-';
+      const inter = g.internacao ? new Date(g.internacao.split('/').reverse().join('-')) : null;
+      const altaD = g.alta ? new Date(g.alta.split('/').reverse().join('-')) : null;
+      const dias = inter && altaD ? Math.floor((altaD-inter)/86400000) : '-';
+      const elegivel = (g.ims_previo!=null&&g.ims_previo>=5&&dias>=3) ? 'Sim' : 'Não';
+      const adequado = (typeof imsAlta==='number'&&typeof g.ims_admissao==='number'&&imsAlta>g.ims_admissao) ? 'Sim' : '-';
+      rows.push([pac.nome||'-', conv.nome||'-', g.ims_previo??'-', g.ims_admissao??'-', imsAlta, g.alta||'-', dias, elegivel, adequado]);
+    });
+  } else if (tipo === 'atendimentos') {
+    filename = `atendimentos_${hojeStr}.csv`;
+    rows.push(['Paciente','Setor','Convênio','Nº Atendimento','Data','Código','Procedimento','Usuário']);
+    const guias = DB.get('guias'), pacs = DB.get('pacientes'), convs = DB.get('convenios'), procs = DB.get('procedimentos');
+    guias.forEach(g => {
+      const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+      const conv = convs.find(c=>c.id===g.convenio_id)||{};
+      const hist = (DB.get('hist_procs_'+g.id)||[]).filter(h=>!h.cancelado);
+      hist.forEach(h => {
+        const proc = procs.find(p=>p.id===h.proc_id)||{};
+        rows.push([pac.nome||'-', g.setor||'-', conv.nome||'-', g.num_at||'-', h.data||'-', proc.codigo||'-', proc.nome||h.nome||'-', h.usuario||'-']);
+      });
+    });
+  } else if (tipo === 'pacientes') {
+    filename = `pacientes_${hojeStr}.csv`;
+    rows.push(['Nome','Nº Atendimento','Convênio','Carteirinha','Nº Autorização','Status','Valor','Data Internação','Data Alta']);
+    const pacs = DB.get('pacientes'), convs = DB.get('convenios'), guias = DB.get('guias');
+    pacs.forEach(p => {
+      const guia = guias.find(g=>g.paciente_id===p.id)||{};
+      const conv = convs.find(c=>c.id===(p.convenio_id||guia.convenio_id))||{};
+      rows.push([p.nome||'-', guia.num_at||'-', conv.nome||'-', guia.carteirinha||'-', guia.num_autorizacao||'-', guia.alta?'Alta':'Em Aberto', guia.valor||'-', guia.internacao||'-', guia.alta||'-']);
+    });
+  } else if (tipo === 'produtividade') {
+    filename = `produtividade_${hojeStr}.csv`;
+    rows.push(['Profissional','Total R$','Qtd Total','Contabilizado R$','Qtd Cont.','Não Contab. R$','Qtd N.Cont.']);
+    const profissionais = DB.get('profissionais'), guias = DB.get('guias');
+    profissionais.forEach(p => {
+      const guiasFisio = guias.filter(g=>g.profissional_id===p.id||g.profissional===p.nome);
+      const cont = guiasFisio.filter(g=>g.contabilizado);
+      const ncont = guiasFisio.filter(g=>!g.contabilizado);
+      rows.push([p.nome, fmtMoeda(guiasFisio.reduce((s,g)=>s+parseMoeda(g.valor),0)), guiasFisio.length, fmtMoeda(cont.reduce((s,g)=>s+parseMoeda(g.valor),0)), cont.length, fmtMoeda(ncont.reduce((s,g)=>s+parseMoeda(g.valor),0)), ncont.length]);
+    });
+  }
+
+  if (tipo === 'financeiro') {
+    filename = `financeiro_${hojeStr}.csv`;
+    rows.push(['Convênio','Qtd Guias','Produção Bruta','Contabilizado','Pendente']);
+    const convs2 = DB.get('convenios'), guiasF = DB.get('guias');
+    const filtConvF = parseInt(document.getElementById('fin-convenio')?.value)||0;
+    const gF = filtConvF ? guiasF.filter(g=>g.convenio_id===filtConvF) : guiasF;
+    const porConvF = {};
+    gF.forEach(g=>{
+      const conv2 = convs2.find(c=>c.id===g.convenio_id)||{nome:'Sem convênio'};
+      if (!porConvF[conv2.nome]) porConvF[conv2.nome]={qtd:0,bruta:0,cont:0,pend:0};
+      porConvF[conv2.nome].qtd++;
+      porConvF[conv2.nome].bruta+=parseMoeda(g.valor);
+      if (g.contabilizado) porConvF[conv2.nome].cont+=parseMoeda(g.valor);
+      else porConvF[conv2.nome].pend+=parseMoeda(g.valor);
+    });
+    Object.keys(porConvF).forEach(n=>rows.push([n,porConvF[n].qtd,fmtMoeda(porConvF[n].bruta),fmtMoeda(porConvF[n].cont),fmtMoeda(porConvF[n].pend)]));
+  } else if (tipo === 'alta-fisio') {
+    filename = `alta_fisio_${hojeStr}.csv`;
+    rows.push(['Paciente','Setor','Convênio','Data Internação','Data Alta','Dias Internado','Tipo Alta','IMS Prévio','IMS Admissão','IMS Alta']);
+    const pacs2 = DB.get('pacientes'), convs2 = DB.get('convenios');
+    DB.get('guias').filter(g=>g.alta).forEach(g=>{
+      const pac2=pacs2.find(p=>p.id===g.paciente_id)||{};
+      const conv2=convs2.find(c=>c.id===g.convenio_id)||{};
+      const intern=g.internacao?new Date(g.internacao.split('/').reverse().join('-')):null;
+      const alta=g.alta?new Date(g.alta.split('/').reverse().join('-')):null;
+      const dias=intern&&alta?Math.floor((alta-intern)/86400000):'-';
+      const histIMS2=DB.get('hist_ims_'+g.id)||[];
+      const imsAlta2=histIMS2.length?histIMS2[histIMS2.length-1].valor:'-';
+      rows.push([pac2.nome||'-',g.setor||'-',conv2.nome||'-',g.internacao||'-',g.alta||'-',dias,g.tipo_alta||'-',g.ims_previo??'-',g.ims_admissao??'-',imsAlta2]);
+    });
+  }
+
+  if (!rows.length) { showToast('Nenhum dado para exportar.', '#e74c3c'); return; }
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Exportado: ${filename}`);
+}
+
+// ===== GERAR XML TISS (guia individual) =====
+function gerarXMLTISS(guiaId) {
+  const guias = DB.get('guias');
+  const guia = guias.find(g=>g.id===guiaId);
+  if (!guia) return;
+  const pacs = DB.get('pacientes'), convs = DB.get('convenios'), procs = DB.get('procedimentos');
+  const pac = pacs.find(p=>p.id===guia.paciente_id)||{};
+  const conv = convs.find(c=>c.id===guia.convenio_id)||{};
+  const hist = (DB.get('hist_procs_'+guiaId)||[]).filter(h=>!h.cancelado);
+  const hojeISO = new Date().toISOString().split('T')[0];
+  const itens = hist.map((h,i) => {
+    const proc = procs.find(p=>p.id===h.proc_id)||{};
+    const dataServ = h.data ? h.data.split('/').reverse().join('-') : hojeISO;
+    return `        <ans:procedimentoRealizado>
+          <ans:sequencialItem>${i+1}</ans:sequencialItem>
+          <ans:dataRealizacao>${dataServ}</ans:dataRealizacao>
+          <ans:procedimento>
+            <ans:codigoTabela>22</ans:codigoTabela>
+            <ans:codigoProcedimento>${proc.codigo||''}</ans:codigoProcedimento>
+            <ans:descricaoProcedimento>${proc.nome||''}</ans:descricaoProcedimento>
+          </ans:procedimento>
+          <ans:quantidadeRealizada>1</ans:quantidadeRealizada>
+        </ans:procedimentoRealizado>`;
+  }).join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<ans:mensagemTISS xmlns:ans="http://www.ans.gov.br/padroes/tiss/schemas" versao="4.01.00">
+  <ans:cabecalho>
+    <ans:identificacaoTransacao>
+      <ans:tipoTransacao>ENVIO_LOTE_GUIAS</ans:tipoTransacao>
+      <ans:sequencialTransacao>1</ans:sequencialTransacao>
+      <ans:dataRegistroTransacao>${hojeISO}</ans:dataRegistroTransacao>
+    </ans:identificacaoTransacao>
+    <ans:destino><ans:registroANS>${conv.ans||''}</ans:registroANS></ans:destino>
+  </ans:cabecalho>
+  <ans:prestadorParaOperadora>
+    <ans:loteGuias>
+      <ans:numeroLote>${guia.id}</ans:numeroLote>
+      <ans:guiasTISS>
+        <ans:guiaSP-SADT>
+          <ans:cabecalhoGuia>
+            <ans:registroANS>${conv.ans||''}</ans:registroANS>
+            <ans:numeroGuiaPrestador>${guia.num_at||guia.id}</ans:numeroGuiaPrestador>
+            <ans:numeroAutorizacao>${guia.num_autorizacao||''}</ans:numeroAutorizacao>
+          </ans:cabecalhoGuia>
+          <ans:dadosBeneficiario>
+            <ans:numeroCertificado>${guia.carteirinha||''}</ans:numeroCertificado>
+            <ans:nomeBeneficiario>${pac.nome||''}</ans:nomeBeneficiario>
+          </ans:dadosBeneficiario>
+          <ans:procedimentosRealizados>
+${itens}
+          </ans:procedimentosRealizados>
+        </ans:guiaSP-SADT>
+      </ans:guiasTISS>
+    </ans:loteGuias>
+  </ans:prestadorParaOperadora>
+</ans:mensagemTISS>`;
+  const blob = new Blob([xml], {type:'application/xml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`TISS_${guia.num_at||guia.id}_${hojeISO}.xml`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('XML TISS gerado!', '#4a90d9');
+}
+
+// ===== GERAR XML TISS (lote) =====
+function gerarXMLLote(loteId) {
+  const lotes = DB.get('lotes');
+  const lote = lotes.find(l=>l.id===loteId);
+  if (!lote) return;
+  const guias = DB.get('guias').filter(g=>g.lote_id===loteId);
+  if (!guias.length) { showToast('Nenhuma guia vinculada a este lote.', '#e74c3c'); return; }
+  guias.forEach(g => gerarXMLTISS(g.id));
+}
+
+// ===== CRIAR LOTE =====
+function abrirModalCriarLote() {
+  const convs = DB.get('convenios').filter(c=>c.ativo!==false);
+  document.getElementById('lote-convenio').innerHTML = '<option value="">Selecione...</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  const d = new Date();
+  document.getElementById('lote-competencia').value = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  openModal('modal-criar-lote');
+}
+
+function salvarNovoLote() {
+  const convId = parseInt(document.getElementById('lote-convenio').value);
+  const competencia = document.getElementById('lote-competencia').value.trim();
+  if (!convId || !competencia) { alert('Preencha convênio e competência.'); return; }
+  const conv = DB.get('convenios').find(c=>c.id===convId)||{};
+  DB.push('lotes', {
+    id: getNextId('lotes'),
+    convenio: conv.nome, convenio_id: convId,
+    competencia, status: 'Pendente',
+    data: hoje(), guias: 0, valor: 'R$ 0,00', concluido: false
+  });
+  closeModal('modal-criar-lote');
+  renderLotesPendente();
+  showToast('Lote criado!');
+}
+
+// ===== BUSCA GLOBAL =====
+function buscaGlobal(q) {
+  const res = document.getElementById('busca-global-results');
+  if (!q || q.length < 2) { res.classList.remove('aberto'); return; }
+  const pacs = DB.get('pacientes');
+  const guias = DB.get('guias');
+  const convs = DB.get('convenios');
+  const termo = q.toLowerCase();
+  const matches = pacs.filter(p => p.nome && p.nome.toLowerCase().includes(termo)).slice(0, 8);
+  if (!matches.length) {
+    res.innerHTML = '<div class="busca-result-item" style="color:#aaa;">Nenhum paciente encontrado</div>';
+  } else {
+    res.innerHTML = matches.map(p => {
+      const guia = guias.find(g => g.paciente_id === p.id);
+      const conv = guia ? convs.find(c => c.id === guia.convenio_id) : null;
+      const status = guia ? (guia.alta ? '<span class="busca-result-badge" style="background:#f5f5f5;color:#888;">Alta</span>' : '<span class="busca-result-badge" style="background:#e8f5e9;color:#27ae60;">Ativo</span>') : '<span class="busca-result-badge" style="background:#f0f0f0;color:#aaa;">Sem guia</span>';
+      return `<div class="busca-result-item" onclick="abrirPacienteBusca(${p.id})">
+        <div><strong>${p.nome}</strong><div style="font-size:11px;color:#888;">${conv ? conv.nome : 'Sem convênio'} ${guia ? '· '+guia.setor : ''}</div></div>
+        ${status}
+      </div>`;
+    }).join('');
+  }
+  res.classList.add('aberto');
+}
+
+function fecharBuscaGlobal() {
+  const res = document.getElementById('busca-global-results');
+  if (res) res.classList.remove('aberto');
+  const inp = document.getElementById('busca-global-input');
+  if (inp) inp.value = '';
+}
+
+function abrirPacienteBusca(pacId) {
+  fecharBuscaGlobal();
+  const guias = DB.get('guias');
+  const guia = guias.find(g => g.paciente_id === pacId);
+  if (guia) { abrirPaciente(guia.id); }
+  else { showToast('Paciente sem guia ativa.'); }
+}
+
+// ===== BUSCA ATIVA: PACIENTES SEM ATENDIMENTO HOJE =====
+function renderSemAtendHoje() {
+  const hojeStr = new Date().toLocaleDateString('pt-BR');
+  const guiasAtivas = DB.get('guias').filter(g=>!g.alta);
+  const pacs = DB.get('pacientes');
+  const semAtend = guiasAtivas.filter(g => {
+    const hist = DB.get('hist_procs_'+g.id)||[];
+    return !hist.some(h=>!h.cancelado&&h.data===hojeStr);
+  });
+  const card = document.getElementById('sem-atend-card');
+  const countEl = document.getElementById('sem-atend-count');
+  const listaEl = document.getElementById('sem-atend-lista');
+  if (!card) return;
+  card.style.display = guiasAtivas.length ? 'block' : 'none';
+  countEl.textContent = semAtend.length;
+  if (!semAtend.length) {
+    listaEl.innerHTML = '<div style="color:#27ae60;font-weight:600;padding:4px 0;">✔ Todos os pacientes foram atendidos hoje</div>';
+    return;
+  }
+  listaEl.innerHTML = semAtend.slice(0,6).map(g => {
+    const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+    return `<div class="sem-atend-row"><span><strong>${pac.nome||'-'}</strong></span><span style="color:#888;">${g.setor||'-'}</span></div>`;
+  }).join('') + (semAtend.length>6 ? `<div style="font-size:12px;color:#aaa;padding-top:6px;">+${semAtend.length-6} pacientes...</div>` : '');
+}
+
+// ===== ALERTA X DIAS SEM ATENDIMENTO =====
+function renderAlertaSemAtend() {
+  const dias = parseInt(document.getElementById('alerta-dias-input')?.value) || 3;
+  const guiasAtivas = DB.get('guias').filter(g => !g.alta);
+  const pacs = DB.get('pacientes');
+  const hoje = new Date();
+  const semAtend = guiasAtivas.filter(g => {
+    const hist = (DB.get('hist_procs_' + g.id) || []).filter(h => !h.cancelado);
+    if (!hist.length) {
+      const internacao = g.internacao ? new Date(g.internacao.split('/').reverse().join('-')) : null;
+      if (!internacao) return false;
+      const diff = Math.floor((hoje - internacao) / 86400000);
+      return diff >= dias;
+    }
+    const ultima = hist.reduce((max, h) => {
+      const d = h.data ? new Date(h.data.split('/').reverse().join('-')) : null;
+      return d && (!max || d > max) ? d : max;
+    }, null);
+    if (!ultima) return false;
+    return Math.floor((hoje - ultima) / 86400000) >= dias;
+  });
+  const card = document.getElementById('alerta-dias-card');
+  const countEl = document.getElementById('alerta-dias-count');
+  const listaEl = document.getElementById('alerta-dias-lista');
+  if (!card) return;
+  card.style.display = guiasAtivas.length ? 'block' : 'none';
+  if (countEl) countEl.textContent = semAtend.length;
+  if (!semAtend.length) {
+    listaEl.innerHTML = '<div style="color:#27ae60;font-weight:600;padding:4px 0;">✔ Nenhum paciente excedeu o limite definido</div>';
+    return;
+  }
+  listaEl.innerHTML = semAtend.slice(0, 8).map(g => {
+    const pac = pacs.find(p => p.id === g.paciente_id) || {};
+    const hist = (DB.get('hist_procs_' + g.id) || []).filter(h => !h.cancelado);
+    let ultimaData = '-';
+    if (hist.length) {
+      const ultima = hist.reduce((max, h) => {
+        const d = h.data ? new Date(h.data.split('/').reverse().join('-')) : null;
+        return d && (!max || d > max) ? d : max;
+      }, null);
+      if (ultima) ultimaData = ultima.toLocaleDateString('pt-BR');
+    }
+    return `<div class="alerta-row"><span><strong>${pac.nome || '-'}</strong></span><span style="color:#888;">${g.setor || '-'}</span><span style="color:#d35400;font-size:12px;">Último: ${ultimaData}</span></div>`;
+  }).join('') + (semAtend.length > 8 ? `<div style="font-size:12px;color:#aaa;padding-top:6px;">+${semAtend.length - 8} pacientes...</div>` : '');
+}
+
+// ===== RESUMO DIÁRIO =====
+function renderResumoDiario(guiaId) {
+  const guia = (DB.get('guias')||[]).find(g=>g.id===guiaId);
+  if (!guia) return;
+  const hoje = new Date().toISOString().split('T')[0];
+  const procs = (DB.getItem('hist_procs_'+guiaId)||[]).filter(p=>p.status!=='cancelado');
+  const realizadosHoje = procs.filter(p=>p.data===hoje).length;
+  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
+  const meta = metaMap[guia.meta_diaria]??1;
+  const diasIntern = guia.data_internacao ? Math.floor((new Date()-new Date(guia.data_internacao+'T00:00:00'))/86400000) : '-';
+  const histIMS = DB.get('hist_ims_'+guiaId)||[];
+  const imsAtual = histIMS.length>0 ? histIMS[histIMS.length-1].valor : (guia.ims_admissao||'-');
+  const pendentes = meta > 0 ? Math.max(0, meta-realizadosHoje) : 0;
+
+  const items = [
+    { label:'Diagnóstico', value: guia.diagnostico||'Não informado', icon:'🏥' },
+    { label:'Dias internado', value: diasIntern + (diasIntern!=='-'?' dias':''), icon:'📅' },
+    { label:'Meta do dia', value: (guia.meta_diaria||'1x').replace('_',' '), icon:'🎯' },
+    { label:'Realizados hoje', value: realizadosHoje + (pendentes>0?` (${pendentes} pendente${pendentes>1?'s':''})` : ' ✓'), icon:'✅', color: pendentes>0?'#f39c12':'#27ae60' },
+    { label:'IMS atual', value: imsAtual, icon:'📊' },
+    { label:'Convênio', value: (DB.get('convenios')||[]).find(c=>c.id===guia.convenio_id)?.nome||'-', icon:'🏷' },
+    { label:'Tipo internação', value: guia.tipo_internacao||'-', icon:'🏨' },
+    { label:'Status', value: guia.status||'Ativo', icon:'🔔' },
+  ];
+  document.getElementById('resumo-diario-content').innerHTML = items.map(i=>`
+    <div style="background:#f8faff;border-radius:8px;padding:10px 14px;border-left:3px solid ${i.color||'#4a90d9'};">
+      <div style="font-size:10px;color:#888;font-weight:600;">${i.icon} ${i.label.toUpperCase()}</div>
+      <div style="font-size:14px;font-weight:700;color:${i.color||'#0a1628'};margin-top:3px;">${i.value}</div>
+    </div>`).join('');
+}
+
+// ===== LINHA DO TEMPO =====
+function renderLinhaTempo(guiaId) {
+  if (!guiaId) return;
+  const filtro = (document.getElementById('linha-tempo-filtro')||{}).value || 'tudo';
+  const hoje = new Date();
+  const limite = new Date(hoje); limite.setDate(limite.getDate()-10);
+  const limiteISO = limite.toISOString().split('T')[0];
+  const eventos = [];
+
+  if (filtro==='tudo'||filtro==='procs') {
+    (DB.getItem('hist_procs_'+guiaId)||[]).filter(p=>p.data>=limiteISO).forEach(p=>{
+      const procNome = (DB.get('procedimentos')||[]).find(pr=>pr.id===p.proc_id)?.nome || 'Procedimento';
+      eventos.push({data:p.data, hora:p.hora||'', tipo:'proc', icon:'🩺', cor:'#4a90d9',
+        texto: p.status==='cancelado' ? `<s>${procNome}</s> <span style="color:#e74c3c;font-size:11px;">(cancelado: ${p.cancelamento?.motivo||''})</span>` : procNome,
+        sub: p.usuario||'' });
+    });
+  }
+  if (filtro==='tudo'||filtro==='status') {
+    (DB.getItem('hist_status_'+guiaId)||[]).filter(s=>s.data>=limiteISO).forEach(s=>{
+      eventos.push({data:s.data, hora:'', tipo:'status', icon:'🔔', cor:'#f39c12', texto:`Status → ${s.status}`, sub:s.usuario||''});
+    });
+  }
+  if (filtro==='tudo'||filtro==='medidas') {
+    (DB.getItem('hist_medidas_'+guiaId)||[]).filter(m=>m.data>=limiteISO).forEach(m=>{
+      eventos.push({data:m.data, hora:'', tipo:'medida', icon:'📏', cor:'#27ae60', texto:`Medidas registradas`, sub:m.usuario||''});
+    });
+  }
+
+  eventos.sort((a,b)=>b.data.localeCompare(a.data)||(b.hora.localeCompare(a.hora)));
+
+  if (eventos.length===0) {
+    document.getElementById('linha-tempo-content').innerHTML = '<div style="text-align:center;color:#aaa;font-size:13px;padding:20px;">Nenhum evento nos últimos 10 dias</div>';
+    return;
+  }
+
+  let html = '';
+  let lastData = '';
+  eventos.forEach(ev => {
+    if (ev.data !== lastData) {
+      lastData = ev.data;
+      html += `<div style="font-size:11px;font-weight:700;color:#4a90d9;padding:10px 0 4px;border-top:1px solid #eef1f7;margin-top:4px;">${new Date(ev.data+'T00:00:00').toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase()}</div>`;
+    }
+    html += `<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;">
+      <span style="font-size:16px;line-height:1.3;">${ev.icon}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;color:#0a1628;">${ev.texto}${ev.hora?' <span style="color:#aaa;font-size:11px;">• '+ev.hora+'</span>':''}</div>
+        ${ev.sub?`<div style="font-size:11px;color:#aaa;">${ev.sub}</div>`:''}
+      </div>
+    </div>`;
+  });
+  document.getElementById('linha-tempo-content').innerHTML = html;
+}
+
+// ===== GRÁFICO EVOLUÇÃO IMS =====
+let chartEvolucaoIMSInstance = null;
+function renderGraficoEvolucaoIMS(guiaId) {
+  const guia = (DB.get('guias')||[]).find(g=>g.id===guiaId) || {};
+  const histIMS = DB.get('hist_ims_' + guiaId) || [];
+  const canvas = document.getElementById('chartEvolucaoIMS');
+  const vazio = document.getElementById('evolucao-ims-vazio');
+  if (chartEvolucaoIMSInstance) { chartEvolucaoIMSInstance.destroy(); chartEvolucaoIMSInstance = null; }
+  // Monta pontos: IMS prévio + admissão + histórico de lançamentos
+  const pontos = [];
+  if (guia.ims_previo !== undefined && guia.ims_previo !== '') pontos.push({ data: 'Prévio', valor: parseFloat(guia.ims_previo) });
+  if (guia.ims_admissao !== undefined && guia.ims_admissao !== '') pontos.push({ data: 'Admissão', valor: parseFloat(guia.ims_admissao) });
+  histIMS.forEach(h => pontos.push({ data: h.data, valor: parseFloat(h.valor) }));
+  if (!pontos.length || pontos.every(p => isNaN(p.valor))) {
+    if (canvas) canvas.style.display = 'none';
+    if (vazio) vazio.style.display = 'block';
+    return;
+  }
+  if (canvas) canvas.style.display = 'block';
+  if (vazio) vazio.style.display = 'none';
+  const labels = pontos.map(h => h.data);
+  const valores = pontos.map(h => h.valor);
+  chartEvolucaoIMSInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'IMS',
+        data: valores,
+        borderColor: '#4a90d9',
+        backgroundColor: 'rgba(74,144,217,0.1)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#4a90d9',
+        pointRadius: 5,
+        tension: 0.3,
+        fill: true
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => 'IMS: ' + ctx.raw } } },
+      scales: {
+        y: { min: 0, max: 10, ticks: { stepSize: 1 }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ===== PDF / IMPRESSÃO DO PRONTUÁRIO =====
+function imprimirProntuario() {
+  const guiaId = pacienteAtivo?.id;
+  if (!guiaId) return;
+  const guia = (DB.get('guias')||[]).find(g=>g.id===guiaId)||{};
+  const pacs = DB.get('pacientes');
+  const pac = pacs.find(p=>p.id===guia.paciente_id)||{};
+  const convs = DB.get('convenios');
+  const conv = convs.find(c=>c.id===guia.convenio_id)||{nome:'-'};
+  const procs = DB.get('procedimentos');
+  const hist = (DB.get('hist_procs_'+guiaId)||[]).filter(h=>!h.cancelado);
+  const histMed = DB.get('hist_medidas_'+guiaId)||[];
+  const histStatus = DB.get('hist_status_'+guiaId)||[];
+
+  const linhasProcs = hist.length ? hist.map(h=>{
+    const p = procs.find(x=>x.id===h.proc_id)||{};
+    return `<tr><td>${h.data}</td><td>${p.nome||h.nome||'-'}</td><td>${h.usuario||'-'}</td></tr>`;
+  }).join('') : '<tr><td colspan="3" style="color:#aaa;">Sem procedimentos</td></tr>';
+
+  const linhasMed = histMed.length ? histMed.map(h=>
+    `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}</td></tr>`
+  ).join('') : '<tr><td colspan="3" style="color:#aaa;">Sem medidas</td></tr>';
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Prontuário - ${pac.nome||'-'}</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:30px;color:#222;font-size:13px;}
+    h1{font-size:20px;color:#0a1628;border-bottom:2px solid #0a1628;padding-bottom:8px;margin-bottom:20px;}
+    h2{font-size:14px;color:#0a1628;margin-top:20px;margin-bottom:8px;border-bottom:1px solid #ddd;padding-bottom:4px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+    .campo{background:#f9f9f9;border-radius:5px;padding:8px 12px;}
+    .campo label{font-size:10px;color:#888;font-weight:700;display:block;margin-bottom:2px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+    th{background:#0a1628;color:#fff;padding:7px 10px;text-align:left;font-size:12px;}
+    td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:12px;}
+    .footer{margin-top:30px;font-size:11px;color:#aaa;text-align:right;}
+    @media print{body{padding:10px;}}
+  </style></head><body>
+  <h1>&#128203; Prontuário Fisioterapêutico — FISIO RAJA</h1>
+  <div class="grid">
+    <div class="campo"><label>Paciente</label>${pac.nome||'-'}</div>
+    <div class="campo"><label>Nascimento</label>${pac.nascimento||'-'}</div>
+    <div class="campo"><label>CPF</label>${pac.cpf||'-'}</div>
+    <div class="campo"><label>Convênio</label>${conv.nome}</div>
+    <div class="campo"><label>Nº Carteirinha</label>${guia.carteirinha||'-'}</div>
+    <div class="campo"><label>Nº Autorização</label>${guia.num_autorizacao||'-'}</div>
+    <div class="campo"><label>Setor / Leito</label>${guia.setor||'-'}</div>
+    <div class="campo"><label>Tipo Internação</label>${guia.tipo_internacao||'-'}</div>
+    <div class="campo"><label>Diagnóstico</label>${guia.diagnostico||'-'}</div>
+    <div class="campo"><label>Data Internação</label>${guia.internacao||'-'}</div>
+    <div class="campo"><label>IMS Prévio</label>${guia.ims_previo||'-'}</div>
+    <div class="campo"><label>IMS Admissão</label>${guia.ims_admissao||'-'}</div>
+  </div>
+  <h2>Procedimentos Realizados</h2>
+  <table><thead><tr><th>Data</th><th>Procedimento</th><th>Profissional</th></tr></thead><tbody>${linhasProcs}</tbody></table>
+  <h2>Medidas Registradas</h2>
+  <table><thead><tr><th>Data</th><th>Medida</th><th>Valor</th></tr></thead><tbody>${linhasMed}</tbody></table>
+  <div class="footer">Gerado em ${new Date().toLocaleString('pt-BR')} · FISIO RAJA</div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ===== GLOSAS =====
+function abrirModalGlosaDetalhe() {
+  if (pacienteAtivo) abrirModalGlosa(pacienteAtivo.id);
+}
+
+function abrirModalGlosa(guiaId) {
+  document.getElementById('glosa-guia-id').value = guiaId;
+  document.getElementById('glosa-valor').value = '';
+  document.getElementById('glosa-motivo').value = '';
+  document.getElementById('glosa-obs').value = '';
+  document.getElementById('glosa-status').value = 'Pendente';
+  openModal('modal-glosa');
+}
+
+function salvarGlosa() {
+  const guiaId = parseInt(document.getElementById('glosa-guia-id').value);
+  const valor = parseFloat(document.getElementById('glosa-valor').value) || 0;
+  const motivo = document.getElementById('glosa-motivo').value;
+  const obs = document.getElementById('glosa-obs').value.trim();
+  const status = document.getElementById('glosa-status').value;
+  if (!motivo || !valor) { alert('Preencha o valor e o motivo da glosa.'); return; }
+  const glosas = DB.get('glosas') || [];
+  glosas.push({ id: getNextId('glosas'), guia_id: guiaId, valor, motivo, obs, status, data: hoje(), usuario: currentUser?.nome || '-' });
+  DB.set('glosas', glosas);
+  closeModal('modal-glosa');
+  showToast('Glosa registrada!');
+  renderPainelFinanceiro();
+}
+
+// ===== BACKUP COMPLETO =====
+function exportarBackup() {
+  const chaves = ['pacientes','guias','lotes','convenios','setores','profissionais','procedimentos','medidas','usuarios','glosas'];
+  const backup = { versao: 'raja_v2', exportado_em: new Date().toISOString(), dados: {} };
+  chaves.forEach(k => { backup.dados[k] = DB.get(k); });
+  // inclui hist_procs, hist_status, hist_medidas, hist_ims por guia
+  const guias = DB.get('guias');
+  guias.forEach(g => {
+    ['hist_procs_','hist_status_','hist_medidas_','hist_ims_'].forEach(prefix => {
+      const val = DB.get(prefix + g.id);
+      if (val && val.length) backup.dados[prefix + g.id] = val;
+    });
+  });
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fisio-raja-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup exportado!');
+}
+
 // ===== INIT =====
 // ===== BOOTSTRAP ASYNC =====
 (async () => {
@@ -2647,8 +4910,14 @@ function salvarEdicaoPaciente() {
 
 function initApp() {
   renderKpis();
-  setTimeout(initCharts,100);
+  setTimeout(()=>{initCharts();renderSemAtendHoje();renderAlertaSemAtend();gerarNotificacoes();},100);
   updateConvenioSelects();
+  // Datas padrão para filtros financeiro e alta fisio (últimos 30 dias)
+  const hoje30 = new Date(), inicio30 = new Date();
+  inicio30.setDate(hoje30.getDate()-30);
+  const fmtISO = d => d.toISOString().split('T')[0];
+  ['fin-de','altafisio-de'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fmtISO(inicio30);});
+  ['fin-ate','altafisio-ate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fmtISO(hoje30);});
   // Abrir modal de novo usuário limpo
   document.getElementById('modal-usuario-titulo').textContent='Novo Usuário';
 }
