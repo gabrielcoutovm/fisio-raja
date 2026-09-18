@@ -2524,7 +2524,10 @@ function renderMapaOcupacao() {
       const prof = guia ? profs.find(p => p.id === guia.profissional_id) : null;
 
       if (!pac || !guia) {
-        if (filtSetor || filtConv || filtProp || filtProf || filtStatus || busca) return '';
+        // Leito vazio: mostra sempre quando filtra por setor (ou sem filtro), some nos outros filtros
+        const outrosFiltros = filtConv || filtProp || filtProf || filtStatus || busca;
+        if (outrosFiltros) return '';
+        leitosVisiveis++;
         return `<div class="ocupacao-leito livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-ocupacao')" title="Clique para internar"><div class="leito-id">${num}</div><div class="leito-info" style="font-size:11px;color:#aaa;">Leito livre — clique para internar</div><div class="leito-arrow">+</div></div>`;
       }
 
@@ -2587,7 +2590,9 @@ function renderMapaOcupacao() {
 
     const ocup = guias.filter(g => g.setor && g.setor.startsWith(s.nome + ' - ') && !g.alta).length;
     const pct = nomes.length > 0 ? Math.round(ocup / nomes.length * 100) : 0;
-    if (!leitosHtml.trim() && (filtSetor || filtConv || filtProp || filtProf || filtStatus || busca)) return '';
+    // Esconde o setor inteiro só se outros filtros estiverem ativos e não houver resultado
+    const outrosFiltrosAtivos = filtConv || filtProp || filtProf || filtStatus || busca;
+    if (!leitosHtml.trim() && outrosFiltrosAtivos) return '';
 
     return `<div class="ocupacao-setor">
       <div class="ocupacao-setor-header">
