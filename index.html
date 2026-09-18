@@ -1225,7 +1225,7 @@
           <button class="btn btn-primary" style="padding:14px;font-size:14px;background:#17a2b8;" onclick="abrirModalAlterarMeta()">&#127919; Alterar Meta Diária</button>
           <button class="btn btn-navy" style="padding:14px;font-size:14px;" onclick="imprimirProntuario()">&#128438; Imprimir Prontuário (PDF)</button>
           <button class="btn btn-danger" style="padding:14px;font-size:14px;border-color:#e74c3c;" onclick="abrirModalGlosaDetalhe()">&#9888; Registrar Glosa</button>
-          <button class="btn btn-danger" style="padding:14px;font-size:14px;" onclick="openModal('modal-alta')">Alta do Paciente</button>
+          <button class="btn btn-danger" style="padding:14px;font-size:14px;" onclick="abrirModalAlta()">Alta do Paciente</button>
           <button class="btn btn-sm" style="padding:10px 14px;font-size:13px;background:#6c757d;color:#fff;margin-top:4px;" onclick="abrirModalExcluirPaciente()">&#128465; Excluir Paciente</button>
         </div>
       </div>
@@ -1768,6 +1768,8 @@
     <div style="background:#fdecea;border:1px solid #e74c3c;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#c0392b;">
       ⚠️ Esta ação encerrará o atendimento do paciente no leito atual.
     </div>
+    <!-- Alertas automáticos preenchidos ao abrir -->
+    <div id="alta-alertas" style="display:none;margin-bottom:14px;"></div>
     <div class="form-group">
       <label>Data da Alta *</label>
       <input type="date" id="alta-data" />
@@ -2898,10 +2900,10 @@ function alterarSenha() {
 }
 
 // ===== TOAST =====
-function showToast(msg, color) {
+function showToast(msg, color, duration) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.style.background=color||'#27ae60'; t.style.display='block';
-  setTimeout(()=>t.style.display='none',3000);
+  setTimeout(()=>t.style.display='none', duration||3000);
 }
 
 // ===== CHARTS =====
@@ -3325,15 +3327,207 @@ function salvarMedidas() {
   showToast('Medidas salvas!');
 }
 
+function abrirModalAlta() {
+  if (!pacienteAtivo) return;
+  // Preenche data padrão
+  document.getElementById('alta-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('alta-tipo').value = '';
+  document.getElementById('alta-ims').value = '';
+  document.getElementById('alta-obs').value = '';
+
+  // Verifica alertas
+  const alertasEl = document.getElementById('alta-alertas');
+  const hoje = new Date().toISOString().split('T')[0];
+  const alertas = [];
+
+  // 1. Sem atendimento hoje
+  const procsHoje = (DB.getItem('hist_procs_' + pacienteAtivo.id) || [])
+    .filter(p => p.data === hoje && p.status !== 'cancelado');
+  if (procsHoje.length === 0) {
+    alertas.push({ cor: '#e74c3c', bg: '#fdecea', icon: '🔴', texto: '<strong>Sem atendimento hoje</strong> — nenhum procedimento foi registrado nesta data.' });
+  }
+
+  // 2. Glosas pendentes na guia
+  const glosasGuia = (DB.get('glosas') || []).filter(g => g.guia_id === pacienteAtivo.id && g.status === 'Pendente');
+  if (glosasGuia.length > 0) {
+    alertas.push({ cor: '#9b59b6', bg: '#f3e5f5', icon: '💜', texto: `<strong>${glosasGuia.length} glosa${glosasGuia.length > 1 ? 's' : ''} pendente${glosasGuia.length > 1 ? 's' : ''}</strong> — resolva antes da alta para evitar perda de faturamento.` });
+  }
+
+  // 3. IMS não preenchido
+  const histIMS = DB.getItem('hist_ims_' + pacienteAtivo.id) || [];
+  if (!histIMS.length && !pacienteAtivo.ims_admissao) {
+    alertas.push({ cor: '#f39c12', bg: '#fff3cd', icon: '🟡', texto: '<strong>IMS não registrado</strong> — recomendado preencher o IMS final antes da alta.' });
+  }
+
+  if (alertas.length > 0) {
+    alertasEl.style.display = 'block';
+    alertasEl.innerHTML = alertas.map(a =>
+      `<div style="background:${a.bg};border:1px solid ${a.cor};border-radius:6px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:#333;display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:16px;">${a.icon}</span><span>${a.texto}</span>
+      </div>`
+    ).join('');
+  } else {
+    alertasEl.style.display = 'none';
+    alertasEl.innerHTML = '';
+  }
+
+  openModal('modal-alta');
+}
+
 function salvarAlta() {
   const tipo = document.getElementById('alta-tipo').value;
   if (!tipo) { alert('Selecione o Tipo da Alta'); return; }
+  if (!pacienteAtivo) return;
+
+  const dataAlta = document.getElementById('alta-data').value;
+  const imsAlta = document.getElementById('alta-ims').value;
+  const obs = document.getElementById('alta-obs').value;
+
   const guias = DB.get('guias');
   const idx = guias.findIndex(g => g.id === pacienteAtivo.id);
-  if (idx >= 0) { guias[idx].alta = document.getElementById('alta-data').value; guias[idx].tipo_alta = tipo; DB.set('guias', guias); }
+  if (idx >= 0) {
+    guias[idx].alta = dataAlta;
+    guias[idx].tipo_alta = tipo;
+    guias[idx].ims_alta = imsAlta;
+    guias[idx].obs_alta = obs;
+    DB.set('guias', guias);
+    pacienteAtivo = guias[idx];
+  }
+
   closeModal('modal-alta');
-  showToast('Alta registrada com sucesso!', '#e74c3c');
-  setTimeout(() => nav('mapa-ocupacao'), 1500);
+  showToast('Alta registrada! Gerando XML TISS...', '#e74c3c');
+
+  // Gera XML automaticamente após 800ms
+  setTimeout(() => gerarXMLAltaAutomatico(pacienteAtivo), 800);
+  setTimeout(() => nav('mapa-ocupacao'), 2500);
+}
+
+function gerarXMLAltaAutomatico(guia) {
+  const pacs = DB.get('pacientes');
+  const pac = pacs.find(p => p.id === guia.paciente_id) || {};
+  const convs = DB.get('convenios');
+  const conv = convs.find(c => c.id === guia.convenio_id) || {};
+  const profs = DB.get('profissionais');
+  const prof = profs.find(p => p.id === guia.profissional_id) || {};
+  const procs = DB.get('procedimentos');
+  const histProcs = (DB.getItem('hist_procs_' + guia.id) || []).filter(p => p.status !== 'cancelado');
+
+  const now = new Date();
+  const ts = now.toISOString().replace(/[-:T]/g,'').slice(0,14);
+  const dataHoje = now.toISOString().split('T')[0];
+
+  // Monta itens de procedimento
+  const itensXML = histProcs.map((hp, i) => {
+    const proc = procs.find(p => p.id === hp.proc_id) || {};
+    const dataProc = hp.data || dataHoje;
+    const valor = parseFloat(proc.valor || 0).toFixed(2);
+    return `
+        <ans:procedimentoRealizado>
+          <ans:sequencialItem>${i + 1}</ans:sequencialItem>
+          <ans:dataRealizacao>${dataProc}</ans:dataRealizacao>
+          <ans:procedimento>
+            <ans:codigoTabela>22</ans:codigoTabela>
+            <ans:codigoProcedimento>${proc.codigo || '50000470'}</ans:codigoProcedimento>
+            <ans:descricaoProcedimento>${proc.nome || 'Fisioterapia'}</ans:descricaoProcedimento>
+          </ans:procedimento>
+          <ans:quantidadeExecutada>1</ans:quantidadeExecutada>
+          <ans:valorUnitario>${valor}</ans:valorUnitario>
+          <ans:valorTotal>${valor}</ans:valorTotal>
+        </ans:procedimentoRealizado>`;
+  }).join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<ans:mensagemTISS xmlns:ans="http://www.ans.gov.br/padroes/tiss/schemas"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.ans.gov.br/padroes/tiss/schemas tissV4_01_00.xsd">
+  <ans:cabecalho>
+    <ans:identificacaoTransacao>
+      <ans:tipoTransacao>ENVIO_LOTE_GUIAS</ans:tipoTransacao>
+      <ans:sequencialTransacao>${ts}</ans:sequencialTransacao>
+      <ans:dataRegistroTransacao>${dataHoje}</ans:dataRegistroTransacao>
+      <ans:horaRegistroTransacao>${now.toTimeString().slice(0,8)}</ans:horaRegistroTransacao>
+    </ans:identificacaoTransacao>
+    <ans:origem>
+      <ans:prestadorFisico>
+        <ans:codigoPrestadorNaOperadora>${conv.codigo_prestador || '0000001'}</ans:codigoPrestadorNaOperadora>
+      </ans:prestadorFisico>
+    </ans:origem>
+    <ans:destino>
+      <ans:registroANS>${conv.registro_ans || '000000'}</ans:registroANS>
+    </ans:destino>
+    <ans:versaoPadrao>4.01.00</ans:versaoPadrao>
+  </ans:cabecalho>
+  <ans:prestadorParaOperadora>
+    <ans:loteGuias>
+      <ans:numeroLote>${ts}</ans:numeroLote>
+      <ans:guiasTISS>
+        <ans:guiaSP-SADT>
+          <ans:cabecalhoGuia>
+            <ans:registroANS>${conv.registro_ans || '000000'}</ans:registroANS>
+            <ans:numeroGuiaPrestador>${guia.n_atendimento || guia.id}</ans:numeroGuiaPrestador>
+            <ans:numeroGuiaOperadora>${guia.n_autorizacao || ''}</ans:numeroGuiaOperadora>
+          </ans:cabecalhoGuia>
+          <ans:dadosBeneficiario>
+            <ans:numeroCarteira>${guia.n_carteirinha || ''}</ans:numeroCarteira>
+            <ans:nomeBeneficiario>${pac.nome || ''}</ans:nomeBeneficiario>
+          </ans:dadosBeneficiario>
+          <ans:dadosSolicitante>
+            <ans:contratadoSolicitante>
+              <ans:nomePrestador>${prof.nome || 'Fisioterapeuta'}</ans:nomePrestador>
+            </ans:contratadoSolicitante>
+          </ans:dadosSolicitante>
+          <ans:dadosAtendimento>
+            <ans:dataInicioFaturamento>${guia.data_internacao || dataHoje}</ans:dataInicioFaturamento>
+            <ans:dataFimFaturamento>${guia.alta || dataHoje}</ans:dataFimFaturamento>
+            <ans:tipoAtendimento>06</ans:tipoAtendimento>
+            <ans:indicacaoAcidente>9</ans:indicacaoAcidente>
+          </ans:dadosAtendimento>
+          <ans:procedimentosExecutados>${itensXML}
+          </ans:procedimentosExecutados>
+          <ans:valorTotal>
+            <ans:valorTotalGeral>${histProcs.reduce((s, hp) => {
+              const proc = procs.find(p => p.id === hp.proc_id) || {};
+              return s + parseFloat(proc.valor || 0);
+            }, 0).toFixed(2)}</ans:valorTotalGeral>
+          </ans:valorTotal>
+        </ans:guiaSP-SADT>
+      </ans:guiasTISS>
+    </ans:loteGuias>
+  </ans:prestadorParaOperadora>
+</ans:mensagemTISS>`;
+
+  const nomePac = (pac.nome || 'paciente').replace(/\s+/g, '_');
+  const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `TISS_${nomePac}_${dataHoje}.xml`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('XML TISS gerado e baixado!', '#27ae60');
+}
+
+// Alerta de turno — roda no initApp e a cada 30min
+function verificarAlertaTurno() {
+  const hora = new Date().getHours();
+  // Turno manhã encerra às 13h, tarde às 19h
+  const isFimTurno = hora === 12 || hora === 13 || hora === 18 || hora === 19;
+  if (!isFimTurno) return;
+
+  const hoje = new Date().toISOString().split('T')[0];
+  const guias = DB.get('guias').filter(g => !g.alta);
+  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
+  const semAtend = guias.filter(g => {
+    const meta = metaMap[g.meta_diaria] ?? 1;
+    if (meta === 0) return false;
+    return (DB.getItem('hist_procs_' + g.id) || []).filter(p => p.data === hoje && p.status !== 'cancelado').length === 0;
+  });
+
+  if (semAtend.length > 0) {
+    const turno = hora <= 13 ? 'manhã' : 'tarde';
+    showToast(`⚠ Fim do turno da ${turno}: ${semAtend.length} paciente${semAtend.length > 1 ? 's' : ''} sem atendimento!`, '#f39c12', 6000);
+    gerarNotificacoes();
+  }
 }
 
 function confirmarExcluirPaciente() {
@@ -4950,7 +5144,8 @@ function exportarBackup() {
 
 function initApp() {
   renderKpis();
-  setTimeout(()=>{initCharts();renderSemAtendHoje();renderAlertaSemAtend();gerarNotificacoes();},100);
+  setTimeout(()=>{initCharts();renderSemAtendHoje();renderAlertaSemAtend();gerarNotificacoes();verificarAlertaTurno();},100);
+  setInterval(verificarAlertaTurno, 30 * 60 * 1000);
   updateConvenioSelects();
   // Datas padrão para filtros financeiro e alta fisio (últimos 30 dias)
   const hoje30 = new Date(), inicio30 = new Date();
