@@ -2051,6 +2051,7 @@ function doLogin() {
   const user = usuarios.find(u => u.login === login && u.senha === senha && u.ativo == 1);
   if (user) {
     currentUser = user;
+    try { sessionStorage.setItem('fisioraja_user', JSON.stringify({id:user.id,login:user.login,senha:user.senha})); } catch(e) {}
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     document.getElementById('topbar-username').textContent = user.nome.split(' ')[0].toUpperCase();
@@ -2069,6 +2070,7 @@ function doLogin() {
 
 function doLogout() {
   currentUser = null;
+  try { sessionStorage.removeItem('fisioraja_user'); } catch(e) {}
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-user').value = '';
@@ -4917,7 +4919,33 @@ function exportarBackup() {
   await carregarDados();
   initData();
   document.getElementById('loading-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+
+  // Tenta restaurar sessão do F5/reload
+  let restaurou = false;
+  try {
+    const saved = sessionStorage.getItem('fisioraja_user');
+    if (saved) {
+      const s = JSON.parse(saved);
+      const usuarios = DB.get('usuarios');
+      const user = usuarios.find(u => u.id === s.id && u.login === s.login && u.senha === s.senha && u.ativo == 1);
+      if (user) {
+        currentUser = user;
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('topbar-username').textContent = user.nome.split(' ')[0].toUpperCase();
+        document.getElementById('user-badge').textContent = user.nome[0].toUpperCase();
+        const menuGerenciar = document.querySelector('.topbar-menu a:first-child');
+        if (menuGerenciar) menuGerenciar.style.display = ['Gestão','Secretaria'].includes(user.perfil) ? 'flex' : 'none';
+        document.getElementById('sidebar-menu').innerHTML = MENUS[user.perfil] || MENUS['Fisioterapeuta'];
+        initApp();
+        assinarMudancas();
+        restaurou = true;
+      }
+    }
+  } catch(e) {}
+
+  if (!restaurou) {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
 })();
 
 function initApp() {
