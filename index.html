@@ -1206,7 +1206,7 @@
       <div class="page-title">Usuários</div>
       <div class="search-bar">
         <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-usuarios', this.value)" />
-        <button class="btn btn-success" onclick="openModal('modal-usuario')">+ Novo Usuário</button>
+        <button class="btn btn-success" onclick="abrirModalNovoUsuario()">+ Novo Usuário</button>
         <button class="btn btn-navy" onclick="exportarBackup()" style="margin-left:8px;">&#128190; Exportar Backup (JSON)</button>
       </div>
       <div class="card">
@@ -1220,7 +1220,10 @@
       <div class="card" style="margin-top:20px;">
         <div class="card-header">
           <h3>&#128274; Log de Acesso a Fichas de Pacientes</h3>
-          <button class="btn btn-sm" style="background:#f0f2f5;color:#333;" onclick="renderLogAcesso()">Atualizar</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-sm" style="background:#f0f2f5;color:#333;" onclick="renderLogAcesso()">Atualizar</button>
+            <button class="btn btn-success btn-sm" onclick="exportarLogCSV()">&#8659; Exportar CSV</button>
+          </div>
         </div>
         <table>
           <thead><tr><th>Data / Hora</th><th>Usuário</th><th>E-mail</th><th>Atendimento</th></tr></thead>
@@ -1509,11 +1512,16 @@
     <input type="hidden" id="usr-id" value="" />
     <div class="form-row">
       <div class="form-group"><label>Nome Completo *</label><input type="text" id="usr-nome" /></div>
-      <div class="form-group"><label>Usuário (login) *</label><input type="text" id="usr-login" /></div>
+      <div class="form-group"><label>E-mail *</label><input type="email" id="usr-email" placeholder="usuario@email.com" /></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Senha *</label><input type="password" id="usr-senha" placeholder="Mínimo 4 caracteres" /></div>
-      <div class="form-group"><label>Confirmar Senha *</label><input type="password" id="usr-senha2" /></div>
+    <div id="usr-senha-bloco">
+      <div class="form-row">
+        <div class="form-group"><label>Senha provisória *</label><input type="password" id="usr-senha" placeholder="Mínimo 6 caracteres" /></div>
+        <div class="form-group"><label>Confirmar Senha *</label><input type="password" id="usr-senha2" /></div>
+      </div>
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#795548;">
+        ⚠️ A senha provisória deve ser compartilhada com o usuário via WhatsApp. O usuário pode alterá-la depois em Configurações → Alterar Senha.
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1534,7 +1542,7 @@
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-usuario')">Cancelar</button>
-      <button class="btn btn-success" onclick="saveUsuario()">Salvar</button>
+      <button class="btn btn-success" id="btn-save-usuario" onclick="saveUsuario()">Salvar</button>
     </div>
   </div>
 </div>
@@ -2492,6 +2500,24 @@ function openEditSetor(id) {
   openModal('modal-setor');
 }
 
+function exportarLogCSV() {
+  const raw = DB.getItem('log_acesso_fichas');
+  const logs = raw ? JSON.parse(raw) : [];
+  if (!logs.length) { showToast('Nenhum registro para exportar', '#f39c12'); return; }
+  const header = 'Data/Hora,Usuario,Email,Atendimento';
+  const rows = [...logs].reverse().map(l => {
+    const dt = new Date(l.data_hora).toLocaleString('pt-BR');
+    return `"${dt}","${l.usuario||''}","${l.email||''}","${l.num_at||l.guia_id}"`;
+  });
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url;
+  a.download = `log-acesso-fichas-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('CSV exportado!');
+}
+
 function renderLogAcesso() {
   const raw = DB.getItem('log_acesso_fichas');
   const logs = raw ? JSON.parse(raw) : [];
@@ -2518,12 +2544,16 @@ function renderUsuarios() {
   renderLogAcesso();
   document.getElementById('tb-usuarios').innerHTML = DB.get('usuarios').map(u => {
     const cls = u.perfil==='Gestão'?'perfil-gestao':u.perfil==='Secretaria'?'perfil-secretaria':'perfil-fisio';
-    return `<tr data-search="${u.nome.toLowerCase()} ${u.login.toLowerCase()}">
-      <td>${u.nome}</td><td>${u.login}</td>
+    const emailExibir = u.email || u.login || '-';
+    const podeRedefinir = u.email && u.id !== currentUser.id;
+    return `<tr data-search="${u.nome.toLowerCase()} ${emailExibir.toLowerCase()}">
+      <td>${u.nome}</td>
+      <td style="font-size:12px;color:#666;">${emailExibir}</td>
       <td><span class="${cls}">${u.perfil}</span></td>
       <td><span class="icon-ativo ${u.ativo?'sim':'nao'}">${u.ativo?'✔':'✘'}</span></td>
-      <td>
+      <td style="white-space:nowrap;">
         <button class="btn btn-primary btn-sm" onclick="openEditUsuario(${u.id})">Editar</button>
+        ${podeRedefinir ? `<button class="btn btn-sm" style="background:#f39c12;color:#fff;margin-left:4px;" onclick="enviarResetSenha('${u.email}','${u.nome.replace(/'/g,"\\'")}')">🔑 Redefinir</button>` : ''}
         ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="toggleUsuarioAtivo(${u.id})">
           ${u.ativo?'Desativar':'Ativar'}
         </button>`:''}
@@ -3154,54 +3184,105 @@ function saveSetor() {
   document.getElementById('modal-setor-titulo').textContent='Novo Setor';
 }
 
-function saveUsuario() {
-  const nome=document.getElementById('usr-nome').value.trim();
-  const login=document.getElementById('usr-login').value.trim();
-  const senha=document.getElementById('usr-senha').value;
-  const senha2=document.getElementById('usr-senha2').value;
-  const editId=document.getElementById('usr-id').value;
+async function saveUsuario() {
+  const nome = document.getElementById('usr-nome').value.trim();
+  const email = document.getElementById('usr-email').value.trim().toLowerCase();
+  const senha = document.getElementById('usr-senha').value;
+  const senha2 = document.getElementById('usr-senha2').value;
+  const editId = document.getElementById('usr-id').value;
+  const btn = document.getElementById('btn-save-usuario');
 
-  if (!nome||!login) { alert('Nome e Usuário são obrigatórios'); return; }
-  if (!editId && !senha) { alert('Senha é obrigatória'); return; }
-  if (senha && senha!==senha2) { alert('As senhas não coincidem'); return; }
-  if (senha && senha.length<4) { alert('Senha deve ter pelo menos 4 caracteres'); return; }
+  if (!nome || !email) { alert('Nome e E-mail são obrigatórios'); return; }
 
   const usuarios = DB.get('usuarios');
-  const loginExiste = usuarios.find(u=>u.login===login && u.id!==parseInt(editId));
-  if (loginExiste) { alert('Esse usuário (login) já existe!'); return; }
 
   if (editId) {
-    const idx = usuarios.findIndex(u=>u.id===parseInt(editId));
-    if (idx>=0) {
-      usuarios[idx].nome=nome; usuarios[idx].login=login;
-      usuarios[idx].perfil=document.getElementById('usr-perfil').value;
-      usuarios[idx].ativo=parseInt(document.getElementById('usr-ativo').value);
-      if (senha) usuarios[idx].senha=senha;
-      DB.set('usuarios',usuarios);
+    // Edição: atualiza apenas nome, perfil, ativo (e-mail não muda)
+    const idx = usuarios.findIndex(u => u.id === parseInt(editId));
+    if (idx >= 0) {
+      usuarios[idx].nome = nome;
+      usuarios[idx].perfil = document.getElementById('usr-perfil').value;
+      usuarios[idx].ativo = parseInt(document.getElementById('usr-ativo').value);
+      DB.set('usuarios', usuarios);
       showToast('Usuário atualizado!');
     }
   } else {
-    DB.push('usuarios',{id:getNextId('usuarios'),nome,login,senha,perfil:document.getElementById('usr-perfil').value,ativo:parseInt(document.getElementById('usr-ativo').value)});
-    showToast('Usuário criado com sucesso!');
+    // Novo usuário: valida e cria no Supabase Auth
+    if (!senha) { alert('Senha provisória é obrigatória'); return; }
+    if (senha !== senha2) { alert('As senhas não coincidem'); return; }
+    if (senha.length < 6) { alert('Senha deve ter pelo menos 6 caracteres'); return; }
+    const emailExiste = usuarios.find(u => u.email === email);
+    if (emailExiste) { alert('Já existe um usuário com esse e-mail'); return; }
+
+    btn.textContent = 'Criando...'; btn.disabled = true;
+    try {
+      // Cria conta no Supabase Auth
+      const r = await fetch(`${SB_AUTH_URL}/signup`, {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: senha })
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        alert('Erro ao criar conta: ' + (err.msg || err.message || r.status));
+        btn.textContent = 'Salvar'; btn.disabled = false;
+        return;
+      }
+      // Adiciona perfil ao store
+      DB.push('usuarios', {
+        id: getNextId('usuarios'), nome, email,
+        perfil: document.getElementById('usr-perfil').value,
+        ativo: parseInt(document.getElementById('usr-ativo').value)
+      });
+      showToast('Usuário criado! Compartilhe a senha provisória com ele.', '#27ae60', 5000);
+    } catch(e) {
+      alert('Erro de conexão: ' + e.message);
+      btn.textContent = 'Salvar'; btn.disabled = false;
+      return;
+    }
   }
+
   closeModal('modal-usuario'); renderUsuarios();
-  document.getElementById('usr-nome').value=''; document.getElementById('usr-login').value='';
-  document.getElementById('usr-senha').value=''; document.getElementById('usr-senha2').value='';
-  document.getElementById('usr-id').value='';
+  ['usr-nome','usr-email','usr-senha','usr-senha2'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('usr-id').value = '';
+  btn.textContent = 'Salvar'; btn.disabled = false;
 }
 
 function openEditUsuario(id) {
-  const u = DB.get('usuarios').find(u=>u.id===id);
+  const u = DB.get('usuarios').find(u => u.id === id);
   if (!u) return;
-  document.getElementById('modal-usuario-titulo').textContent='Editar Usuário';
-  document.getElementById('usr-id').value=u.id;
-  document.getElementById('usr-nome').value=u.nome;
-  document.getElementById('usr-login').value=u.login;
-  document.getElementById('usr-senha').value='';
-  document.getElementById('usr-senha2').value='';
-  document.getElementById('usr-perfil').value=u.perfil;
-  document.getElementById('usr-ativo').value=u.ativo;
+  document.getElementById('modal-usuario-titulo').textContent = 'Editar Usuário';
+  document.getElementById('usr-id').value = u.id;
+  document.getElementById('usr-nome').value = u.nome;
+  document.getElementById('usr-email').value = u.email || '';
+  document.getElementById('usr-senha').value = '';
+  document.getElementById('usr-senha2').value = '';
+  document.getElementById('usr-perfil').value = u.perfil;
+  document.getElementById('usr-ativo').value = u.ativo;
+  // Na edição, esconde bloco de senha (não se altera senha de outro por aqui)
+  document.getElementById('usr-senha-bloco').style.display = 'none';
   openModal('modal-usuario');
+}
+
+function abrirModalNovoUsuario() {
+  document.getElementById('modal-usuario-titulo').textContent = 'Novo Usuário';
+  document.getElementById('usr-id').value = '';
+  ['usr-nome','usr-email','usr-senha','usr-senha2'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('usr-perfil').value = 'Fisioterapeuta';
+  document.getElementById('usr-ativo').value = '1';
+  document.getElementById('usr-senha-bloco').style.display = 'block';
+  openModal('modal-usuario');
+}
+
+async function enviarResetSenha(email, nome) {
+  if (!confirm(`Enviar e-mail de redefinição de senha para ${nome} (${email})?`)) return;
+  const r = await fetch(`${SB_AUTH_URL}/recover`, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (r.ok) showToast(`E-mail de redefinição enviado para ${nome}!`, '#27ae60', 4000);
+  else showToast('Erro ao enviar e-mail. Verifique o endereço.', '#e74c3c');
 }
 
 function toggleUsuarioAtivo(id) {
@@ -5493,8 +5574,7 @@ function initApp() {
   const fmtISO = d => d.toISOString().split('T')[0];
   ['fin-de','altafisio-de'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fmtISO(inicio30);});
   ['fin-ate','altafisio-ate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=fmtISO(hoje30);});
-  // Abrir modal de novo usuário limpo
-  document.getElementById('modal-usuario-titulo').textContent='Novo Usuário';
+  nav('dashboard');
 }
 </script>
 </body>
