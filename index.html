@@ -953,7 +953,7 @@
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Pacientes</h3></div>
-        <table><thead><tr><th>Nome</th><th>Idade</th><th>CPF</th><th>Convênio</th><th>Ações</th></tr></thead><tbody id="tb-cad-pacientes"></tbody></table>
+        <table><thead><tr><th>Nome</th><th>Idade</th><th>Convênio</th><th>Ações</th></tr></thead><tbody id="tb-cad-pacientes"></tbody></table>
       </div>
     </div>
 
@@ -989,7 +989,6 @@
           <div class="form-group"><label>Convênio *</label><select id="novoat-convenio"><option value="">Selecione...</option></select></div>
           <div class="form-group"><label>Nome Completo do Paciente *</label><input type="text" id="novoat-nome" /></div>
           <div class="form-group"><label>Data de Nascimento</label><input type="date" id="novoat-nascimento" /></div>
-          <div class="form-group"><label>CPF</label><input type="text" id="novoat-cpf" placeholder="000.000.000-00" /></div>
           <div class="form-group"><label>Nº Carteirinha</label><input type="text" id="novoat-carteirinha" placeholder="Número da carteirinha do convênio" /></div>
           <div class="form-group"><label>Nº Autorização</label><input type="text" id="novoat-autorizacao" placeholder="Nº da autorização prévia (se houver)" /></div>
           <div class="form-group"><label>Status do Paciente</label>
@@ -1217,6 +1216,17 @@
           <tbody id="tb-usuarios"></tbody>
         </table>
       </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <h3>&#128274; Log de Acesso a Fichas de Pacientes</h3>
+          <button class="btn btn-sm" style="background:#f0f2f5;color:#333;" onclick="renderLogAcesso()">Atualizar</button>
+        </div>
+        <table>
+          <thead><tr><th>Data / Hora</th><th>Usuário</th><th>E-mail</th><th>Atendimento</th></tr></thead>
+          <tbody id="tb-log-acesso"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- DETALHE DO PACIENTE -->
@@ -1357,7 +1367,6 @@
       <div class="form-group"><label>Data de Nascimento</label><input type="date" id="pac-nascimento" /></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>CPF</label><input type="text" id="pac-cpf" placeholder="000.000.000-00" /></div>
       <div class="form-group"><label>Convênio *</label><select id="pac-convenio"><option value="">Selecione</option></select></div>
     </div>
     <div class="form-actions">
@@ -1854,7 +1863,6 @@
       <div class="form-group"><label>Data de Nascimento</label><input type="date" id="edit-pac-nasc" /></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>CPF</label><input type="text" id="edit-pac-cpf" /></div>
       <div class="form-group"><label>Convênio</label><select id="edit-pac-conv"><option value="">Selecione</option></select></div>
     </div>
     <div class="form-row">
@@ -2349,7 +2357,7 @@ function renderPacientes() {
   document.getElementById('tb-cad-pacientes').innerHTML = data.map(p => {
     const conv = convs.find(c=>c.id===p.convenio_id)||{};
     const idade = p.nascimento ? Math.floor((new Date()-new Date(p.nascimento))/31557600000) : '-';
-    return `<tr data-search="${p.nome.toLowerCase()}"><td>${p.nome}</td><td>${idade}</td><td>${p.cpf||'-'}</td><td>${conv.nome||'-'}</td>
+    return `<tr data-search="${p.nome.toLowerCase()}"><td>${p.nome}</td><td>${idade}</td><td>${conv.nome||'-'}</td>
       <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`;
   }).join('');
   updateConvenioSelects();
@@ -2428,7 +2436,30 @@ function openEditSetor(id) {
   openModal('modal-setor');
 }
 
+function renderLogAcesso() {
+  const raw = DB.getItem('log_acesso_fichas');
+  const logs = raw ? JSON.parse(raw) : [];
+  const tb = document.getElementById('tb-log-acesso');
+  if (!tb) return;
+  if (!logs.length) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum acesso registrado ainda</td></tr>';
+    return;
+  }
+  // Mostra mais recentes primeiro
+  tb.innerHTML = [...logs].reverse().slice(0, 100).map(l => {
+    const dt = new Date(l.data_hora);
+    const fmt = `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+    return `<tr>
+      <td style="white-space:nowrap">${fmt}</td>
+      <td>${l.usuario||'-'}</td>
+      <td style="color:#888;font-size:12px">${l.email||'-'}</td>
+      <td>Atd. ${l.num_at||l.guia_id}</td>
+    </tr>`;
+  }).join('');
+}
+
 function renderUsuarios() {
+  renderLogAcesso();
   document.getElementById('tb-usuarios').innerHTML = DB.get('usuarios').map(u => {
     const cls = u.perfil==='Gestão'?'perfil-gestao':u.perfil==='Secretaria'?'perfil-secretaria':'perfil-fisio';
     return `<tr data-search="${u.nome.toLowerCase()} ${u.login.toLowerCase()}">
@@ -3194,6 +3225,19 @@ function abrirPacienteDetalhe(guiaId) {
   if (!guia) return;
   pacienteAtivo = guia;
 
+  // Log de acesso à ficha do paciente (LGPD rastreabilidade)
+  const logAcesso = DB.getItem('log_acesso_fichas') ? JSON.parse(DB.getItem('log_acesso_fichas')) : [];
+  logAcesso.push({
+    guia_id: guia.id,
+    num_at: guia.num_at,
+    usuario: currentUser ? currentUser.nome : '?',
+    email: currentUser ? currentUser.email : '?',
+    data_hora: new Date().toISOString()
+  });
+  // Mantém apenas os últimos 500 registros para não crescer indefinidamente
+  if (logAcesso.length > 500) logAcesso.splice(0, logAcesso.length - 500);
+  DB.setItem('log_acesso_fichas', JSON.stringify(logAcesso));
+
   const pacs = DB.get('pacientes');
   const convs = DB.get('convenios');
   const pac = pacs.find(p => p.id === guia.paciente_id) || {};
@@ -3242,7 +3286,6 @@ function abrirPacienteDetalhe(guiaId) {
   document.getElementById('edit-pac-id').value = pac.id;
   document.getElementById('edit-pac-nome').value = pac.nome || '';
   document.getElementById('edit-pac-nasc').value = pac.nascimento || '';
-  document.getElementById('edit-pac-cpf').value = pac.cpf || '';
   document.getElementById('edit-pac-diag').value = guia.diagnostico || '';
   document.getElementById('edit-pac-tipo').value = guia.tipo_internacao || 'Clinico';
   // preencher convênios no select editar
@@ -3394,7 +3437,7 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
   _novoatOrigem = origem || 'cad-pacientes';
 
   // Limpar campos
-  ['novoat-num-at','novoat-nome','novoat-cpf','novoat-carteirinha','novoat-autorizacao','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
+  ['novoat-num-at','novoat-nome','novoat-carteirinha','novoat-autorizacao','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
   ['novoat-nascimento','novoat-data-intern','novoat-data-atend'].forEach(id => document.getElementById(id).value = new Date().toISOString().split('T')[0]);
   document.getElementById('novoat-convenio').value='';
   document.getElementById('novoat-status').value='';
@@ -3472,7 +3515,6 @@ function saveNovoAtendimento() {
   if (guias.some(g => g.setor === setorLeito)) { alert('Este leito já está ocupado'); return; }
 
   const nascimento = document.getElementById('novoat-nascimento').value;
-  const cpf = document.getElementById('novoat-cpf').value.trim();
   const status = document.getElementById('novoat-status').value;
   const clinica = document.getElementById('novoat-clinica').value;
   const tipo = document.getElementById('novoat-tipo').value;
@@ -3488,7 +3530,7 @@ function saveNovoAtendimento() {
 
   // Salvar paciente
   const pacId = getNextId('pacientes');
-  DB.push('pacientes', {id:pacId, nome, nascimento, cpf, convenio_id:convenioId});
+  DB.push('pacientes', {id:pacId, nome, nascimento, convenio_id:convenioId});
 
   // Salvar guia/atendimento
   const carteirinha = document.getElementById('novoat-carteirinha').value.trim();
@@ -3824,7 +3866,6 @@ function salvarEdicaoPaciente() {
   if (idx >= 0) {
     pacs[idx].nome = document.getElementById('edit-pac-nome').value;
     pacs[idx].nascimento = document.getElementById('edit-pac-nasc').value;
-    pacs[idx].cpf = document.getElementById('edit-pac-cpf').value;
     pacs[idx].convenio_id = parseInt(document.getElementById('edit-pac-conv').value) || pacs[idx].convenio_id;
     DB.set('pacientes', pacs);
   }
@@ -5273,7 +5314,6 @@ function imprimirProntuario() {
   <div class="grid">
     <div class="campo"><label>Paciente</label>${pac.nome||'-'}</div>
     <div class="campo"><label>Nascimento</label>${pac.nascimento||'-'}</div>
-    <div class="campo"><label>CPF</label>${pac.cpf||'-'}</div>
     <div class="campo"><label>Convênio</label>${conv.nome}</div>
     <div class="campo"><label>Nº Carteirinha</label>${guia.carteirinha||'-'}</div>
     <div class="campo"><label>Nº Autorização</label>${guia.num_autorizacao||'-'}</div>
