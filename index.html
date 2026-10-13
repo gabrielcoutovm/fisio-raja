@@ -2708,7 +2708,7 @@ function renderMapaOcupacao() {
       if (busca && !pac.nome.toLowerCase().includes(busca) && !(guia.num_at||'').toLowerCase().includes(busca)) return '';
 
       // Calcula proposta do dia
-      const hist = (DB.getItem('hist_procs_' + guia.id) || []).filter(h => h.data === hoje && h.status !== 'cancelado');
+      const hist = DB.get('hist_procs_' + guia.id).filter(h => h.data === hoje && h.status !== 'cancelado');
       const realizados = hist.length;
 
       // Meta: usa max_uti / max_apt do convênio, ou meta_diaria do guia
@@ -3761,7 +3761,7 @@ function abrirModalAlta() {
   const alertas = [];
 
   // 1. Sem atendimento hoje
-  const procsHoje = (DB.getItem('hist_procs_' + pacienteAtivo.id) || [])
+  const procsHoje = DB.get('hist_procs_' + pacienteAtivo.id)
     .filter(p => p.data === hoje && p.status !== 'cancelado');
   if (procsHoje.length === 0) {
     alertas.push({ cor: '#e74c3c', bg: '#fdecea', icon: '🔴', texto: '<strong>Sem atendimento hoje</strong> — nenhum procedimento foi registrado nesta data.' });
@@ -3830,7 +3830,7 @@ function gerarXMLAltaAutomatico(guia) {
   const profs = DB.get('profissionais');
   const prof = profs.find(p => p.id === guia.profissional_id) || {};
   const procs = DB.get('procedimentos');
-  const histProcs = (DB.getItem('hist_procs_' + guia.id) || []).filter(p => p.status !== 'cancelado');
+  const histProcs = DB.get('hist_procs_' + guia.id).filter(p => p.status !== 'cancelado');
 
   const now = new Date();
   const ts = now.toISOString().replace(/[-:T]/g,'').slice(0,14);
@@ -3940,7 +3940,7 @@ function verificarAlertaTurno() {
   const semAtend = guias.filter(g => {
     const meta = metaMap[g.meta_diaria] ?? 1;
     if (meta === 0) return false;
-    return (DB.getItem('hist_procs_' + g.id) || []).filter(p => p.data === hoje && p.status !== 'cancelado').length === 0;
+    return DB.get('hist_procs_' + g.id).filter(p => p.data === hoje && p.status !== 'cancelado').length === 0;
   });
 
   if (semAtend.length > 0) {
@@ -4229,7 +4229,7 @@ function gerarNotificacoes() {
   guias.forEach(g => {
     const meta = metaMap[g.meta_diaria] ?? 1;
     if (meta === 0) return;
-    const procs = (DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hoje&&p.status!=='cancelado');
+    const procs = DB.get('hist_procs_'+g.id).filter(p=>p.data===hoje&&p.status!=='cancelado');
     if (procs.length === 0) {
       notifs.push({ tipo: 'sem-atend', cor: '#e74c3c', icon: '🔴', texto: `<strong>${g.nome_pac||'Paciente'}</strong> sem atendimento hoje`, sub: `Leito ${g.leito||'-'} — Meta: ${g.meta_diaria||'1x'}`, guiaId: g.id });
     } else if (procs.length < meta) {
@@ -4326,7 +4326,7 @@ function gerarRelatorioExecutivoPDF() {
   guiasAtivas.forEach(g => {
     const meta = metaMap[g.meta_diaria]??1;
     metaHoje += meta;
-    atendHoje += (DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
+    atendHoje += DB.get('hist_procs_'+g.id).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
   });
   guias.filter(g=>g.alta&&g.alta.startsWith(hojeISO.slice(0,7))).forEach(()=>altasMes++);
   const cobHoje = metaHoje > 0 ? Math.round(atendHoje/metaHoje*100) : 0;
@@ -4393,7 +4393,7 @@ function gerarRelatorioExecutivoPDF() {
   <table><thead><tr><th>Paciente</th><th>Setor/Leito</th><th>Meta</th><th>Realizados</th><th>Situação</th></tr></thead><tbody>
   ${guiasAtivas.map(g=>{
     const meta=metaMap[g.meta_diaria]??1;
-    const real=(DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
+    const real=DB.get('hist_procs_'+g.id).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
     const setor=(setores.find(s=>s.id===g.setor_id)||{}).nome||'-';
     const sit=meta===0?'Dispensado':real>=meta?'Meta atingida':real>0?'Parcial':'Não atendido';
     const cls=meta===0?'':'';
@@ -4428,13 +4428,13 @@ function renderCoberturaAssistencial() {
 
   guias.forEach(g => {
     if (filtroSetor && String(g.setor_id) !== String(filtroSetor)) return;
-    const procs = (DB.getItem('hist_procs_' + g.id) || []).filter(p => p.data === hoje && p.status !== 'cancelado');
+    const procs = DB.get('hist_procs_' + g.id).filter(p => p.data === hoje && p.status !== 'cancelado');
     const realizados = procs.length;
     const meta = metaMap[g.meta_diaria] ?? 1;
     const pendentes = Math.max(0, meta - realizados);
     const setor = setores.find(s => s.id === g.setor_id) || {};
     const profNome = g.profissional_id ? (profs.find(p => p.id === g.profissional_id) || {}).nome || '-' : '-';
-    const ultProc = (DB.getItem('hist_procs_' + g.id) || []).filter(p => p.status !== 'cancelado').sort((a,b)=>b.data.localeCompare(a.data)).pop();
+    const ultProc = DB.get('hist_procs_' + g.id).filter(p => p.status !== 'cancelado').sort((a,b)=>b.data.localeCompare(a.data))[0];
     const ultAtend = ultProc ? ultProc.data : '-';
 
     let situacao, cor;
@@ -4479,7 +4479,7 @@ function renderOportunidadeFinanceira() {
   const setorDeficit = {};
 
   guias.forEach(g => {
-    const histProcs = (DB.getItem('hist_procs_' + g.id) || []);
+    const histProcs = DB.get('hist_procs_' + g.id);
     const realizadosHoje = histProcs.filter(p => p.data === hoje && p.status !== 'cancelado');
     const meta = metaMap[g.meta_diaria] ?? 1;
     const deficit = Math.max(0, meta - realizadosHoje.length);
@@ -4573,7 +4573,7 @@ function renderIndicadoresCobertura() {
   guias.forEach(g => {
     if (filtroSetor && String(g.setor_id) !== String(filtroSetor)) return;
     const meta = metaMap[g.meta_diaria] ?? 1;
-    const hist = DB.getItem('hist_procs_' + g.id) || [];
+    const hist = DB.get('hist_procs_' + g.id);
     const setor = setores.find(s => s.id === g.setor_id) || {};
     const sNome = setor.nome || 'Sem setor';
 
@@ -4631,25 +4631,115 @@ function renderIndicadoresCobertura() {
 
 function gerarRelatorioCoberturaExec() {
   const hoje = new Date().toLocaleDateString('pt-BR');
-  const guias = DB.get('guias').filter(g => !g.alta);
-  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const hojeISO = new Date().toISOString().split('T')[0];
-  let atendidos = 0, total = 0;
+  const guias = DB.get('guias').filter(g => !g.alta);
+  const setores = DB.get('setores');
+  const pacientes = DB.get('pacientes');
+  const procedimentos = DB.get('procedimentos');
+  const profissionais = DB.get('profissionais');
+  const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
+
+  let total = 0, atendidos = 0, parciais = 0, naoAtendidos = 0;
+  let potencialTotal = 0, produzidaTotal = 0;
+  const setorStats = {};
+  const detalhePacientes = [];
+
   guias.forEach(g => {
-    const meta = metaMap[g.meta_diaria]??1;
+    const meta = metaMap[g.meta_diaria] ?? 1;
     if (meta === 0) return;
     total++;
-    const r = (DB.getItem('hist_procs_'+g.id)||[]).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
-    if (r >= meta) atendidos++;
+    const histHoje = DB.get('hist_procs_'+g.id).filter(p=>p.data===hojeISO&&p.status!=='cancelado');
+    const real = histHoje.length;
+    const setor = (setores.find(s=>s.id===g.setor_id)||{}).nome || 'Sem setor';
+    const pac = pacientes.find(p=>p.id===g.paciente_id)||{};
+    const nomePac = g.nome_pac || pac.nome || ('Paciente '+g.paciente_id);
+    const prof = g.profissional_id ? (profissionais.find(p=>p.id===g.profissional_id)||{}).nome||'-' : '-';
+
+    // valor médio por atendimento deste paciente
+    const valorAtend = histHoje.reduce((s,p)=>{
+      const proc = procedimentos.find(pr=>pr.id===p.proc_id);
+      return s + (proc ? (parseFloat(String(proc.valor||'0').replace(/[^\d.,]/g,'').replace(',','.')) || 0) : 0);
+    }, 0);
+    const valorPot = meta * (histHoje.length > 0 ? valorAtend / histHoje.length : 0);
+    potencialTotal += valorPot;
+    produzidaTotal += valorAtend;
+
+    let sit;
+    if (real >= meta) { sit = 'Meta atingida'; atendidos++; }
+    else if (real > 0) { sit = 'Parcial'; parciais++; }
+    else { sit = 'Nao atendido'; naoAtendidos++; }
+
+    if (!setorStats[setor]) setorStats[setor] = {total:0,ok:0,parc:0,zero:0};
+    setorStats[setor].total++;
+    if (sit==='Meta atingida') setorStats[setor].ok++;
+    else if (sit==='Parcial') setorStats[setor].parc++;
+    else setorStats[setor].zero++;
+
+    detalhePacientes.push({nomePac, setor, leito: g.leito||'-', meta, real, sit, prof});
   });
+
+  const coberturaPct = total > 0 ? Math.round(atendidos/total*100) : 0;
+  const perdida = potencialTotal - produzidaTotal;
+  const fmt = v => 'R$ ' + v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  const corSit = s => s==='Meta atingida'?'#27ae60':s==='Parcial'?'#f39c12':'#e74c3c';
+
+  const rowsSetor = Object.entries(setorStats).map(([nome,d])=>{
+    const cob = d.total > 0 ? Math.round(d.ok/d.total*100) : 0;
+    return `<tr><td>${nome}</td><td style="text-align:center;">${d.total}</td><td style="text-align:center;color:#27ae60;font-weight:600;">${d.ok}</td><td style="text-align:center;color:#f39c12;font-weight:600;">${d.parc}</td><td style="text-align:center;color:#e74c3c;font-weight:600;">${d.zero}</td><td style="text-align:center;font-weight:700;color:${cob>=80?'#27ae60':cob>=50?'#f39c12':'#e74c3c'};">${cob}%</td></tr>`;
+  }).join('');
+
+  const rowsPac = detalhePacientes.map(p=>`<tr><td>${p.nomePac}</td><td>${p.setor} / ${p.leito}</td><td style="text-align:center;">${p.meta}x</td><td style="text-align:center;">${p.real}</td><td>${p.prof}</td><td><span style="background:${corSit(p.sit)};color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;">${p.sit}</span></td></tr>`).join('');
+
   const w = window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><title>Relatório Executivo - ${hoje}</title>
-  <style>body{font-family:Arial,sans-serif;padding:30px;color:#222;}h1{color:#0a1628;}table{width:100%;border-collapse:collapse;margin-top:20px;}th,td{border:1px solid #ddd;padding:8px 12px;font-size:13px;}th{background:#0a1628;color:#fff;}.kpi{display:inline-block;border:2px solid #4a90d9;border-radius:8px;padding:12px 24px;margin:8px;text-align:center;}</style></head>
-  <body><h1>Relatório Executivo de Cobertura Assistencial</h1><p>Data: ${hoje}</p>
-  <div><span class="kpi"><div style="font-size:10px;color:#888;">TOTAL INTERNADOS</div><strong style="font-size:22px;">${total}</strong></span>
-  <span class="kpi"><div style="font-size:10px;color:#888;">META ATINGIDA</div><strong style="font-size:22px;color:#27ae60;">${atendidos}</strong></span>
-  <span class="kpi"><div style="font-size:10px;color:#888;">COBERTURA</div><strong style="font-size:22px;color:#4a90d9;">${total>0?Math.round(atendidos/total*100):0}%</strong></span></div>
-  <script>window.print();<\/script></body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatorio Executivo - ${hoje}</title>
+  <style>
+    *{box-sizing:border-box;}
+    body{font-family:Arial,sans-serif;padding:30px;color:#222;font-size:13px;}
+    h1{color:#0a1628;font-size:20px;margin:0 0 4px;}
+    h2{color:#0a1628;font-size:14px;margin:20px 0 8px;border-bottom:2px solid #0a1628;padding-bottom:4px;}
+    .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+    .logo-area{font-size:11px;color:#888;text-align:right;}
+    .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+    .kpi{border:1px solid #ddd;border-radius:6px;padding:10px 14px;text-align:center;}
+    .kpi-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;}
+    .kpi-val{font-size:24px;font-weight:700;line-height:1.2;}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+    th,td{border:1px solid #ddd;padding:6px 10px;font-size:12px;}
+    th{background:#0a1628;color:#fff;font-weight:600;}
+    tr:nth-child(even){background:#f9f9f9;}
+    .footer{margin-top:24px;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:10px;}
+    @media print{body{padding:15px;}.no-print{display:none;}}
+  </style></head>
+  <body>
+  <div class="header">
+    <div><h1>Relatorio Executivo de Cobertura Assistencial</h1><div style="color:#888;font-size:12px;">Fisioterapia Hospitalar &mdash; Gerado em ${hoje}</div></div>
+    <button class="no-print" onclick="window.print()" style="padding:8px 18px;background:#0a1628;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;">Imprimir / Salvar PDF</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">Total internados</div><div class="kpi-val">${total}</div></div>
+    <div class="kpi"><div class="kpi-label">Meta atingida</div><div class="kpi-val" style="color:#27ae60;">${atendidos}</div></div>
+    <div class="kpi"><div class="kpi-label">Parcial</div><div class="kpi-val" style="color:#f39c12;">${parciais}</div></div>
+    <div class="kpi"><div class="kpi-label">Nao atendido</div><div class="kpi-val" style="color:#e74c3c;">${naoAtendidos}</div></div>
+    <div class="kpi" style="background:#0a1628;"><div class="kpi-label" style="color:#aaa;">Cobertura geral</div><div class="kpi-val" style="color:#fff;">${coberturaPct}%</div></div>
+  </div>
+
+  ${potencialTotal > 0 ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+    <div class="kpi"><div class="kpi-label">Receita potencial</div><div style="font-size:16px;font-weight:700;">${fmt(potencialTotal)}</div></div>
+    <div class="kpi"><div class="kpi-label">Receita produzida</div><div style="font-size:16px;font-weight:700;color:#27ae60;">${fmt(produzidaTotal)}</div></div>
+    <div class="kpi"><div class="kpi-label">Receita perdida</div><div style="font-size:16px;font-weight:700;color:#e74c3c;">${fmt(perdida)}</div></div>
+  </div>` : ''}
+
+  <h2>Cobertura por Setor</h2>
+  <table><thead><tr><th>Setor</th><th>Pacientes</th><th>Meta atingida</th><th>Parcial</th><th>Nao atendido</th><th>Cobertura</th></tr></thead>
+  <tbody>${rowsSetor || '<tr><td colspan="6" style="text-align:center;color:#aaa;">Sem dados</td></tr>'}</tbody></table>
+
+  <h2>Detalhamento por Paciente</h2>
+  <table><thead><tr><th>Paciente</th><th>Setor / Leito</th><th>Meta</th><th>Realizados</th><th>Profissional</th><th>Situacao</th></tr></thead>
+  <tbody>${rowsPac || '<tr><td colspan="6" style="text-align:center;color:#aaa;">Nenhum paciente ativo</td></tr>'}</tbody></table>
+
+  <div class="footer">Sistema Fisio Raja &mdash; Relatorio gerado automaticamente em ${hoje} &mdash; Confidencial</div>
+  </body></html>`);
   w.document.close();
 }
 
@@ -5282,7 +5372,7 @@ function renderResumoDiario(guiaId) {
   const guia = (DB.get('guias')||[]).find(g=>g.id===guiaId);
   if (!guia) return;
   const hoje = new Date().toISOString().split('T')[0];
-  const procs = (DB.getItem('hist_procs_'+guiaId)||[]).filter(p=>p.status!=='cancelado');
+  const procs = DB.get('hist_procs_'+guiaId).filter(p=>p.status!=='cancelado');
   const realizadosHoje = procs.filter(p=>p.data===hoje).length;
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const meta = metaMap[guia.meta_diaria]??1;
@@ -5318,7 +5408,7 @@ function renderLinhaTempo(guiaId) {
   const eventos = [];
 
   if (filtro==='tudo'||filtro==='procs') {
-    (DB.getItem('hist_procs_'+guiaId)||[]).filter(p=>p.data>=limiteISO).forEach(p=>{
+    DB.get('hist_procs_'+guiaId).filter(p=>p.data>=limiteISO).forEach(p=>{
       const procNome = (DB.get('procedimentos')||[]).find(pr=>pr.id===p.proc_id)?.nome || 'Procedimento';
       eventos.push({data:p.data, hora:p.hora||'', tipo:'proc', icon:'🩺', cor:'#4a90d9',
         texto: p.status==='cancelado' ? `<s>${procNome}</s> <span style="color:#e74c3c;font-size:11px;">(cancelado: ${p.cancelamento?.motivo||''})</span>` : procNome,
