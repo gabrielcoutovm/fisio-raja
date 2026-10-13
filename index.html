@@ -1915,10 +1915,63 @@ function sbSet(key, value) {
   }).catch(e => console.warn('Supabase save error:', e.message));
 }
 
+// ===== TABELA DEDICADA: pacientes =====
+// Grava/sincroniza um ou mais pacientes na tabela própria (upsert por id)
+function sbUpsertPacientes(pacs) {
+  if (!pacs || !pacs.length) return;
+  fetch(`${SB_URL}/pacientes?on_conflict=id`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(pacs.map(p => ({
+      id: p.id, nome: p.nome, nascimento: p.nascimento || null,
+      convenio_id: p.convenio_id || null, updated_at: new Date().toISOString()
+    })))
+  }).catch(e => console.warn('Pacientes upsert error:', e.message));
+}
+
+// Remove um paciente da tabela pelo id
+function sbDeletePaciente(id) {
+  fetch(`${SB_URL}/pacientes?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  }).catch(e => console.warn('Paciente delete error:', e.message));
+}
+
+// Carrega todos os pacientes da tabela dedicada para o cache
+async function carregarPacientes() {
+  try {
+    const r = await fetch(`${SB_URL}/pacientes?select=*&order=id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    _mem['pacientes'] = await r.json();
+  } catch(e) { console.warn('Pacientes load error:', e.message); }
+}
+
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
-  set: (k, v) => { _mem[k] = v; sbSet(k, v); },
-  push: (k, v) => { const a = DB.get(k); a.push(v); DB.set(k, a); return a; },
+  set: (k, v) => {
+    if (k === 'pacientes') {
+      // Detecta exclusões comparando com o cache anterior e apaga na tabela
+      const antes = Array.isArray(_mem['pacientes']) ? _mem['pacientes'] : [];
+      const idsNovos = new Set(v.map(p => p.id));
+      antes.forEach(p => { if (!idsNovos.has(p.id)) sbDeletePaciente(p.id); });
+      _mem['pacientes'] = v;
+      sbUpsertPacientes(v);
+    } else {
+      _mem[k] = v;
+      sbSet(k, v);
+    }
+  },
+  push: (k, v) => {
+    const a = DB.get(k);
+    a.push(v);
+    if (k === 'pacientes') {
+      _mem['pacientes'] = a;
+      sbUpsertPacientes([v]); // upsert só o novo
+    } else {
+      DB.set(k, a);
+    }
+    return a;
+  },
   getItem: k => { const v = _mem['__'+k]; return v !== undefined ? String(v) : null; },
   setItem: (k, v) => { _mem['__'+k] = v; sbSet('__'+k, v); }
 };
@@ -1927,10 +1980,13 @@ async function carregarDados() {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 6000);
   try {
-    const r = await fetch(`${SB_URL}/store?select=key,value,updated_at&order=updated_at.asc`, { headers: getHeaders(), signal: ctrl.signal });
+    const [rStore] = await Promise.all([
+      fetch(`${SB_URL}/store?select=key,value,updated_at&order=updated_at.asc`, { headers: getHeaders(), signal: ctrl.signal }),
+      carregarPacientes()
+    ]);
     clearTimeout(timer);
-    if (!r.ok) { console.warn('Supabase retornou:', r.status); return; }
-    const rows = await r.json();
+    if (!rStore.ok) { console.warn('Supabase retornou:', rStore.status); return; }
+    const rows = await rStore.json();
     rows.forEach(row => { _mem[row.key] = row.value; });
   } catch(e) {
     clearTimeout(timer);
@@ -1942,7 +1998,7 @@ function assinarMudancas() {
   // Polling a cada 30s para sincronizar entre dispositivos
   setInterval(async () => {
     const antes = JSON.stringify(_mem);
-    await sbGet();
+    await Promise.all([sbGet(), carregarPacientes()]);
     if (JSON.stringify(_mem) !== antes) {
       const activePage = document.querySelector('.page.active');
       if (activePage) {
@@ -1958,7 +2014,7 @@ function assinarMudancas() {
 function initData() {
   // limpa dados de demonstração de versões anteriores
   if (!DB.getItem('raja_v2')) {
-    ['convenios','setores','profissionais','procedimentos','pacientes','lotes','guias'].forEach(k => {
+    ['convenios','setores','profissionais','procedimentos','lotes','guias'].forEach(k => {
       if (DB.get(k).length > 0) DB.set(k, []);
     });
     DB.setItem('raja_v2','1');
@@ -2800,9 +2856,9 @@ function getNextId(key) { const d = DB.get(key); return d.length?Math.max(...d.m
 function savePaciente() {
   const nome = document.getElementById('pac-nome').value.trim();
   if (!nome) { alert('Nome é obrigatório'); return; }
-  DB.push('pacientes',{id:getNextId('pacientes'),nome,nascimento:document.getElementById('pac-nascimento').value,cpf:document.getElementById('pac-cpf').value,convenio_id:parseInt(document.getElementById('pac-convenio').value)||null});
+  DB.push('pacientes',{id:getNextId('pacientes'),nome,nascimento:document.getElementById('pac-nascimento').value,convenio_id:parseInt(document.getElementById('pac-convenio').value)||null});
   closeModal('modal-paciente'); renderPacientes(); showToast('Paciente salvo!');
-  document.getElementById('pac-nome').value=''; document.getElementById('pac-cpf').value='';
+  document.getElementById('pac-nome').value='';
 }
 
 let _convProcsTemp = [];
@@ -5365,8 +5421,10 @@ function salvarGlosa() {
 
 // ===== BACKUP COMPLETO =====
 function exportarBackup() {
-  const chaves = ['pacientes','guias','lotes','convenios','setores','profissionais','procedimentos','medidas','usuarios','glosas'];
+  // pacientes vem da tabela dedicada (já está em _mem['pacientes'])
+  const chaves = ['guias','lotes','convenios','setores','profissionais','procedimentos','medidas','usuarios','glosas'];
   const backup = { versao: 'raja_v2', exportado_em: new Date().toISOString(), dados: {} };
+  backup.dados['pacientes'] = DB.get('pacientes'); // da tabela dedicada
   chaves.forEach(k => { backup.dados[k] = DB.get(k); });
   // inclui hist_procs, hist_status, hist_medidas, hist_ims por guia
   const guias = DB.get('guias');
