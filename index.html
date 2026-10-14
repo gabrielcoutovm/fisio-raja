@@ -1980,7 +1980,7 @@ const DB = {
     }
     return a;
   },
-  getItem: k => { const v = _mem['__'+k]; return v !== undefined ? String(v) : null; },
+  getItem: k => { const v = _mem['__'+k]; return v !== undefined ? (typeof v === 'string' ? v : JSON.stringify(v)) : null; },
   setItem: (k, v) => { _mem['__'+k] = v; sbSet('__'+k, v); }
 };
 
@@ -2708,7 +2708,7 @@ function renderMapaOcupacao() {
       if (busca && !pac.nome.toLowerCase().includes(busca) && !(guia.num_at||'').toLowerCase().includes(busca)) return '';
 
       // Calcula proposta do dia
-      const hist = DB.get('hist_procs_' + guia.id).filter(h => h.data === hoje && h.status !== 'cancelado');
+      const hist = DB.get('hist_procs_' + guia.id).filter(h => paraISO(h.data) === hoje && !h.cancelado);
       const realizados = hist.length;
 
       // Meta: usa max_uti / max_apt do convênio, ou meta_diaria do guia
@@ -3326,7 +3326,13 @@ function initCharts() {
   labels.forEach(l=>contsPorDia[l]=0);
   guiasAll.forEach(g=>{
     (DB.get('hist_procs_'+g.id)||[]).forEach(h=>{
-      if (!h.cancelado && h.data && contsPorDia[h.data]!==undefined) contsPorDia[h.data]++;
+      if (!h.cancelado && h.data) {
+        // normaliza para "d/m" (formato dos labels do chart)
+        let key;
+        if (h.data.includes('/')) { const p=h.data.split('/'); key=`${parseInt(p[0])}/${parseInt(p[1])}`; }
+        else { const d=new Date(h.data+'T00:00:00'); key=`${d.getDate()}/${d.getMonth()+1}`; }
+        if (contsPorDia[key]!==undefined) contsPorDia[key]++;
+      }
     });
   });
   new Chart(document.getElementById('chartProcedimentos'),{
@@ -3498,7 +3504,7 @@ function renderDetStatus(guiaId) {
 }
 
 function renderDetMedidas(guiaId) {
-  const hist = DB.getItem('hist_medidas_' + guiaId) || [];
+  const hist = JSON.parse(DB.getItem('hist_medidas_' + guiaId) || '[]');
   document.getElementById('det-tb-medidas').innerHTML = hist.length ? hist.slice().reverse().map(h =>
     `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}</td><td>${h.usuario}</td></tr>`
   ).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhuma medida lançada</td></tr>';
@@ -3513,6 +3519,13 @@ function renderDetSetor(guiaId) {
 }
 
 function hoje() { return new Date().toLocaleDateString('pt-BR'); }
+// Normaliza datas pt-BR ("13/10/2026") ou ISO ("2026-10-13") para ISO para comparação
+function paraISO(d) {
+  if (!d) return '';
+  if (!d.includes('/')) return d.split('T')[0];
+  const [dia, mes, ano] = d.split('/');
+  return `${ano}-${(mes||'').padStart(2,'0')}-${(dia||'').padStart(2,'0')}`;
+}
 function usuarioAtual() { return currentUser ? currentUser.nome.split(' ')[0] : 'Sistema'; }
 
 function mudarDataProc(delta) {
@@ -3649,7 +3662,7 @@ function saveNovoAtendimento() {
   // Verificar se leito está ocupado
   const guias = DB.get('guias');
   const setorLeito = `${setorNome} - ${leitoNum}`;
-  if (guias.some(g => g.setor === setorLeito)) { alert('Este leito já está ocupado'); return; }
+  if (guias.some(g => !g.alta && g.setor === setorLeito)) { alert('Este leito já está ocupado'); return; }
 
   const nascimento = document.getElementById('novoat-nascimento').value;
   const status = document.getElementById('novoat-status').value;
@@ -3700,7 +3713,7 @@ function gerarLeitosTransfer() {
   const nomes = getLeitosNomes(setor);
   const guias = DB.get('guias');
   sel.innerHTML = '<option value="">Selecione o leito</option>' + nomes.map(n => {
-    const ocupado = guias.some(g => g.setor === `${setor.nome} - ${n}`);
+    const ocupado = guias.some(g => !g.alta && g.setor === `${setor.nome} - ${n}`);
     return `<option value="${n}" ${ocupado ? 'disabled style="color:#ccc"' : ''}>${n}${ocupado ? ' (ocupado)' : ''}</option>`;
   }).join('');
 }
@@ -3735,9 +3748,9 @@ function salvarMedidas() {
   medidas.forEach(m => {
     const input = document.getElementById('med-val-' + m.id);
     if (input && input.value !== '') {
-      const hist = DB.getItem('hist_medidas_' + pacienteAtivo.id) || [];
+      const hist = JSON.parse(DB.getItem('hist_medidas_' + pacienteAtivo.id) || '[]');
       hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: new Date().toISOString().split('T')[0], usuario: usuarioAtual()});
-      DB.setItem('hist_medidas_' + pacienteAtivo.id, hist);
+      DB.setItem('hist_medidas_' + pacienteAtivo.id, JSON.stringify(hist));
       salvou = true;
     }
   });
@@ -3762,7 +3775,7 @@ function abrirModalAlta() {
 
   // 1. Sem atendimento hoje
   const procsHoje = DB.get('hist_procs_' + pacienteAtivo.id)
-    .filter(p => p.data === hoje && p.status !== 'cancelado');
+    .filter(p => paraISO(p.data) === hoje && !p.cancelado);
   if (procsHoje.length === 0) {
     alertas.push({ cor: '#e74c3c', bg: '#fdecea', icon: '🔴', texto: '<strong>Sem atendimento hoje</strong> — nenhum procedimento foi registrado nesta data.' });
   }
@@ -3774,7 +3787,7 @@ function abrirModalAlta() {
   }
 
   // 3. IMS não preenchido
-  const histIMS = DB.getItem('hist_ims_' + pacienteAtivo.id) || [];
+  const histIMS = DB.get('hist_ims_' + pacienteAtivo.id);
   if (!histIMS.length && !pacienteAtivo.ims_admissao) {
     alertas.push({ cor: '#f39c12', bg: '#fff3cd', icon: '🟡', texto: '<strong>IMS não registrado</strong> — recomendado preencher o IMS final antes da alta.' });
   }
@@ -3830,7 +3843,7 @@ function gerarXMLAltaAutomatico(guia) {
   const profs = DB.get('profissionais');
   const prof = profs.find(p => p.id === guia.profissional_id) || {};
   const procs = DB.get('procedimentos');
-  const histProcs = DB.get('hist_procs_' + guia.id).filter(p => p.status !== 'cancelado');
+  const histProcs = DB.get('hist_procs_' + guia.id).filter(p => !p.cancelado);
 
   const now = new Date();
   const ts = now.toISOString().replace(/[-:T]/g,'').slice(0,14);
@@ -3940,7 +3953,7 @@ function verificarAlertaTurno() {
   const semAtend = guias.filter(g => {
     const meta = metaMap[g.meta_diaria] ?? 1;
     if (meta === 0) return false;
-    return DB.get('hist_procs_' + g.id).filter(p => p.data === hoje && p.status !== 'cancelado').length === 0;
+    return DB.get('hist_procs_' + g.id).filter(p => paraISO(p.data) === hoje && !p.cancelado).length === 0;
   });
 
   if (semAtend.length > 0) {
@@ -3965,8 +3978,11 @@ function confirmarExcluirPaciente() {
   DB.set('guias', guias);
 
   // Remove históricos desta guia
-  ['hist_procs_', 'hist_ims_', 'hist_status_', 'hist_medidas_'].forEach(prefix => {
-    DB.setItem(prefix + guiaId, null);
+  ['hist_procs_', 'hist_ims_', 'hist_status_'].forEach(prefix => {
+    DB.set(prefix + guiaId, []);
+  });
+  ['hist_medidas_', 'hist_mob_', 'hist_checklist_'].forEach(prefix => {
+    DB.setItem(prefix + guiaId, '[]');
   });
 
   // Remove paciente se não tiver outras guias vinculadas
@@ -4051,9 +4067,9 @@ function salvarMobilizacao() {
     obs: document.getElementById('mob-obs').value,
     usuario: currentUser?.nome || 'Sistema'
   };
-  const hist = DB.getItem('hist_mob_' + pacienteAtivo.id) || [];
+  const hist = JSON.parse(DB.getItem('hist_mob_' + pacienteAtivo.id) || '[]');
   hist.push(registro);
-  DB.setItem('hist_mob_' + pacienteAtivo.id, hist);
+  DB.setItem('hist_mob_' + pacienteAtivo.id, JSON.stringify(hist));
   closeModal('modal-mobilizacao');
   renderMobilizacao(pacienteAtivo.id);
   renderLinhaTempo(pacienteAtivo.id);
@@ -4061,7 +4077,7 @@ function salvarMobilizacao() {
 }
 
 function renderMobilizacao(guiaId) {
-  const hist = DB.getItem('hist_mob_' + guiaId) || [];
+  const hist = JSON.parse(DB.getItem('hist_mob_' + guiaId) || '[]');
   const vazio = document.getElementById('mob-vazio');
   const canvas = document.getElementById('chartMobilizacao');
 
@@ -4128,7 +4144,7 @@ const CHECKLIST_PADRAO = [
 ];
 
 function abrirChecklist() {
-  const itens = DB.get('checklist_config') || CHECKLIST_PADRAO;
+  const itens = DB.get('checklist_config').length ? DB.get('checklist_config') : CHECKLIST_PADRAO;
   document.getElementById('checklist-itens').innerHTML = itens.map(item =>
     `<label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #eee;border-radius:8px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='#f5f8ff'" onmouseout="this.style.background=''">
       <input type="checkbox" id="ck_${item.id}" style="width:16px;height:16px;cursor:pointer;" />
@@ -4140,7 +4156,7 @@ function abrirChecklist() {
 }
 
 function confirmarChecklist() {
-  const itens = DB.get('checklist_config') || CHECKLIST_PADRAO;
+  const itens = DB.get('checklist_config').length ? DB.get('checklist_config') : CHECKLIST_PADRAO;
   const naoMarcados = itens.filter(i => !document.getElementById('ck_'+i.id)?.checked).map(i => i.label);
   if (naoMarcados.length > 0) {
     if (!confirm(`Atenção! Os seguintes itens NÃO foram confirmados:\n\n${naoMarcados.map(i=>'• '+i).join('\n')}\n\nDeseja prosseguir mesmo assim?`)) return;
@@ -4155,9 +4171,9 @@ function confirmarChecklist() {
       obs: document.getElementById('checklist-obs').value,
       usuario: currentUser?.nome || 'Sistema'
     };
-    const hist = DB.getItem('hist_checklist_' + pacienteAtivo.id) || [];
+    const hist = JSON.parse(DB.getItem('hist_checklist_' + pacienteAtivo.id) || '[]');
     hist.push(reg);
-    DB.setItem('hist_checklist_' + pacienteAtivo.id, hist);
+    DB.setItem('hist_checklist_' + pacienteAtivo.id, JSON.stringify(hist));
   }
   closeModal('modal-checklist');
   showToast('Checklist confirmado! Pode iniciar a mobilização.', '#27ae60');
@@ -4187,9 +4203,9 @@ function salvarAlterarMeta() {
   DB.set('guias', guias);
   pacienteAtivo = guias[idx];
   // Registra no histórico de status
-  const histStatus = DB.getItem('hist_status_' + pacienteAtivo.id) || [];
+  const histStatus = DB.get('hist_status_' + pacienteAtivo.id);
   histStatus.push({ data: new Date().toISOString().split('T')[0], status: `Meta alterada: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, usuario: currentUser?.nome || 'Sistema' });
-  DB.setItem('hist_status_' + pacienteAtivo.id, histStatus);
+  DB.set('hist_status_' + pacienteAtivo.id, histStatus);
   closeModal('modal-alterar-meta');
   renderResumoDiario(pacienteAtivo.id);
   renderLinhaTempo(pacienteAtivo.id);
@@ -4222,6 +4238,7 @@ function gerarNotificacoes() {
   const turno = horaAtual >= 7 && horaAtual < 13 ? 'manhã' : horaAtual >= 13 && horaAtual < 19 ? 'tarde' : 'noite';
 
   const guias = DB.get('guias').filter(g => !g.alta);
+  const pacNotif = DB.get('pacientes');
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const notifs = [];
 
@@ -4229,11 +4246,12 @@ function gerarNotificacoes() {
   guias.forEach(g => {
     const meta = metaMap[g.meta_diaria] ?? 1;
     if (meta === 0) return;
-    const procs = DB.get('hist_procs_'+g.id).filter(p=>p.data===hoje&&p.status!=='cancelado');
+    const procs = DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hoje&&!p.cancelado);
+    const nomePac = (pacNotif.find(p => p.id === g.paciente_id)||{}).nome || ('Paciente '+g.paciente_id);
     if (procs.length === 0) {
-      notifs.push({ tipo: 'sem-atend', cor: '#e74c3c', icon: '🔴', texto: `<strong>${g.nome_pac||'Paciente'}</strong> sem atendimento hoje`, sub: `Leito ${g.leito||'-'} — Meta: ${g.meta_diaria||'1x'}`, guiaId: g.id });
+      notifs.push({ tipo: 'sem-atend', cor: '#e74c3c', icon: '🔴', texto: `<strong>${nomePac}</strong> sem atendimento hoje`, sub: `${g.setor||'-'} — Meta: ${g.meta_diaria||'1x'}`, guiaId: g.id });
     } else if (procs.length < meta) {
-      notifs.push({ tipo: 'parcial', cor: '#f39c12', icon: '🟡', texto: `<strong>${g.nome_pac||'Paciente'}</strong> abaixo da meta`, sub: `${procs.length}/${meta} atendimentos — Leito ${g.leito||'-'}`, guiaId: g.id });
+      notifs.push({ tipo: 'parcial', cor: '#f39c12', icon: '🟡', texto: `<strong>${nomePac}</strong> abaixo da meta`, sub: `${procs.length}/${meta} atendimentos — ${g.setor||'-'}`, guiaId: g.id });
     }
   });
 
@@ -4271,7 +4289,7 @@ setInterval(() => {
 // ===== GRÁFICO DE MEDIDAS =====
 let chartMedidasInstance = null;
 function renderGraficoMedidas(guiaId) {
-  const hist = DB.getItem('hist_medidas_'+guiaId) || [];
+  const hist = JSON.parse(DB.getItem('hist_medidas_'+guiaId) || '[]');
   const canvas = document.getElementById('chartEvolucaoMedidas');
   const vazio = document.getElementById('medidas-grafico-vazio');
   if (chartMedidasInstance) { chartMedidasInstance.destroy(); chartMedidasInstance = null; }
@@ -4318,6 +4336,7 @@ function gerarRelatorioExecutivoPDF() {
   const mes = hoje.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const guias = DB.get('guias') || [];
   const guiasAtivas = guias.filter(g=>!g.alta);
+  const setores_pdf_pacs = DB.get('pacientes');
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const hojeISO = hoje.toISOString().split('T')[0];
 
@@ -4326,7 +4345,7 @@ function gerarRelatorioExecutivoPDF() {
   guiasAtivas.forEach(g => {
     const meta = metaMap[g.meta_diaria]??1;
     metaHoje += meta;
-    atendHoje += DB.get('hist_procs_'+g.id).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
+    atendHoje += DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISO&&!p.cancelado).length;
   });
   guias.filter(g=>g.alta&&g.alta.startsWith(hojeISO.slice(0,7))).forEach(()=>altasMes++);
   const cobHoje = metaHoje > 0 ? Math.round(atendHoje/metaHoje*100) : 0;
@@ -4393,11 +4412,10 @@ function gerarRelatorioExecutivoPDF() {
   <table><thead><tr><th>Paciente</th><th>Setor/Leito</th><th>Meta</th><th>Realizados</th><th>Situação</th></tr></thead><tbody>
   ${guiasAtivas.map(g=>{
     const meta=metaMap[g.meta_diaria]??1;
-    const real=DB.get('hist_procs_'+g.id).filter(p=>p.data===hojeISO&&p.status!=='cancelado').length;
-    const setor=(setores.find(s=>s.id===g.setor_id)||{}).nome||'-';
+    const real=DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISO&&!p.cancelado).length;
     const sit=meta===0?'Dispensado':real>=meta?'Meta atingida':real>0?'Parcial':'Não atendido';
-    const cls=meta===0?'':'';
-    return `<tr><td>${g.nome_pac||g.paciente_id}</td><td>${setor}/${g.leito||'-'}</td><td>${(g.meta_diaria||'1x').replace(/_/g,' ')}</td><td>${real}</td><td><span class="badge ${sit==='Meta atingida'?'verde':sit==='Não atendido'?'vermelho':'amarelo'}">${sit}</span></td></tr>`;
+    const pacN=(setores_pdf_pacs.find(p=>p.id===g.paciente_id)||{}).nome||('Pac.'+g.paciente_id);
+    return `<tr><td>${pacN}</td><td>${g.setor||'-'}</td><td>${(g.meta_diaria||'1x').replace(/_/g,' ')}</td><td>${real}</td><td><span class="badge ${sit==='Meta atingida'?'verde':sit==='Não atendido'?'vermelho':'amarelo'}">${sit}</span></td></tr>`;
   }).join('')}
   </tbody></table>
   </body></html>`);
@@ -4416,7 +4434,8 @@ function renderCoberturaAssistencial() {
 
   // populate setor filter
   const sel = document.getElementById('cobertura-setor');
-  const filtroSetor = sel.value;
+  const filtroSetorId = sel.value;
+  const filtroSetorNome = filtroSetorId ? (setores.find(s => String(s.id) === String(filtroSetorId)) || {}).nome || '' : '';
   if (sel.options.length <= 1) {
     setores.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.nome; sel.appendChild(o); });
   }
@@ -4427,14 +4446,14 @@ function renderCoberturaAssistencial() {
   const rows = [];
 
   guias.forEach(g => {
-    if (filtroSetor && String(g.setor_id) !== String(filtroSetor)) return;
-    const procs = DB.get('hist_procs_' + g.id).filter(p => p.data === hoje && p.status !== 'cancelado');
+    if (filtroSetorNome && !(g.setor || '').startsWith(filtroSetorNome + ' - ')) return;
+    const procs = DB.get('hist_procs_' + g.id).filter(p => paraISO(p.data) === hoje && !p.cancelado);
     const realizados = procs.length;
     const meta = metaMap[g.meta_diaria] ?? 1;
     const pendentes = Math.max(0, meta - realizados);
-    const setor = setores.find(s => s.id === g.setor_id) || {};
+    const setor = setores.find(s => g.setor && g.setor.startsWith(s.nome + ' - ')) || {};
     const profNome = g.profissional_id ? (profs.find(p => p.id === g.profissional_id) || {}).nome || '-' : '-';
-    const ultProc = DB.get('hist_procs_' + g.id).filter(p => p.status !== 'cancelado').sort((a,b)=>b.data.localeCompare(a.data))[0];
+    const ultProc = DB.get('hist_procs_' + g.id).filter(p => !p.cancelado).sort((a,b)=>paraISO(b.data).localeCompare(paraISO(a.data)))[0];
     const ultAtend = ultProc ? ultProc.data : '-';
 
     let situacao, cor;
@@ -4445,8 +4464,8 @@ function renderCoberturaAssistencial() {
 
     total++;
     rows.push(`<tr>
-      <td>${g.nome_pac || g.paciente_id}</td>
-      <td>${setor.nome||'-'} / ${g.leito||'-'}</td>
+      <td>${(DB.get('pacientes').find(p=>p.id===g.paciente_id)||{}).nome || ('Pac.'+g.paciente_id)}</td>
+      <td>${g.setor||'-'}</td>
       <td>${g.meta_diaria ? g.meta_diaria.replace('_',' ') : '1x'}</td>
       <td style="font-weight:600;">${realizados}</td>
       <td style="color:${pendentes>0?'#e74c3c':'#27ae60'};font-weight:600;">${pendentes}</td>
@@ -4480,7 +4499,7 @@ function renderOportunidadeFinanceira() {
 
   guias.forEach(g => {
     const histProcs = DB.get('hist_procs_' + g.id);
-    const realizadosHoje = histProcs.filter(p => p.data === hoje && p.status !== 'cancelado');
+    const realizadosHoje = histProcs.filter(p => paraISO(p.data) === hoje && !p.cancelado);
     const meta = metaMap[g.meta_diaria] ?? 1;
     const deficit = Math.max(0, meta - realizadosHoje.length);
 
@@ -4499,18 +4518,20 @@ function renderOportunidadeFinanceira() {
     if (g.lote_id) faturada += valorProdDia;
 
     if (deficit > 0 && meta > 0) {
-      const setor = setores.find(s => s.id === g.setor_id) || {};
+      const setor = setores.find(s => g.setor && g.setor.startsWith(s.nome + ' - ')) || {};
       const conv = (DB.get('convenios')||[]).find(c => c.id === g.convenio_id) || {};
+      const pacNome = (DB.get('pacientes').find(p => p.id === g.paciente_id)||{}).nome || ('Pac. '+g.paciente_id);
       deficitRows.push(`<tr>
-        <td>${g.nome_pac || g.paciente_id}</td>
-        <td>${setor.nome||'-'}</td>
+        <td>${pacNome}</td>
+        <td>${g.setor||'-'}</td>
         <td>${conv.nome||'-'}</td>
         <td>${g.meta_diaria ? g.meta_diaria.replace('_',' ') : '1x'}</td>
         <td>${realizadosHoje.length}</td>
         <td style="color:#e74c3c;font-weight:600;">${deficit}</td>
         <td style="color:#e74c3c;font-weight:600;">R$ ${(deficit*valorMedio).toFixed(2).replace('.',',')}</td>
       </tr>`);
-      setorDeficit[setor.nome||'Sem setor'] = (setorDeficit[setor.nome||'Sem setor']||0) + deficit;
+      const setorNomeOf = setor.nome || (g.setor ? g.setor.split(' - ')[0] : 'Sem setor');
+      setorDeficit[setorNomeOf] = (setorDeficit[setorNomeOf]||0) + deficit;
     }
   });
 
@@ -4549,10 +4570,11 @@ function renderIndicadoresCobertura() {
   if (!deEl.value) { const d = new Date(); d.setDate(d.getDate()-30); deEl.value = d.toISOString().split('T')[0]; }
   if (!ateEl.value) ateEl.value = new Date().toISOString().split('T')[0];
   const de = deEl.value, ate = ateEl.value;
-  const filtroSetor = document.getElementById('ind-setor').value;
+  const filtroSetorIdInd = document.getElementById('ind-setor').value;
 
   const guias = DB.get('guias');
   const setores = DB.get('setores');
+  const filtroSetorNomeInd = filtroSetorIdInd ? (setores.find(s => String(s.id) === String(filtroSetorIdInd)) || {}).nome || '' : '';
   // populate filter
   const selInd = document.getElementById('ind-setor');
   if (selInd.options.length <= 1) {
@@ -4571,14 +4593,14 @@ function renderIndicadoresCobertura() {
   const cobPorDia = {}, setorData = {};
 
   guias.forEach(g => {
-    if (filtroSetor && String(g.setor_id) !== String(filtroSetor)) return;
+    if (filtroSetorNomeInd && !(g.setor || '').startsWith(filtroSetorNomeInd + ' - ')) return;
     const meta = metaMap[g.meta_diaria] ?? 1;
     const hist = DB.get('hist_procs_' + g.id);
-    const setor = setores.find(s => s.id === g.setor_id) || {};
-    const sNome = setor.nome || 'Sem setor';
+    const setor = setores.find(s => g.setor && g.setor.startsWith(s.nome + ' - ')) || {};
+    const sNome = setor.nome || (g.setor ? g.setor.split(' - ')[0] : 'Sem setor');
 
     dias.forEach(d => {
-      const realizados = hist.filter(p => p.data === d && p.status !== 'cancelado').length;
+      const realizados = hist.filter(p => paraISO(p.data) === d && !p.cancelado).length;
       totalAtend += realizados;
       totalMeta += meta;
       deficitTotal += Math.max(0, meta - realizados);
@@ -4591,7 +4613,7 @@ function renderIndicadoresCobertura() {
     });
   });
 
-  const nPac = guias.filter(g => !filtroSetor || String(g.setor_id)===String(filtroSetor)).length;
+  const nPac = guias.filter(g => !filtroSetorNomeInd || (g.setor||'').startsWith(filtroSetorNomeInd+' - ')).length;
   const nDias = dias.length || 1;
   document.getElementById('ind-elegíveis').textContent = totalMeta > 0 ? Math.round((totalAtend/totalMeta)*100)+'%' : '0%';
   document.getElementById('ind-atend-dia').textContent = (totalAtend/(nPac*nDias||1)).toFixed(1);
@@ -4621,7 +4643,7 @@ function renderIndicadoresCobertura() {
 
   // tabela por setor
   document.getElementById('tb-ind-setor').innerHTML = Object.entries(setorData).map(([nome, d]) => {
-    const guiasSetor = guias.filter(g => (setores.find(s=>s.id===g.setor_id)||{}).nome===nome);
+    const guiasSetor = guias.filter(g => (g.setor||'').startsWith(nome+' - ') || (setores.find(s=>g.setor&&g.setor.startsWith(s.nome+' - '))||{}).nome===nome);
     const metaTotal = guiasSetor.reduce((s,g)=>(metaMap[g.meta_diaria]??1)*nDias+s,0);
     const realTotal = d.r;
     const cob = metaTotal > 0 ? Math.round(realTotal/metaTotal*100) : 0;
@@ -4648,11 +4670,12 @@ function gerarRelatorioCoberturaExec() {
     const meta = metaMap[g.meta_diaria] ?? 1;
     if (meta === 0) return;
     total++;
-    const histHoje = DB.get('hist_procs_'+g.id).filter(p=>p.data===hojeISO&&p.status!=='cancelado');
+    const histHoje = DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISO&&!p.cancelado);
     const real = histHoje.length;
-    const setor = (setores.find(s=>s.id===g.setor_id)||{}).nome || 'Sem setor';
+    const setorObj = setores.find(s=>g.setor&&g.setor.startsWith(s.nome+' - '))||{};
+    const setor = setorObj.nome || (g.setor ? g.setor.split(' - ')[0] : 'Sem setor');
     const pac = pacientes.find(p=>p.id===g.paciente_id)||{};
-    const nomePac = g.nome_pac || pac.nome || ('Paciente '+g.paciente_id);
+    const nomePac = pac.nome || ('Paciente '+g.paciente_id);
     const prof = g.profissional_id ? (profissionais.find(p=>p.id===g.profissional_id)||{}).nome||'-' : '-';
 
     // valor médio por atendimento deste paciente
@@ -4675,7 +4698,7 @@ function gerarRelatorioCoberturaExec() {
     else if (sit==='Parcial') setorStats[setor].parc++;
     else setorStats[setor].zero++;
 
-    detalhePacientes.push({nomePac, setor, leito: g.leito||'-', meta, real, sit, prof});
+    detalhePacientes.push({nomePac, setor, leito: g.setor||'-', meta, real, sit, prof});
   });
 
   const coberturaPct = total > 0 ? Math.round(atendidos/total*100) : 0;
@@ -5169,7 +5192,7 @@ function gerarXMLTISS(guiaId) {
   const hojeISO = new Date().toISOString().split('T')[0];
   const itens = hist.map((h,i) => {
     const proc = procs.find(p=>p.id===h.proc_id)||{};
-    const dataServ = h.data ? h.data.split('/').reverse().join('-') : hojeISO;
+    const dataServ = h.data ? paraISO(h.data) : hojeISO;
     return `        <ans:procedimentoRealizado>
           <ans:sequencialItem>${i+1}</ans:sequencialItem>
           <ans:dataRealizacao>${dataServ}</ans:dataRealizacao>
@@ -5292,7 +5315,7 @@ function abrirPacienteBusca(pacId) {
   fecharBuscaGlobal();
   const guias = DB.get('guias');
   const guia = guias.find(g => g.paciente_id === pacId);
-  if (guia) { abrirPaciente(guia.id); }
+  if (guia) { abrirPacienteDetalhe(guia.id); }
   else { showToast('Paciente sem guia ativa.'); }
 }
 
@@ -5372,8 +5395,8 @@ function renderResumoDiario(guiaId) {
   const guia = (DB.get('guias')||[]).find(g=>g.id===guiaId);
   if (!guia) return;
   const hoje = new Date().toISOString().split('T')[0];
-  const procs = DB.get('hist_procs_'+guiaId).filter(p=>p.status!=='cancelado');
-  const realizadosHoje = procs.filter(p=>p.data===hoje).length;
+  const procs = DB.get('hist_procs_'+guiaId).filter(p=>!p.cancelado);
+  const realizadosHoje = procs.filter(p=>paraISO(p.data)===hoje).length;
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const meta = metaMap[guia.meta_diaria]??1;
   const diasIntern = guia.data_internacao ? Math.floor((new Date()-new Date(guia.data_internacao+'T00:00:00'))/86400000) : '-';
@@ -5408,7 +5431,7 @@ function renderLinhaTempo(guiaId) {
   const eventos = [];
 
   if (filtro==='tudo'||filtro==='procs') {
-    DB.get('hist_procs_'+guiaId).filter(p=>p.data>=limiteISO).forEach(p=>{
+    DB.get('hist_procs_'+guiaId).filter(p=>paraISO(p.data)>=limiteISO).forEach(p=>{
       const procNome = (DB.get('procedimentos')||[]).find(pr=>pr.id===p.proc_id)?.nome || 'Procedimento';
       eventos.push({data:p.data, hora:p.hora||'', tipo:'proc', icon:'🩺', cor:'#4a90d9',
         texto: p.status==='cancelado' ? `<s>${procNome}</s> <span style="color:#e74c3c;font-size:11px;">(cancelado: ${p.cancelamento?.motivo||''})</span>` : procNome,
@@ -5416,12 +5439,12 @@ function renderLinhaTempo(guiaId) {
     });
   }
   if (filtro==='tudo'||filtro==='status') {
-    (DB.getItem('hist_status_'+guiaId)||[]).filter(s=>s.data>=limiteISO).forEach(s=>{
+    DB.get('hist_status_'+guiaId).filter(s=>paraISO(s.data)>=limiteISO).forEach(s=>{
       eventos.push({data:s.data, hora:'', tipo:'status', icon:'🔔', cor:'#f39c12', texto:`Status → ${s.status}`, sub:s.usuario||''});
     });
   }
   if (filtro==='tudo'||filtro==='medidas') {
-    (DB.getItem('hist_medidas_'+guiaId)||[]).filter(m=>m.data>=limiteISO).forEach(m=>{
+    JSON.parse(DB.getItem('hist_medidas_'+guiaId)||'[]').filter(m=>paraISO(m.data)>=limiteISO).forEach(m=>{
       eventos.push({data:m.data, hora:'', tipo:'medida', icon:'📏', cor:'#27ae60', texto:`Medidas registradas`, sub:m.usuario||''});
     });
   }
@@ -5510,7 +5533,7 @@ function imprimirProntuario() {
   const conv = convs.find(c=>c.id===guia.convenio_id)||{nome:'-'};
   const procs = DB.get('procedimentos');
   const hist = (DB.get('hist_procs_'+guiaId)||[]).filter(h=>!h.cancelado);
-  const histMed = DB.get('hist_medidas_'+guiaId)||[];
+  const histMed = JSON.parse(DB.getItem('hist_medidas_'+guiaId)||'[]');
   const histStatus = DB.get('hist_status_'+guiaId)||[];
 
   const linhasProcs = hist.length ? hist.map(h=>{
