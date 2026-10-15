@@ -401,6 +401,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           Gerenciar Usuários
         </a>
+        <a href="#" onclick="nav('lgpd');closeMenu();return false;" id="topbar-nav-lgpd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          LGPD / Privacidade
+        </a>
         <a href="#" onclick="atualizarDados();closeMenu();return false;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           Atualizar Dados
@@ -1245,6 +1249,24 @@
         <div id="lista-clinicas" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;"></div>
       </div>
 
+      <!-- Retencao de Dados LGPD -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <h3>&#128465; Retenção de Dados (LGPD)</h3>
+          <small style="color:#888;">Dados de saúde — recomendação CFM: 20 anos após alta</small>
+        </div>
+        <div style="padding:12px 0 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:13px;font-weight:600;">Período de retenção:</label>
+          <select id="retencao-anos" onchange="renderRetencaoGuias()" style="padding:6px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;">
+            <option value="20">20 anos (padrão CFM)</option>
+            <option value="10">10 anos</option>
+            <option value="5">5 anos</option>
+          </select>
+          <button class="btn btn-sm" style="background:#f0f2f5;color:#333;" onclick="renderRetencaoGuias()">Verificar</button>
+        </div>
+        <div id="retencao-resultado" style="margin-top:8px;font-size:13px;color:#666;"></div>
+      </div>
+
       <div class="card" style="margin-top:20px;">
         <div class="card-header">
           <h3>&#128274; Log de Acesso a Fichas de Pacientes</h3>
@@ -1257,6 +1279,93 @@
           <thead><tr><th>Data / Hora</th><th>Usuário</th><th>E-mail</th><th>Atendimento</th></tr></thead>
           <tbody id="tb-log-acesso"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- LGPD / PRIVACIDADE -->
+    <div class="page" id="page-lgpd">
+      <div class="page-title">&#128737; LGPD / Privacidade</div>
+
+      <!-- DPO -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#128100; Encarregado de Dados (DPO)</h3><button class="btn btn-success btn-sm" onclick="salvarDPO()">Salvar</button></div>
+        <div style="padding:12px 0;">
+          <div class="form-row">
+            <div class="form-group"><label>Nome do DPO</label><input type="text" id="dpo-nome" placeholder="Nome completo" /></div>
+            <div class="form-group"><label>E-mail</label><input type="email" id="dpo-email" placeholder="dpo@hospital.com.br" /></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Telefone / WhatsApp</label><input type="text" id="dpo-tel" placeholder="(00) 00000-0000" /></div>
+            <div class="form-group"><label>Cargo</label><input type="text" id="dpo-cargo" placeholder="Ex: Diretor de TI, Advogado..." /></div>
+          </div>
+          <div id="dpo-status" style="font-size:12px;color:#888;margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <!-- Requisicoes de Titulares -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#128221; Requisições de Titulares (art. 18 LGPD)</h3></div>
+        <div style="padding:12px 0 4px;">
+          <div class="form-row">
+            <div class="form-group"><label>Nome do Titular (paciente)</label><input type="text" id="req-titular" placeholder="Nome completo" /></div>
+            <div class="form-group"><label>Tipo de Requisição</label>
+              <select id="req-tipo" style="padding:8px;border:1px solid #ddd;border-radius:5px;font-size:13px;width:100%;">
+                <option value="">Selecione...</option>
+                <option>Acesso aos dados (art. 18 II)</option>
+                <option>Correção de dados (art. 18 III)</option>
+                <option>Exclusão de dados (art. 18 VI)</option>
+                <option>Portabilidade (art. 18 V)</option>
+                <option>Revogação de consentimento (art. 18 IX)</option>
+                <option>Informação sobre compartilhamento (art. 18 VII)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Observação</label><input type="text" id="req-obs" placeholder="Detalhe da solicitação..." /></div>
+            <div class="form-group" style="flex:0 0 auto;display:flex;align-items:flex-end;">
+              <button class="btn btn-primary" onclick="salvarRequisicao()">Registrar Requisição</button>
+            </div>
+          </div>
+        </div>
+        <table><thead><tr><th>Data</th><th>Titular</th><th>Tipo</th><th>Status</th><th>Registrado por</th><th>Ação</th></tr></thead>
+        <tbody id="tb-requisicoes"></tbody></table>
+      </div>
+
+      <!-- Protocolo de Incidente -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#128680; Protocolo de Incidente de Segurança (art. 48 LGPD)</h3></div>
+        <div style="padding:12px 0;font-size:13px;">
+          <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:12px;margin-bottom:14px;">
+            <strong>Em caso de incidente (vazamento, acesso indevido, perda de dados):</strong>
+            <ol style="margin:8px 0 0 16px;line-height:2;">
+              <li>Confirme o incidente e identifique os dados afetados</li>
+              <li>Notifique o DPO imediatamente</li>
+              <li>Isole o sistema se necessário (revogar acessos, trocar senhas)</li>
+              <li>Documente: o quê, quando, quem foi afetado, como ocorreu</li>
+              <li><strong>Notifique a ANPD em até 72h</strong> — Portal gov.br/anpd → Reporte um Incidente</li>
+              <li>Notifique os titulares afetados com clareza e em prazo razoável</li>
+              <li>Registre o incidente abaixo e as ações tomadas</li>
+            </ol>
+          </div>
+          <button class="btn btn-danger" onclick="registrarIncidente()" style="margin-bottom:12px;">&#128680; Registrar Novo Incidente</button>
+          <table><thead><tr><th>Data</th><th>Descrição</th><th>Dados afetados</th><th>Status</th><th>Notif. ANPD</th></tr></thead>
+          <tbody id="tb-incidentes"></tbody></table>
+        </div>
+      </div>
+
+      <!-- RIPD Checklist -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#128203; Checklist RIPD — Relatório de Impacto à Proteção de Dados</h3></div>
+        <div style="padding:12px 0;font-size:13px;line-height:2;" id="ripd-checklist">
+          <div style="color:#888;margin-bottom:8px;">Marque os itens conforme forem concluídos:</div>
+        </div>
+      </div>
+
+      <!-- Log de Exports -->
+      <div class="card">
+        <div class="card-header"><h3>&#128196; Log de Exportações de Dados</h3><button class="btn btn-sm" style="background:#f0f2f5;color:#333;" onclick="renderLGPD()">Atualizar</button></div>
+        <table><thead><tr><th>Data / Hora</th><th>Tipo</th><th>Usuário</th><th>E-mail</th></tr></thead>
+        <tbody id="tb-log-exports"></tbody></table>
       </div>
     </div>
 
@@ -1560,8 +1669,13 @@
     </div>
     <div id="usr-senha-bloco">
       <div class="form-row">
-        <div class="form-group"><label>Senha provisória *</label><input type="password" id="usr-senha" placeholder="Mínimo 6 caracteres" /></div>
+        <div class="form-group"><label>Senha provisória *</label><input type="password" id="usr-senha" placeholder="Mínimo 8 caracteres" oninput="avaliarForcaSenha(this.value)" /></div>
         <div class="form-group"><label>Confirmar Senha *</label><input type="password" id="usr-senha2" /></div>
+      </div>
+      <div id="senha-forca-wrap" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:3px;"><span>Força da senha:</span><span id="senha-forca-label">—</span></div>
+        <div style="background:#eee;border-radius:4px;height:6px;overflow:hidden;"><div id="senha-forca-barra" style="height:100%;border-radius:4px;width:0%;transition:width 0.3s,background 0.3s;"></div></div>
+        <div id="senha-forca-req" style="font-size:10px;color:#888;margin-top:4px;line-height:1.6;"></div>
       </div>
       <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#795548;">
         ⚠️ A senha provisória deve ser compartilhada com o usuário via WhatsApp. O usuário pode alterá-la depois em Configurações → Alterar Senha.
@@ -2191,6 +2305,10 @@ const MENUS = {
     </a>
     <a href="#" onclick="nav('cad-setores')" id="nav-cad-setores">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Setores
+    </a>
+    <div class="sidebar-section">Compliance</div>
+    <a href="#" onclick="nav('lgpd')" id="nav-lgpd">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>LGPD / Privacidade
     </a>`,
 
   'Fisioterapeuta': `
@@ -2302,6 +2420,8 @@ function _ativarSessao(user) {
   document.getElementById('user-badge').textContent = user.nome[0].toUpperCase();
   const menuGerenciar = document.querySelector('.topbar-menu a:first-child');
   if (menuGerenciar) menuGerenciar.style.display = ['Gestão','Secretaria'].includes(user.perfil) ? 'flex' : 'none';
+  const menuLGPD = document.getElementById('topbar-nav-lgpd');
+  if (menuLGPD) menuLGPD.style.display = user.perfil === 'Gestão' ? 'flex' : 'none';
   document.getElementById('sidebar-menu').innerHTML = MENUS[user.perfil] || MENUS['Fisioterapeuta'];
   document.getElementById('login-error').style.display = 'none';
   initApp();
@@ -2350,6 +2470,7 @@ const breadcrumbs = {
   'cad-pacientes':'Pacientes','cad-convenios':'Convênios',
   'cad-profissionais':'Profissionais','cad-procedimentos':'Procedimentos',
   'cad-setores':'Setores','config-usuarios':'Usuários','paciente-detalhe':'Detalhe do Paciente',
+  'lgpd':'LGPD / Privacidade',
 };
 
 function toggleSidebar() {
@@ -2490,6 +2611,7 @@ function renderPage(id) {
     'rel-alta-fisio': renderRelAltaFisio,
     'painel-financeiro': renderPainelFinanceiro,
     'config-usuarios': renderUsuarios,
+    'lgpd': renderLGPD,
     'cobertura-assistencial': renderCoberturaAssistencial,
     'oportunidade-financeira': renderOportunidadeFinanceira,
     'indicadores-cobertura': renderIndicadoresCobertura,
@@ -3322,6 +3444,227 @@ function saveSetor() {
   document.getElementById('modal-setor-titulo').textContent='Novo Setor';
 }
 
+// ===== SEGURANÇA — FORÇA DE SENHA =====
+function calcularForcaSenha(senha) {
+  const req = [
+    {ok: senha.length >= 8,         texto: 'Mínimo 8 caracteres'},
+    {ok: /[A-Z]/.test(senha),       texto: 'Uma letra maiúscula'},
+    {ok: /[0-9]/.test(senha),       texto: 'Um número'},
+    {ok: /[^A-Za-z0-9]/.test(senha),texto: 'Um caractere especial (!@#$...)'},
+  ];
+  const score = req.filter(r=>r.ok).length;
+  return {score, requisitos: req};
+}
+function avaliarForcaSenha(v) {
+  const {score, requisitos} = calcularForcaSenha(v);
+  const barra = document.getElementById('senha-forca-barra');
+  const label = document.getElementById('senha-forca-label');
+  const reqEl  = document.getElementById('senha-forca-req');
+  if (!barra) return;
+  const cfg = [{pct:'25%',cor:'#e74c3c',txt:'Muito fraca'},{pct:'50%',cor:'#e67e22',txt:'Fraca'},{pct:'75%',cor:'#f1c40f',txt:'Boa'},{pct:'100%',cor:'#27ae60',txt:'Forte'}];
+  const c = cfg[score-1] || {pct:'0%',cor:'#eee',txt:'—'};
+  barra.style.width = c.pct; barra.style.background = c.cor;
+  label.textContent = c.txt; label.style.color = c.cor;
+  reqEl.innerHTML = requisitos.map(r=>`<span style="color:${r.ok?'#27ae60':'#e74c3c'};">${r.ok?'✔':'✗'} ${r.texto}</span>`).join(' &nbsp; ');
+}
+
+// ===== SEGURANÇA — LOG DE EXPORTS (LGPD rastreabilidade) =====
+function registrarLogExport(tipo) {
+  const log = JSON.parse(DB.getItem('log_exports') || '[]');
+  log.push({tipo, usuario: currentUser?.nome||'?', email: currentUser?.email||'?', data_hora: new Date().toISOString()});
+  if (log.length > 200) log.splice(0, log.length - 200);
+  DB.setItem('log_exports', JSON.stringify(log));
+}
+
+// ===== LGPD PAGE =====
+const RIPD_ITENS = [
+  'Identificar todas as operações de tratamento de dados pessoais do sistema',
+  'Mapear as finalidades de cada operação (diagnóstico, faturamento, gestão...)',
+  'Verificar a base legal para cada operação (consentimento, obrigação legal, legítimo interesse)',
+  'Identificar dados sensíveis tratados (dados de saúde — art. 11 LGPD)',
+  'Avaliar riscos e vulnerabilidades técnicas do sistema',
+  'Documentar as medidas de segurança adotadas (RLS, autenticação, logs)',
+  'Definir e documentar o DPO responsável',
+  'Estabelecer política de retenção e exclusão de dados',
+  'Criar canal para atendimento de direitos dos titulares',
+  'Treinar equipe sobre práticas de privacidade',
+  'Elaborar o documento RIPD formal e manter atualizado',
+];
+
+function renderLGPD() {
+  // DPO
+  const dpo = JSON.parse(DB.getItem('lgpd_dpo') || '{}');
+  if (document.getElementById('dpo-nome')) {
+    document.getElementById('dpo-nome').value = dpo.nome || '';
+    document.getElementById('dpo-email').value = dpo.email || '';
+    document.getElementById('dpo-tel').value = dpo.tel || '';
+    document.getElementById('dpo-cargo').value = dpo.cargo || '';
+    const st = document.getElementById('dpo-status');
+    if (st) st.textContent = dpo.nome ? `Última atualização: ${dpo.atualizado || '—'}` : '⚠ DPO não designado';
+  }
+  // Requisicoes
+  const reqs = JSON.parse(DB.getItem('lgpd_requisicoes') || '[]');
+  const tbReq = document.getElementById('tb-requisicoes');
+  if (tbReq) {
+    tbReq.innerHTML = reqs.length ? reqs.slice().reverse().map((r,i) => {
+      const idx = reqs.length - 1 - i;
+      const cicloStatus = ['Pendente','Em análise','Concluída'];
+      const cor = {Pendente:'#e74c3c','Em análise':'#e67e22','Concluída':'#27ae60'};
+      return `<tr>
+        <td>${r.data}</td><td>${r.titular}</td><td style="font-size:12px;">${r.tipo}</td>
+        <td><span style="background:${(cor[r.status]||'#888')}20;color:${cor[r.status]||'#888'};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">${r.status||'Pendente'}</span></td>
+        <td style="font-size:12px;">${r.usuario}</td>
+        <td><button class="btn btn-sm" style="font-size:11px;" onclick="ciclarStatusRequisicao(${idx})">Avançar</button></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:16px;">Nenhuma requisição registrada</td></tr>';
+  }
+  // Incidentes
+  const incs = JSON.parse(DB.getItem('lgpd_incidentes') || '[]');
+  const tbInc = document.getElementById('tb-incidentes');
+  if (tbInc) {
+    tbInc.innerHTML = incs.length ? incs.slice().reverse().map(inc =>
+      `<tr>
+        <td>${inc.data}</td><td>${inc.descricao}</td><td style="font-size:12px;">${inc.dados_afetados||'-'}</td>
+        <td><span style="background:${inc.status==='Resolvido'?'#d4edda':'#fdecea'};color:${inc.status==='Resolvido'?'#155724':'#721c24'};padding:2px 8px;border-radius:10px;font-size:11px;">${inc.status||'Aberto'}</span></td>
+        <td><span style="font-size:11px;color:${inc.notif_anpd?'#27ae60':'#e74c3c'};">${inc.notif_anpd?'✔ Notificado':'✗ Pendente'}</span></td>
+      </tr>`
+    ).join('') : '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:16px;">Nenhum incidente registrado</td></tr>';
+  }
+  // RIPD checklist
+  const concluidos = JSON.parse(DB.getItem('lgpd_ripd') || '[]');
+  const ripdEl = document.getElementById('ripd-checklist');
+  if (ripdEl) {
+    ripdEl.innerHTML = '<div style="color:#888;margin-bottom:8px;font-size:12px;">Marque os itens conforme forem concluídos:</div>' +
+      RIPD_ITENS.map((item, i) => {
+        const ok = concluidos.includes(i);
+        return `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+          <input type="checkbox" id="ripd-${i}" ${ok?'checked':''} onchange="toggleRIPD(${i})" style="margin-top:2px;" />
+          <label for="ripd-${i}" style="cursor:pointer;color:${ok?'#27ae60':'#333'};${ok?'text-decoration:line-through;':''}">${item}</label>
+        </div>`;
+      }).join('') +
+      `<div style="margin-top:10px;font-size:13px;font-weight:600;color:#0a1628;">${concluidos.length}/${RIPD_ITENS.length} itens concluídos</div>`;
+  }
+  // Log exports
+  const logsExp = JSON.parse(DB.getItem('log_exports') || '[]');
+  const tbExp = document.getElementById('tb-log-exports');
+  if (tbExp) {
+    tbExp.innerHTML = logsExp.length ? logsExp.slice().reverse().map(l =>
+      `<tr><td style="font-size:12px;">${new Date(l.data_hora).toLocaleString('pt-BR')}</td><td>${l.tipo}</td><td>${l.usuario}</td><td style="font-size:12px;">${l.email}</td></tr>`
+    ).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhuma exportação registrada</td></tr>';
+  }
+}
+
+function salvarDPO() {
+  const dpo = {
+    nome: document.getElementById('dpo-nome').value.trim(),
+    email: document.getElementById('dpo-email').value.trim(),
+    tel: document.getElementById('dpo-tel').value.trim(),
+    cargo: document.getElementById('dpo-cargo').value.trim(),
+    atualizado: new Date().toLocaleString('pt-BR'),
+  };
+  if (!dpo.nome || !dpo.email) { alert('Nome e E-mail são obrigatórios'); return; }
+  DB.setItem('lgpd_dpo', JSON.stringify(dpo));
+  document.getElementById('dpo-status').textContent = 'Última atualização: ' + dpo.atualizado;
+  showToast('DPO salvo!');
+}
+
+function salvarRequisicao() {
+  const titular = document.getElementById('req-titular').value.trim();
+  const tipo = document.getElementById('req-tipo').value;
+  if (!titular || !tipo) { alert('Titular e Tipo são obrigatórios'); return; }
+  const reqs = JSON.parse(DB.getItem('lgpd_requisicoes') || '[]');
+  reqs.push({
+    titular, tipo, status: 'Pendente',
+    obs: document.getElementById('req-obs').value.trim(),
+    usuario: currentUser?.nome || '?',
+    data: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
+  });
+  DB.setItem('lgpd_requisicoes', JSON.stringify(reqs));
+  document.getElementById('req-titular').value = '';
+  document.getElementById('req-tipo').value = '';
+  document.getElementById('req-obs').value = '';
+  renderLGPD();
+  showToast('Requisição registrada!');
+}
+
+function ciclarStatusRequisicao(idx) {
+  const ciclo = ['Pendente','Em análise','Concluída'];
+  const reqs = JSON.parse(DB.getItem('lgpd_requisicoes') || '[]');
+  if (!reqs[idx]) return;
+  reqs[idx].status = ciclo[(ciclo.indexOf(reqs[idx].status||'Pendente')+1)%ciclo.length];
+  DB.setItem('lgpd_requisicoes', JSON.stringify(reqs));
+  renderLGPD();
+}
+
+function registrarIncidente() {
+  const descricao = prompt('Descreva o incidente:');
+  if (!descricao) return;
+  const dados = prompt('Quais dados foram afetados? (ex: nome, histórico de procedimentos)');
+  const incs = JSON.parse(DB.getItem('lgpd_incidentes') || '[]');
+  incs.push({
+    descricao, dados_afetados: dados || '-', status: 'Aberto', notif_anpd: false,
+    usuario: currentUser?.nome || '?',
+    data: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
+  });
+  DB.setItem('lgpd_incidentes', JSON.stringify(incs));
+  renderLGPD();
+  showToast('Incidente registrado! Siga o protocolo de notificação.', '#e74c3c');
+}
+
+function toggleRIPD(i) {
+  const concluidos = JSON.parse(DB.getItem('lgpd_ripd') || '[]');
+  const pos = concluidos.indexOf(i);
+  if (pos >= 0) concluidos.splice(pos, 1); else concluidos.push(i);
+  DB.setItem('lgpd_ripd', JSON.stringify(concluidos));
+  renderLGPD();
+}
+
+function renderRetencaoGuias() {
+  const anos = parseInt(document.getElementById('retencao-anos')?.value || '20');
+  const limite = new Date();
+  limite.setFullYear(limite.getFullYear() - anos);
+  const guias = DB.get('guias') || [];
+  const pacs = DB.get('pacientes') || [];
+  const vencidas = guias.filter(g => {
+    if (!g.alta) return false;
+    const d = new Date(paraISO(g.alta));
+    return d < limite;
+  });
+  const el = document.getElementById('retencao-resultado');
+  if (!el) return;
+  if (vencidas.length === 0) {
+    el.innerHTML = '<span style="color:#27ae60;">✔ Nenhum registro excedeu o período de retenção de ' + anos + ' anos.</span>';
+    return;
+  }
+  el.innerHTML = `<div style="background:#fdecea;border:1px solid #e74c3c;border-radius:6px;padding:12px;margin-bottom:8px;">
+    <strong style="color:#c0392b;">⚠ ${vencidas.length} guia(s) fechada(s) há mais de ${anos} anos</strong>
+    <p style="font-size:12px;color:#666;margin-top:4px;">Avalie se ainda há necessidade de manter esses registros. A exclusão é irreversível.</p>
+    <table style="width:100%;font-size:12px;margin-top:8px;border-collapse:collapse;">
+      <thead><tr><th style="text-align:left;padding:4px;">Paciente</th><th style="text-align:left;padding:4px;">Alta</th><th style="text-align:left;padding:4px;">Nº Atend.</th></tr></thead>
+      <tbody>${vencidas.map(g=>{const p=pacs.find(x=>x.id===g.paciente_id)||{};return `<tr><td style="padding:3px 4px;">${p.nome||'-'}</td><td style="padding:3px 4px;">${g.alta||'-'}</td><td style="padding:3px 4px;">${g.num_at||'-'}</td></tr>`;}).join('')}</tbody>
+    </table>
+    <button class="btn btn-sm" style="background:#e74c3c;color:#fff;margin-top:10px;"
+      onclick="if(confirm('Excluir DEFINITIVAMENTE ${vencidas.length} guia(s) e históricos vinculados? Esta ação é irreversível.')) excluirGuiasVencidas(${JSON.stringify(vencidas.map(g=>g.id))})">
+      &#128465; Excluir ${vencidas.length} registro(s) vencido(s)
+    </button>
+  </div>`;
+}
+
+function excluirGuiasVencidas(ids) {
+  let guias = DB.get('guias') || [];
+  ids.forEach(id => {
+    guias = guias.filter(g => g.id !== id);
+    ['hist_procs_','hist_status_','hist_medidas_','hist_ims_','hist_setor_'].forEach(p => {
+      DB.set(p + id, []);
+      try { DB.setItem(p + id, '[]'); } catch(e) {}
+    });
+  });
+  DB.set('guias', guias);
+  registrarLogExport('exclusao-retencao-' + ids.length + '-guias');
+  showToast(ids.length + ' registro(s) excluído(s).', '#e74c3c');
+  renderRetencaoGuias();
+}
+
 function renderListaClinicas() {
   const lista = document.getElementById('lista-clinicas');
   if (!lista) return;
@@ -3363,6 +3706,16 @@ async function saveUsuario() {
 
   const usuarios = DB.get('usuarios');
 
+  if (!editId) {
+    // Validação de força de senha
+    if (!senha) { alert('Senha provisória é obrigatória'); return; }
+    const forca = calcularForcaSenha(senha);
+    if (forca.score < 3) {
+      alert('Senha fraca.\n\nRequisitos:\n' + forca.requisitos.filter(r=>!r.ok).map(r=>'• '+r.texto).join('\n'));
+      return;
+    }
+  }
+
   if (editId) {
     // Edição: atualiza apenas nome, perfil, ativo (e-mail não muda)
     const idx = usuarios.findIndex(u => u.id === parseInt(editId));
@@ -3375,9 +3728,7 @@ async function saveUsuario() {
     }
   } else {
     // Novo usuário: valida e cria no Supabase Auth
-    if (!senha) { alert('Senha provisória é obrigatória'); return; }
     if (senha !== senha2) { alert('As senhas não coincidem'); return; }
-    if (senha.length < 6) { alert('Senha deve ter pelo menos 6 caracteres'); return; }
     const emailExiste = usuarios.find(u => u.email === email);
     if (emailExiste) { alert('Já existe um usuário com esse e-mail'); return; }
 
@@ -5361,6 +5712,13 @@ function atualizarAlertaSessoes(guiaId) {
 
 // ===== EXPORTAR CSV =====
 function exportarCSV(tipo) {
+  // Tipos que contêm dados pessoais de pacientes exigem confirmação
+  const tiposPaciente = ['atendimentos','pacientes','alta-fisio','glosas'];
+  if (tiposPaciente.includes(tipo)) {
+    const ok = confirm('⚠️ Este relatório contém dados pessoais de pacientes (LGPD).\nO arquivo será registrado no log de auditoria.\n\nContinuar?');
+    if (!ok) return;
+    registrarLogExport('csv-' + tipo);
+  }
   function parseMoeda(v){if(!v)return 0;return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;}
   function fmtMoeda(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
   const hojeStr = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
@@ -5474,6 +5832,7 @@ function exportarCSV(tipo) {
 
 // ===== GERAR XML TISS (guia individual) =====
 function gerarXMLTISS(guiaId) {
+  registrarLogExport('xml-tiss-guia-' + guiaId);
   const guias = DB.get('guias');
   const guia = guias.find(g=>g.id===guiaId);
   if (!guia) return;
@@ -5927,12 +6286,28 @@ function salvarGlosa() {
 
 // ===== BACKUP COMPLETO =====
 function exportarBackup() {
-  // pacientes vem da tabela dedicada (já está em _mem['pacientes'])
+  const confirmado = confirm(
+    '⚠️ ATENÇÃO — DADOS PESSOAIS SENSÍVEIS\n\n' +
+    'Este arquivo contém dados de saúde de pacientes classificados como sensíveis pela LGPD (Lei 13.709/2018).\n\n' +
+    'Ao exportar, você assume a responsabilidade por:\n' +
+    '• Armazenar o arquivo em local seguro e com acesso restrito\n' +
+    '• Não compartilhar com pessoas não autorizadas\n' +
+    '• Excluir o arquivo quando não for mais necessário\n\n' +
+    'Esta exportação será registrada no log de auditoria.\n\nDeseja continuar?'
+  );
+  if (!confirmado) return;
+  registrarLogExport('backup-json');
   const chaves = ['guias','lotes','convenios','setores','profissionais','procedimentos','medidas','usuarios','glosas'];
-  const backup = { versao: 'raja_v2', exportado_em: new Date().toISOString(), dados: {} };
-  backup.dados['pacientes'] = DB.get('pacientes'); // da tabela dedicada
+  const backup = {
+    _classificacao: 'CONFIDENCIAL — DADOS_PESSOAIS_SENSÍVEIS — LGPD Art.11',
+    _aviso: 'Este arquivo contém dados de saúde. Manuseie com responsabilidade.',
+    versao: 'raja_v2',
+    exportado_em: new Date().toISOString(),
+    exportado_por: currentUser?.email || '?',
+    dados: {}
+  };
+  backup.dados['pacientes'] = DB.get('pacientes');
   chaves.forEach(k => { backup.dados[k] = DB.get(k); });
-  // inclui hist_procs, hist_status, hist_medidas, hist_ims por guia
   const guias = DB.get('guias');
   guias.forEach(g => {
     ['hist_procs_','hist_status_','hist_medidas_','hist_ims_'].forEach(prefix => {
@@ -5947,7 +6322,7 @@ function exportarBackup() {
   a.download = `fisio-raja-backup-${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('Backup exportado!');
+  showToast('Backup exportado e registrado no log de auditoria.');
 }
 
 // ===== INIT =====
