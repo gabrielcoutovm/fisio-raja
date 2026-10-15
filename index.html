@@ -2028,13 +2028,6 @@ function initData() {
     DB.setItem('raja_v2','1');
   }
 
-  // garante sempre que existe pelo menos um admin
-  const usuarios = DB.get('usuarios');
-  const temAdmin = usuarios.find(u => u.login === 'admin');
-  if (!temAdmin) {
-    usuarios.unshift({id:1, nome:'ADMINISTRADOR', login:'admin', senha:'1234', perfil:'Gestão', ativo:1});
-    DB.set('usuarios', usuarios);
-  }
   // garante medidas padrão sempre existam
   if (DB.get('medidas').length === 0) {
     DB.set('medidas',[
