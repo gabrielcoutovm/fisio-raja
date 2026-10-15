@@ -1709,7 +1709,7 @@
 <div class="modal-overlay" id="modal-alterar-senha">
   <div class="modal">
     <h2>Alterar Senha</h2>
-    <div class="form-group"><label>Nova Senha *</label><input type="password" id="senha-nova" placeholder="Mínimo 6 caracteres" /></div>
+    <div class="form-group"><label>Nova Senha *</label><input type="password" id="senha-nova" placeholder="Mínimo 8 caracteres, maiúscula, número e símbolo" /></div>
     <div class="form-group"><label>Confirmar Nova Senha *</label><input type="password" id="senha-nova2" /></div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-alterar-senha')">Cancelar</button>
@@ -2093,6 +2093,78 @@ function getHeaders() {
   };
 }
 
+// ===== RENOVAÇÃO DE SESSÃO (refresh_token) =====
+let _sessaoAlertaVisivel = false;
+let _refreshInterval = null;
+
+async function renovarSessao() {
+  const refresh = sessionStorage.getItem('fisioraja_refresh');
+  if (!refresh) return false;
+  try {
+    const r = await fetch(`${SB_AUTH_URL}/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refresh })
+    });
+    if (!r.ok) return false;
+    const data = await r.json();
+    if (!data.access_token) return false;
+    sessionStorage.setItem('fisioraja_token', data.access_token);
+    if (data.refresh_token) sessionStorage.setItem('fisioraja_refresh', data.refresh_token);
+    ocultarAlertaSessao();
+    return true;
+  } catch(e) { return false; }
+}
+
+function mostrarAlertaSessao() {
+  if (_sessaoAlertaVisivel) return;
+  _sessaoAlertaVisivel = true;
+  let banner = document.getElementById('banner-sessao-exp');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'banner-sessao-exp';
+    banner.style.cssText = 'position:fixed;top:52px;left:210px;right:0;z-index:9999;background:#e74c3c;color:#fff;padding:10px 20px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;';
+    banner.innerHTML = '⚠️ Sessão expirada — as últimas alterações podem não ter sido salvas. <button onclick="location.reload()" style="background:#fff;color:#e74c3c;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-weight:700;">Recarregar</button>';
+    document.body.appendChild(banner);
+  }
+  banner.style.display = 'flex';
+}
+
+function ocultarAlertaSessao() {
+  _sessaoAlertaVisivel = false;
+  const banner = document.getElementById('banner-sessao-exp');
+  if (banner) banner.style.display = 'none';
+}
+
+// Envolve um fetch e tenta renovar sessão automaticamente se receber 401
+async function fetchComRenovacao(url, opts) {
+  let r = await fetch(url, opts);
+  if (r.status === 401) {
+    const renovado = await renovarSessao();
+    if (renovado) {
+      // reconstrói headers com o novo token
+      opts.headers = getHeaders();
+      r = await fetch(url, opts);
+    } else {
+      mostrarAlertaSessao();
+    }
+  } else if (!r.ok) {
+    console.warn('Supabase error', r.status, url);
+  }
+  return r;
+}
+
+// ===== ESCAPE HTML (previne XSS em innerHTML) =====
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 const _mem = {};
 
 async function sbGet() {
@@ -2105,10 +2177,11 @@ async function sbGet() {
 }
 
 function sbSet(key, value) {
-  fetch(`${SB_URL}/store?on_conflict=key`, {
+  const body = JSON.stringify({ key, value, updated_at: new Date().toISOString() });
+  fetchComRenovacao(`${SB_URL}/store?on_conflict=key`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
+    body
   }).catch(e => console.warn('Supabase save error:', e.message));
 }
 
@@ -2116,7 +2189,7 @@ function sbSet(key, value) {
 // Grava/sincroniza um ou mais pacientes na tabela própria (upsert por id)
 function sbUpsertPacientes(pacs) {
   if (!pacs || !pacs.length) return;
-  fetch(`${SB_URL}/pacientes?on_conflict=id`, {
+  fetchComRenovacao(`${SB_URL}/pacientes?on_conflict=id`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(pacs.map(p => ({
@@ -2128,7 +2201,7 @@ function sbUpsertPacientes(pacs) {
 
 // Remove um paciente da tabela pelo id
 function sbDeletePaciente(id) {
-  fetch(`${SB_URL}/pacientes?id=eq.${id}`, {
+  fetchComRenovacao(`${SB_URL}/pacientes?id=eq.${id}`, {
     method: 'DELETE',
     headers: getHeaders()
   }).catch(e => console.warn('Paciente delete error:', e.message));
@@ -2390,8 +2463,12 @@ async function doLogin() {
       btn.textContent = 'Entrar'; btn.disabled = false;
       return;
     }
-    const { access_token } = await r.json();
+    const { access_token, refresh_token } = await r.json();
     sessionStorage.setItem('fisioraja_token', access_token);
+    if (refresh_token) sessionStorage.setItem('fisioraja_refresh', refresh_token);
+    // Renova sessão a cada 50 minutos automaticamente
+    if (_refreshInterval) clearInterval(_refreshInterval);
+    _refreshInterval = setInterval(renovarSessao, 50 * 60 * 1000);
 
     // Recarrega dados com o token autenticado e busca perfil pelo e-mail
     await carregarDados();
@@ -2438,6 +2515,9 @@ function doLogout() {
   }
   currentUser = null;
   sessionStorage.removeItem('fisioraja_token');
+  sessionStorage.removeItem('fisioraja_refresh');
+  if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = null; }
+  ocultarAlertaSessao();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-user').value = '';
@@ -2625,7 +2705,7 @@ function renderPacientes() {
   document.getElementById('tb-cad-pacientes').innerHTML = data.map(p => {
     const conv = convs.find(c=>c.id===p.convenio_id)||{};
     const idade = p.nascimento ? Math.floor((new Date()-new Date(p.nascimento))/31557600000) : '-';
-    return `<tr data-search="${p.nome.toLowerCase()}"><td>${p.nome}</td><td>${idade}</td><td>${conv.nome||'-'}</td>
+    return `<tr data-search="${esc(p.nome).toLowerCase()}"><td>${esc(p.nome)}</td><td>${idade}</td><td>${esc(conv.nome||'-')}</td>
       <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`;
   }).join('');
   updateConvenioSelects();
@@ -2644,9 +2724,9 @@ function renderConvenios() {
 
 function renderProfissionais() {
   document.getElementById('tb-cad-profissionais').innerHTML = DB.get('profissionais').map(p => `
-    <tr data-search="${p.nome.toLowerCase()}">
-      <td>${p.nome}</td><td>${p.cpf||'-'}</td><td>${p.conselho}</td><td>${p.numconselho||'-'}</td>
-      <td>${p.especialidade||'-'}</td>
+    <tr data-search="${esc(p.nome).toLowerCase()}">
+      <td>${esc(p.nome)}</td><td>${esc(p.cpf||'-')}</td><td>${esc(p.conselho)}</td><td>${esc(p.numconselho||'-')}</td>
+      <td>${esc(p.especialidade||'-')}</td>
       <td style="text-align:center;">${p.meta_guias_mes ? `<span style="background:#eaf5ea;color:#27ae60;padding:2px 8px;border-radius:4px;font-size:12px;">${p.meta_guias_mes}/mês</span>` : '-'}</td>
       <td><span class="icon-ativo ${p.ativo?'sim':'nao'}">${p.ativo?'✔':'✘'}</span></td>
       <td><button class="btn btn-primary btn-sm" onclick="editarProfissional(${p.id})">Editar</button></td>
@@ -2671,8 +2751,8 @@ function renderProcedimentos() {
   const lista = DB.get('procedimentos');
   document.getElementById('tb-cad-procedimentos').innerHTML = lista.length
     ? lista.map(p => `
-        <tr data-search="${(p.nome+' '+(p.codigo||'')).toLowerCase()}">
-          <td>${p.tabela||22}</td><td>${p.codigo}</td><td>${p.nome}</td><td>${p.abrev||'-'}</td>
+        <tr data-search="${esc(p.nome+' '+(p.codigo||'')).toLowerCase()}">
+          <td>${p.tabela||22}</td><td>${esc(p.codigo)}</td><td>${esc(p.nome)}</td><td>${esc(p.abrev||'-')}</td>
           <td><button class="btn btn-primary btn-sm" onclick="editarProcedimento(${p.id})">Editar</button>
               <button class="btn btn-sm" style="background:#e74c3c;color:#fff;margin-left:4px" onclick="excluirProcedimento(${p.id})">✕</button></td>
         </tr>`).join('')
@@ -2791,8 +2871,8 @@ function renderGuiasAbertas() {
     const conv = convs.find(c=>c.id===g.convenio_id)||{};
     const glosas = (DB.get('glosas')||[]).filter(gl=>gl.guia_id===g.id);
     const glosaCell = glosas.length ? `<span class="glosa-badge">${glosas.length} glosa${glosas.length>1?'s':''}</span>` : '';
-    return `<tr><td>${g.num_at}</td><td>${g.setor}</td><td>${g.num_guia}</td>
-      <td>${pac.nome||'-'}</td><td>${conv.nome||'-'}</td>
+    return `<tr><td>${esc(g.num_at)}</td><td>${esc(g.setor)}</td><td>${esc(g.num_guia)}</td>
+      <td>${esc(pac.nome||'-')}</td><td>${esc(conv.nome||'-')}</td>
       <td>${g.internacao}</td><td>${g.atend}</td><td>${g.valor}</td><td>${g.dias}</td>
       <td>${glosaCell} <button style="background:none;border:1px solid #e74c3c;color:#e74c3c;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;" onclick="abrirModalGlosa(${g.id})">+ Glosa</button></td></tr>`;
   }).join('');
@@ -2848,7 +2928,7 @@ function renderMapaGeral() {
       const atendidoHoje = hist.some(h=>!h.cancelado&&h.data===hojeStr);
       const classeExtra = guia.alta ? 'alta-fisio' : (atendidoHoje ? '' : 'sem-atend');
       const titulo = guia.alta ? 'Alta fisioterapêutica' : (atendidoHoje ? '' : 'Sem atendimento hoje');
-      return `<div class="leito-cell ocupado ${classeExtra}" onclick="abrirPacienteDetalhe(${guia.id})" title="${titulo}"><div class="leito-num">${num}</div><div class="leito-nome">${pac.nome.split(' ').slice(0,2).join(' ')}</div><div class="leito-conv">(${conv?conv.nome:''})</div></div>`;
+      return `<div class="leito-cell ocupado ${classeExtra}" onclick="abrirPacienteDetalhe(${guia.id})" title="${esc(titulo)}"><div class="leito-num">${num}</div><div class="leito-nome">${esc(pac.nome.split(' ').slice(0,2).join(' '))}</div><div class="leito-conv">(${esc(conv?conv.nome:'')})</div></div>`;
     }).join('');
     return `<div class="mapa-setor"><div class="mapa-setor-title">${s.nome}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
   }).join('');
@@ -2968,15 +3048,15 @@ function renderMapaOcupacao() {
       const semAtendBadge = meta > 0 && realizados === 0
         ? `<span style="font-size:10px;color:#e65100;margin-left:4px;">⚠</span>` : '';
 
-      const convNome = conv ? conv.nome : '';
-      const profNome = prof ? ` · ${prof.nome.split(' ')[0]}` : '';
+      const convNome = conv ? esc(conv.nome) : '';
+      const profNome = prof ? ` · ${esc(prof.nome.split(' ')[0])}` : '';
 
       return `<div class="ocupacao-leito ocupado${proposta === 'nao-iniciada' ? ' sem-atend' : proposta === 'alcancada' ? '' : ''}"
         onclick="abrirPacienteDetalhe(${guia.id})"
         style="border-left:3px solid ${propostaCor};">
         <div class="leito-id">${num}</div>
         <div class="leito-info">
-          <div class="nome">${pac.nome}${semAtendBadge}${propostaBadge}</div>
+          <div class="nome">${esc(pac.nome)}${semAtendBadge}${propostaBadge}</div>
           <div class="detalhe" style="font-size:11px;color:#888;">${convNome}${profNome}</div>
         </div>
         <div class="leito-arrow">›</div>
@@ -3732,17 +3812,18 @@ async function saveUsuario() {
     const emailExiste = usuarios.find(u => u.email === email);
     if (emailExiste) { alert('Já existe um usuário com esse e-mail'); return; }
 
-    btn.textContent = 'Criando...'; btn.disabled = true;
+    btn.textContent = 'Salvando...'; btn.disabled = true;
     try {
-      // Cria conta no Supabase Auth
-      const r = await fetch(`${SB_AUTH_URL}/signup`, {
-        method: 'POST',
-        headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: senha })
-      });
-      if (!r.ok) {
-        const err = await r.json().catch(() => ({}));
-        alert('Erro ao criar conta: ' + (err.msg || err.message || r.status));
+      // ⚠️ Por segurança, a conta Supabase Auth deve ser criada pelo administrador
+      // diretamente no painel: Authentication → Users → Invite user / Add user.
+      // Aqui registramos apenas o perfil local após a conta já existir.
+      if (!confirm(
+        'ATENÇÃO — Passo obrigatório antes de salvar:\n\n' +
+        '1. Acesse o painel Supabase → Authentication → Users\n' +
+        '2. Clique em "Invite user" e cadastre o e-mail: ' + email + '\n' +
+        '3. Defina a senha diretamente no painel\n\n' +
+        'A conta já foi criada no painel?\n(Clique OK para registrar o perfil aqui)'
+      )) {
         btn.textContent = 'Salvar'; btn.disabled = false;
         return;
       }
@@ -3752,7 +3833,7 @@ async function saveUsuario() {
         perfil: document.getElementById('usr-perfil').value,
         ativo: parseInt(document.getElementById('usr-ativo').value)
       });
-      showToast('Usuário criado! Compartilhe a senha provisória com ele.', '#27ae60', 5000);
+      showToast('Perfil registrado! Certifique-se de que a conta Supabase foi criada.', '#27ae60', 5000);
     } catch(e) {
       alert('Erro de conexão: ' + e.message);
       btn.textContent = 'Salvar'; btn.disabled = false;
@@ -3812,7 +3893,12 @@ function toggleUsuarioAtivo(id) {
 async function alterarSenha() {
   const nova=document.getElementById('senha-nova').value;
   const nova2=document.getElementById('senha-nova2').value;
-  if (!nova||nova.length<6) { alert('Nova senha deve ter pelo menos 6 caracteres'); return; }
+  if (!nova) { alert('Digite a nova senha'); return; }
+  const forca = calcularForcaSenha(nova);
+  if (forca.score < 3) {
+    alert('Senha fraca.\n\nRequisitos não atendidos:\n' + forca.requisitos.filter(r=>!r.ok).map(r=>'• '+r.texto).join('\n'));
+    return;
+  }
   if (nova!==nova2) { alert('As senhas não coincidem'); return; }
   const token = sessionStorage.getItem('fisioraja_token');
   const r = await fetch(`${SB_AUTH_URL}/user`, {
@@ -4040,8 +4126,8 @@ function renderDetProcs(guiaId) {
     const realIdx = hist.length - 1 - hist.slice().reverse().indexOf(h);
     const proc = procs.find(p=>p.id===h.proc_id)||{};
     const nomeCell = h.cancelado
-      ? `<span style="text-decoration:line-through;color:#aaa;">${proc.nome||h.nome||'-'}</span> <span style="font-size:11px;color:#e74c3c;">(cancelado: ${h.motivo_cancelamento||''})</span>`
-      : (proc.nome||h.nome||'-');
+      ? `<span style="text-decoration:line-through;color:#aaa;">${esc(proc.nome||h.nome||'-')}</span> <span style="font-size:11px;color:#e74c3c;">(cancelado: ${esc(h.motivo_cancelamento||'')})</span>`
+      : esc(proc.nome||h.nome||'-');
     const cancelBtn = !h.cancelado
       ? `<button style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;" title="Cancelar" onclick="cancelarProcedimento(${guiaId},${realIdx})">✕</button>`
       : '';
@@ -4049,9 +4135,9 @@ function renderDetProcs(guiaId) {
       const s = h.status_fat || 'Pendente';
       const cfg = {Pendente:{bg:'#fff3cd',c:'#856404'},Validado:{bg:'#d1ecf1',c:'#0c5460'},Faturado:{bg:'#d4edda',c:'#155724'},Glosado:{bg:'#f8d7da',c:'#721c24'}};
       const k = cfg[s]||cfg['Pendente'];
-      return `<button onclick="ciclarStatusProc(${guiaId},${realIdx})" style="background:${k.bg};color:${k.c};border:none;cursor:pointer;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;" title="Clique para alterar">${s}</button>`;
+      return `<button onclick="ciclarStatusProc(${guiaId},${realIdx})" style="background:${k.bg};color:${k.c};border:none;cursor:pointer;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;" title="Clique para alterar">${esc(s)}</button>`;
     })();
-    return `<tr><td>${h.data}</td><td>${nomeCell}</td><td>${h.usuario}</td><td>${statusFat}</td><td>${cancelBtn}</td></tr>`;
+    return `<tr><td>${esc(h.data)}</td><td>${nomeCell}</td><td>${esc(h.usuario)}</td><td>${statusFat}</td><td>${cancelBtn}</td></tr>`;
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento no período</td></tr>';
 }
 
