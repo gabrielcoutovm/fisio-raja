@@ -2509,6 +2509,7 @@ let _recoveryToken = null; // token JWT de recuperação vindo do link do e-mail
 
 // ===== NAVEGAÇÃO ENTRE TELAS DE AUTENTICAÇÃO =====
 function mostrarLogin() {
+  ocultarAlertaSessao();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('recuperar-senha-screen').style.display = 'none';
   document.getElementById('nova-senha-screen').style.display = 'none';
@@ -2546,10 +2547,16 @@ async function enviarRecuperacao() {
     if (r.ok || r.status === 200) {
       document.getElementById('recuperar-sucesso').style.display = 'block';
     } else {
-      document.getElementById('recuperar-error').style.display = 'block';
+      let detalhes = '';
+      try { const j = await r.json(); detalhes = j.msg || j.message || j.error_description || JSON.stringify(j); } catch(_){}
+      const el = document.getElementById('recuperar-error');
+      el.textContent = `Erro ${r.status}: ${detalhes || 'Não foi possível enviar o e-mail.'}`;
+      el.style.display = 'block';
     }
   } catch(e) {
-    document.getElementById('recuperar-error').style.display = 'block';
+    const el = document.getElementById('recuperar-error');
+    el.textContent = 'Erro de conexão: ' + e.message;
+    el.style.display = 'block';
   }
   btn.textContent = 'Enviar link'; btn.disabled = false;
 }
