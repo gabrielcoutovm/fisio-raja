@@ -2542,7 +2542,7 @@ async function enviarRecuperacao() {
     const r = await fetch(`${SB_AUTH_URL}/recover`, {
       method: 'POST',
       headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, redirectTo: 'https://gabrielcoutovm.github.io/fisio-raja/' })
+      body: JSON.stringify({ email, redirectTo: 'https://gabrielcoutovm.github.io/fisio-raja' })
     });
     if (r.ok || r.status === 200) {
       document.getElementById('recuperar-sucesso').style.display = 'block';
