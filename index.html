@@ -422,6 +422,10 @@
 
     <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
+      <div id="dashboard-empty-banner" style="display:none;background:#f0f7ff;border:1px solid #bcd6f5;border-radius:8px;padding:16px 20px;margin-bottom:18px;font-size:13px;color:#1a3460;">
+        <strong>Configure o sistema para começar.</strong> Nenhum setor ou profissional cadastrado ainda.
+        Acesse <em>Cadastros → Setores</em> e <em>Cadastros → Profissionais</em> para configurar o ambiente.
+      </div>
       <div class="kpi-grid">
         <div class="kpi-card kpi-green"><div class="kpi-num" id="kpi-fisios">0</div><div class="kpi-label">Fisioterapeutas</div></div>
         <div class="kpi-card kpi-gray"><div class="kpi-num" id="kpi-leitos">0</div><div class="kpi-label">Leitos</div></div>
@@ -445,7 +449,12 @@
         <button class="btn btn-navy btn-sm" onclick="gerarRelatorioExecutivoPDF()">&#128438; Relatório Executivo PDF</button>
       </div>
       <div class="sem-atend-card" id="sem-atend-card" style="display:none;">
-        <h4>⚠ Pacientes sem atendimento hoje (<span id="sem-atend-count">0</span>)</h4>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <h4 style="margin:0;">⚠ Pacientes sem atendimento hoje (<span id="sem-atend-count">0</span>)</h4>
+          <select id="sem-atend-filtro-setor" style="font-size:12px;padding:4px 8px;border:1px solid #ffcc80;border-radius:5px;background:#fff;" onchange="renderSemAtendHoje()">
+            <option value="">Todos os setores</option>
+          </select>
+        </div>
         <div id="sem-atend-lista"></div>
       </div>
       <div class="alerta-card" id="alerta-dias-card" style="display:none;">
@@ -505,7 +514,7 @@
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Pendentes</h3><button class="btn btn-success btn-sm" onclick="abrirModalCriarLote()">+ Criar Lote</button></div>
         <table>
-          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor Total</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Protocolo</th><th>Nº Guias</th><th>Valor Total</th><th>Ações</th></tr></thead>
           <tbody id="tb-lotes-pendente"></tbody>
         </table>
       </div>
@@ -524,7 +533,7 @@
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Concluídas</h3></div>
         <table>
-          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Nº Guias</th><th>Valor Total</th></tr></thead>
+          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Protocolo</th><th>Nº Guias</th><th>Valor Total</th></tr></thead>
           <tbody id="tb-lotes-concluida"></tbody>
         </table>
       </div>
@@ -996,6 +1005,7 @@
           <div class="form-group"><label>Data de Nascimento</label><input type="date" id="novoat-nascimento" /></div>
           <div class="form-group"><label>Nº Carteirinha</label><input type="text" id="novoat-carteirinha" placeholder="Número da carteirinha do convênio" /></div>
           <div class="form-group"><label>Nº Autorização</label><input type="text" id="novoat-autorizacao" placeholder="Nº da autorização prévia (se houver)" /></div>
+          <div class="form-group"><label>Limite de Sessões Autorizadas</label><input type="number" id="novoat-limite-sessoes" min="0" placeholder="Qtd máxima autorizada pelo convênio (opcional)" /></div>
           <div class="form-group"><label>Status do Paciente</label>
             <select id="novoat-status"><option value="">Selecione...</option></select>
           </div>
@@ -1251,6 +1261,7 @@
         <div class="card" style="padding:20px;">
           <div style="margin-bottom:12px;"><div style="font-size:11px;color:#888;font-weight:600;">Paciente</div><div id="det-nome" style="font-size:20px;font-weight:700;color:#0a1628;"></div></div>
           <div style="margin-bottom:12px;"><div style="font-size:11px;color:#888;font-weight:600;">Convênio</div><div id="det-convenio" style="font-size:15px;font-weight:600;"></div></div>
+          <div id="det-alerta-sessoes" style="display:none;margin-bottom:10px;"></div>
           <div id="det-status-box" style="border-radius:6px;padding:10px 14px;margin-bottom:12px;">
             <div style="font-size:11px;color:#555;font-weight:600;">Status do Paciente</div>
             <div id="det-status" style="font-size:15px;font-weight:700;margin-top:2px;"></div>
@@ -1321,7 +1332,17 @@
       <!-- Históricos -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="card">
-          <div class="card-header"><h3>Procedimentos</h3></div>
+          <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+            <h3>Procedimentos</h3>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <input type="date" id="det-procs-de" style="font-size:11px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;" onchange="renderDetProcs(pacienteAtivo&&pacienteAtivo.id)" title="A partir de" />
+              <span style="font-size:11px;color:#aaa;">até</span>
+              <input type="date" id="det-procs-ate" style="font-size:11px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;" onchange="renderDetProcs(pacienteAtivo&&pacienteAtivo.id)" title="Até" />
+              <label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" id="det-procs-mostrar-cancelados" onchange="renderDetProcs(pacienteAtivo&&pacienteAtivo.id)" /> Cancelados
+              </label>
+            </div>
+          </div>
           <table><thead><tr><th>Data</th><th>Procedimento</th><th>Usuário</th><th></th></tr></thead>
           <tbody id="det-tb-procs"></tbody></table>
         </div>
@@ -1687,6 +1708,7 @@
     <h2>Criar Novo Lote</h2>
     <div class="form-group"><label>Convênio *</label><select id="lote-convenio"><option value="">Selecione...</option></select></div>
     <div class="form-group"><label>Competência * <small style="color:#888;">(MM/AAAA)</small></label><input type="text" id="lote-competencia" placeholder="06/2026" maxlength="7" /></div>
+    <div class="form-group"><label>Nº Protocolo de Envio <small style="color:#888;">(opcional)</small></label><input type="text" id="lote-protocolo" placeholder="Número atribuído pelo convênio ao enviar" /></div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-criar-lote')">Cancelar</button>
       <button class="btn btn-success" onclick="salvarNovoLote()">Criar Lote</button>
@@ -2371,6 +2393,13 @@ function renderKpis() {
   const pacAtivos = guias.length;
   const pct = totalLeitos > 0 ? Math.round(pacAtivos / totalLeitos * 100) : 0;
 
+  // Mensagem de estado vazio (6A - sem dados fictícios)
+  const emptyBanner = document.getElementById('dashboard-empty-banner');
+  if (emptyBanner) {
+    const isVazio = setores.length === 0 && profissionais.length === 0;
+    emptyBanner.style.display = isVazio ? 'block' : 'none';
+  }
+
   const guiasComSetor = guias.map(g => {
     const setor = setores.find(s => g.setor && g.setor.startsWith(s.nome));
     return { ...g, tipoSetor: setor ? setor.tipo : '' };
@@ -2586,21 +2615,23 @@ function renderLotesPendente() {
   const lotes = DB.get('lotes').filter(l=>!l.concluido);
   document.getElementById('tb-lotes-pendente').innerHTML = lotes.length ? lotes.map(l => {
     const {total, qtd} = calcTotalLote(l);
+    const protocolo = l.num_protocolo ? `<span style="font-size:11px;color:#555;">${l.num_protocolo}</span>` : '<span style="font-size:11px;color:#bbb;">—</span>';
     return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
     <td><span style="color:#f39c12;font-weight:600;">${l.status}</span></td>
-    <td>${l.data}</td><td>${qtd}</td><td>${total}</td>
+    <td>${l.data}</td><td>${protocolo}</td><td>${qtd}</td><td>${total}</td>
     <td><button class="btn btn-sm" style="background:#0a1628;color:#fff;font-size:11px;" onclick="gerarXMLLote(${l.id})">XML TISS</button></td></tr>`;
-  }).join('') : '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote pendente</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote pendente</td></tr>';
 }
 
 function renderLotesConcluida() {
   const lotes = DB.get('lotes').filter(l=>l.concluido);
   document.getElementById('tb-lotes-concluida').innerHTML = lotes.length ? lotes.map(l => {
     const {total, qtd} = calcTotalLote(l);
+    const protocolo = l.num_protocolo ? `<span style="font-size:11px;color:#555;">${l.num_protocolo}</span>` : '<span style="font-size:11px;color:#bbb;">—</span>';
     return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
     <td><span style="color:#27ae60;font-weight:600;">Finalizada</span></td>
-    <td>${l.data}</td><td>${qtd}</td><td>${total}</td></tr>`;
-  }).join('') : '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote concluído</td></tr>';
+    <td>${l.data}</td><td>${protocolo}</td><td>${qtd}</td><td>${total}</td></tr>`;
+  }).join('') : '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote concluído</td></tr>';
 }
 
 function getLeitosNomes(s) {
@@ -3393,6 +3424,23 @@ function abrirPacienteDetalhe(guiaId) {
   document.getElementById('det-nome').textContent = pac.nome || '-';
   document.getElementById('det-convenio').textContent = conv.nome || '-';
   document.getElementById('det-num-at').textContent = guia.num_at || '-';
+
+  // Alerta de limite de sessões (5C)
+  const sessoesEl = document.getElementById('det-alerta-sessoes');
+  if (sessoesEl) {
+    if (guia.limite_sessoes) {
+      const totalSessoes = (DB.get('hist_procs_' + guia.id) || []).filter(h => !h.cancelado).length;
+      const pct = Math.round(totalSessoes / guia.limite_sessoes * 100);
+      const cor = pct >= 100 ? '#e74c3c' : pct >= 80 ? '#e67e22' : '#27ae60';
+      sessoesEl.innerHTML = `<div style="background:${cor}15;border:1px solid ${cor}40;border-radius:6px;padding:8px 12px;font-size:12px;">
+        <strong style="color:${cor};">Sessões: ${totalSessoes} / ${guia.limite_sessoes}</strong>
+        ${pct >= 100 ? ' — <span style="color:#e74c3c;">Limite atingido!</span>' : pct >= 80 ? ' — <span style="color:#e67e22;">Próximo do limite</span>' : ''}
+      </div>`;
+      sessoesEl.style.display = 'block';
+    } else {
+      sessoesEl.style.display = 'none';
+    }
+  }
   document.getElementById('det-tipo').textContent = guia.tipo_internacao || 'Clínico';
   document.getElementById('det-diag').textContent = guia.diagnostico || 'Não informado';
   document.getElementById('det-internacao').textContent = guia.internacao ? `${guia.internacao} (${diasInt} dias)` : '-';
@@ -3479,10 +3527,28 @@ function abrirPacienteDetalhe(guiaId) {
 }
 
 function renderDetProcs(guiaId) {
+  if (!guiaId) return;
   const hist = DB.get('hist_procs_' + guiaId) || [];
   const procs = DB.get('procedimentos');
-  document.getElementById('det-tb-procs').innerHTML = hist.length ? hist.slice().reverse().map((h, displayIdx) => {
-    const realIdx = hist.length - 1 - displayIdx;
+  const deEl = document.getElementById('det-procs-de');
+  const ateEl = document.getElementById('det-procs-ate');
+  const mostrarCanc = document.getElementById('det-procs-mostrar-cancelados')?.checked;
+  const de = deEl && deEl.value ? new Date(deEl.value) : null;
+  const ate = ateEl && ateEl.value ? new Date(ateEl.value + 'T23:59:59') : null;
+
+  const filtrado = hist.slice().reverse().filter((h, _) => {
+    if (!mostrarCanc && h.cancelado) return false;
+    if (de || ate) {
+      const d = h.data ? new Date(h.data.split('/').reverse().join('-')) : null;
+      if (!d) return false;
+      if (de && d < de) return false;
+      if (ate && d > ate) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('det-tb-procs').innerHTML = filtrado.length ? filtrado.map((h) => {
+    const realIdx = hist.length - 1 - hist.slice().reverse().indexOf(h);
     const proc = procs.find(p=>p.id===h.proc_id)||{};
     const nomeCell = h.cancelado
       ? `<span style="text-decoration:line-through;color:#aaa;">${proc.nome||h.nome||'-'}</span> <span style="font-size:11px;color:#e74c3c;">(cancelado: ${h.motivo_cancelamento||''})</span>`
@@ -3491,7 +3557,7 @@ function renderDetProcs(guiaId) {
       ? `<button style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;" title="Cancelar" onclick="cancelarProcedimento(${guiaId},${realIdx})">✕</button>`
       : '';
     return `<tr><td>${h.data}</td><td>${nomeCell}</td><td>${h.usuario}</td><td>${cancelBtn}</td></tr>`;
-  }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento lançado</td></tr>';
+  }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento no período</td></tr>';
 }
 
 function renderDetStatus(guiaId) {
@@ -3555,6 +3621,7 @@ function salvarProcedimento() {
 
   closeModal('modal-lancar-proc');
   renderDetProcs(pacienteAtivo.id);
+  atualizarAlertaSessoes(pacienteAtivo.id);
   setTimeout(() => renderGraficoEvolucaoIMS(pacienteAtivo.id), 80);
   showToast('Procedimento lançado com sucesso!');
 }
@@ -3585,7 +3652,7 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
   _novoatOrigem = origem || 'cad-pacientes';
 
   // Limpar campos
-  ['novoat-num-at','novoat-nome','novoat-carteirinha','novoat-autorizacao','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
+  ['novoat-num-at','novoat-nome','novoat-carteirinha','novoat-autorizacao','novoat-limite-sessoes','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
   ['novoat-nascimento','novoat-data-intern','novoat-data-atend'].forEach(id => document.getElementById(id).value = new Date().toISOString().split('T')[0]);
   document.getElementById('novoat-convenio').value='';
   document.getElementById('novoat-status').value='';
@@ -3683,12 +3750,13 @@ function saveNovoAtendimento() {
   // Salvar guia/atendimento
   const carteirinha = document.getElementById('novoat-carteirinha').value.trim();
   const num_autorizacao = document.getElementById('novoat-autorizacao').value.trim();
+  const limite_sessoes = parseInt(document.getElementById('novoat-limite-sessoes').value) || null;
 
   const guiaId = getNextId('guias');
   DB.push('guias', {
     id:guiaId, num_at:numAt, setor:setorLeito,
     paciente_id:pacId, convenio_id:convenioId,
-    carteirinha, num_autorizacao,
+    carteirinha, num_autorizacao, limite_sessoes,
     internacao:fmtDate(dataIntern), atend:fmtDate(dataAtend),
     tipo_internacao:tipo, diagnostico:diag, clinica,
     status, obs, paliativo,
@@ -5074,8 +5142,24 @@ function cancelarProcedimento(guiaId, realIdx) {
     hist[realIdx].cancelado_por = usuarioAtual();
     DB.set('hist_procs_'+guiaId, hist);
     renderDetProcs(guiaId);
+    atualizarAlertaSessoes(guiaId);
     showToast('Procedimento cancelado com registro.', '#e74c3c');
   }
+}
+
+function atualizarAlertaSessoes(guiaId) {
+  const sessoesEl = document.getElementById('det-alerta-sessoes');
+  if (!sessoesEl) return;
+  const guia = (DB.get('guias')||[]).find(g=>g.id===guiaId);
+  if (!guia || !guia.limite_sessoes) { sessoesEl.style.display='none'; return; }
+  const total = (DB.get('hist_procs_'+guiaId)||[]).filter(h=>!h.cancelado).length;
+  const pct = Math.round(total / guia.limite_sessoes * 100);
+  const cor = pct >= 100 ? '#e74c3c' : pct >= 80 ? '#e67e22' : '#27ae60';
+  sessoesEl.innerHTML = `<div style="background:${cor}15;border:1px solid ${cor}40;border-radius:6px;padding:8px 12px;font-size:12px;">
+    <strong style="color:${cor};">Sessões: ${total} / ${guia.limite_sessoes}</strong>
+    ${pct>=100?' — <span style="color:#e74c3c;">Limite atingido!</span>':pct>=80?' — <span style="color:#e67e22;">Próximo do limite</span>':''}
+  </div>`;
+  sessoesEl.style.display = 'block';
 }
 
 // ===== EXPORTAR CSV =====
@@ -5266,12 +5350,15 @@ function salvarNovoLote() {
   const competencia = document.getElementById('lote-competencia').value.trim();
   if (!convId || !competencia) { alert('Preencha convênio e competência.'); return; }
   const conv = DB.get('convenios').find(c=>c.id===convId)||{};
+  const num_protocolo = document.getElementById('lote-protocolo').value.trim();
   DB.push('lotes', {
     id: getNextId('lotes'),
     convenio: conv.nome, convenio_id: convId,
-    competencia, status: 'Pendente',
+    competencia, num_protocolo: num_protocolo || null,
+    status: 'Pendente',
     data: hoje(), guias: 0, valor: 'R$ 0,00', concluido: false
   });
+  document.getElementById('lote-protocolo').value = '';
   closeModal('modal-criar-lote');
   renderLotesPendente();
   showToast('Lote criado!');
@@ -5322,24 +5409,41 @@ function renderSemAtendHoje() {
   const hojeStr = new Date().toLocaleDateString('pt-BR');
   const guiasAtivas = DB.get('guias').filter(g=>!g.alta);
   const pacs = DB.get('pacientes');
-  const semAtend = guiasAtivas.filter(g => {
-    const hist = DB.get('hist_procs_'+g.id)||[];
-    return !hist.some(h=>!h.cancelado&&h.data===hojeStr);
-  });
+  const setores = DB.get('setores');
   const card = document.getElementById('sem-atend-card');
   const countEl = document.getElementById('sem-atend-count');
   const listaEl = document.getElementById('sem-atend-lista');
   if (!card) return;
+
+  // Popular select de setores na primeira chamada
+  const selSetor = document.getElementById('sem-atend-filtro-setor');
+  if (selSetor && selSetor.options.length <= 1) {
+    const setoresAtivos = [...new Set(guiasAtivas.map(g => g.setor ? g.setor.split(' - ')[0] : null).filter(Boolean))];
+    setoresAtivos.sort().forEach(s => {
+      const opt = document.createElement('option'); opt.value = s; opt.textContent = s;
+      selSetor.appendChild(opt);
+    });
+  }
+  const setorFiltro = selSetor ? selSetor.value : '';
+
+  const semAtend = guiasAtivas.filter(g => {
+    if (setorFiltro && !(g.setor||'').startsWith(setorFiltro)) return false;
+    const hist = DB.get('hist_procs_'+g.id)||[];
+    return !hist.some(h=>!h.cancelado&&h.data===hojeStr);
+  });
   card.style.display = guiasAtivas.length ? 'block' : 'none';
   countEl.textContent = semAtend.length;
   if (!semAtend.length) {
     listaEl.innerHTML = '<div style="color:#27ae60;font-weight:600;padding:4px 0;">✔ Todos os pacientes foram atendidos hoje</div>';
     return;
   }
-  listaEl.innerHTML = semAtend.slice(0,6).map(g => {
+  listaEl.innerHTML = semAtend.slice(0,8).map(g => {
     const pac = pacs.find(p=>p.id===g.paciente_id)||{};
-    return `<div class="sem-atend-row"><span><strong>${pac.nome||'-'}</strong></span><span style="color:#888;">${g.setor||'-'}</span></div>`;
-  }).join('') + (semAtend.length>6 ? `<div style="font-size:12px;color:#aaa;padding-top:6px;">+${semAtend.length-6} pacientes...</div>` : '');
+    return `<div class="sem-atend-row" onclick="abrirPacienteDetalhe(${g.id})" style="cursor:pointer;" title="Abrir ficha">
+      <span><strong>${pac.nome||'-'}</strong></span>
+      <span style="color:#888;">${g.setor||'-'}</span>
+    </div>`;
+  }).join('') + (semAtend.length>8 ? `<div style="font-size:12px;color:#aaa;padding-top:6px;">+${semAtend.length-8} pacientes...</div>` : '');
 }
 
 // ===== ALERTA X DIAS SEM ATENDIMENTO =====
