@@ -1013,6 +1013,9 @@
           <div class="form-group"><label>Status do Paciente</label>
             <select id="novoat-status"><option value="">Selecione...</option></select>
           </div>
+          <div class="form-group"><label>Fisioterapeuta Responsável</label>
+            <select id="novoat-profissional"><option value="">Selecione (opcional)...</option></select>
+          </div>
           <div class="form-group"><label>Meta Diária de Atendimentos</label>
             <select id="novoat-meta-diaria">
               <option value="1x">1x ao dia</option>
@@ -2307,6 +2310,12 @@ function initData() {
       {id:7,nome:'UTI'},{id:8,nome:'Outro'},
     ]);
   }
+  if ((DB.get('status_paciente')||[]).length === 0) {
+    DB.set('status_paciente',[
+      {id:1,nome:'Internado'},{id:2,nome:'Semi-Internação'},{id:3,nome:'Observação'},
+      {id:4,nome:'Isolamento'},{id:5,nome:'Pré-Cirúrgico'},{id:6,nome:'Pós-Cirúrgico'},
+    ]);
+  }
 }
 
 // ===== MENUS POR PERFIL =====
@@ -2815,7 +2824,7 @@ function exportarLogCSV() {
   const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href=url;
-  a.download = `log-acesso-fichas-${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `log-acesso-fichas-${hojeISO()}.csv`;
   a.click(); URL.revokeObjectURL(url);
   showToast('CSV exportado!');
 }
@@ -2923,7 +2932,7 @@ function renderMapaGeral() {
       const guia = guias.find(g => g.setor === `${s.nome} - ${num}`);
       const pac = guia ? pacs.find(p => p.id === guia.paciente_id) : null;
       const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
-      if (!pac) return `<div class="leito-cell livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${num}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`;
+      if (!pac) { const _si=s.id, _ni=encodeURIComponent(num); return `<div class="leito-cell livre" onclick="abrirNovoAtendimentoId(${_si},'${_ni}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${num}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`; }
       const hist = DB.get('hist_procs_'+guia.id)||[];
       const atendidoHoje = hist.some(h=>!h.cancelado&&h.data===hojeStr);
       const classeExtra = guia.alta ? 'alta-fisio' : (atendidoHoje ? '' : 'sem-atend');
@@ -2971,7 +2980,7 @@ function renderMapaOcupacao() {
 
   const setores = DB.get('setores'), pacs = DB.get('pacientes');
   const guias = DB.get('guias'), convs = DB.get('convenios'), profs = DB.get('profissionais');
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
 
   // Lê filtros
   const busca      = (document.getElementById('mapa-busca')?.value || '').toLowerCase().trim();
@@ -3003,7 +3012,7 @@ function renderMapaOcupacao() {
         const outrosFiltros = filtConv || filtProp || filtProf || filtStatus || busca;
         if (outrosFiltros) return '';
         leitosVisiveis++;
-        return `<div class="ocupacao-leito livre" onclick="abrirNovoAtendimento('${s.nome}','${num}','mapa-ocupacao')" title="Clique para internar"><div class="leito-id">${num}</div><div class="leito-info" style="font-size:11px;color:#aaa;">Leito livre — clique para internar</div><div class="leito-arrow">+</div></div>`;
+        return `<div class="ocupacao-leito livre" onclick="abrirNovoAtendimentoId(${s.id},'${encodeURIComponent(num)}','mapa-ocupacao')" title="Clique para internar"><div class="leito-id">${num}</div><div class="leito-info" style="font-size:11px;color:#aaa;">Leito livre — clique para internar</div><div class="leito-arrow">+</div></div>`;
       }
 
       // Filtros aplicados ao paciente
@@ -4058,7 +4067,7 @@ function abrirPacienteDetalhe(guiaId) {
 
   // Modal lançar proc
   document.getElementById('proc-setor-label').textContent = guia.setor;
-  const hoje2 = new Date().toISOString().split('T')[0];
+  const hoje2 = hojeISO();
   document.getElementById('proc-data').value = hoje2;
   document.getElementById('proc-ims-prev').textContent = guia.ims_previo || '-';
   document.getElementById('proc-ims-adm').textContent = guia.ims_admissao || '-';
@@ -4086,7 +4095,7 @@ function abrirPacienteDetalhe(guiaId) {
 
   // Modal medidas
   const medidas = DB.get('medidas') || [];
-  const today = new Date().toISOString().split('T')[0];
+  const today = hojeISO();
   document.getElementById('medida-data').value = today;
   document.getElementById('medidas-lista').innerHTML = medidas.map(m => `
     <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#f9f9f9;border-radius:6px;">
@@ -4184,7 +4193,22 @@ function renderDetSetor(guiaId) {
   ).join('') : '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:16px;">Sem transferências</td></tr>';
 }
 
-function hoje() { return new Date().toLocaleDateString('pt-BR'); }
+// Usa getFullYear/getMonth/getDate para garantir fuso local (evita UTC do toISOString)
+function hojeISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function hoje() {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+// Converte ISO "YYYY-MM-DD" para pt-BR "dd/mm/aaaa" (sem criar objeto Date — evita UTC)
+function isoParaBR(iso) {
+  if (!iso) return '';
+  const s = iso.split('T')[0];
+  const [a,m,d] = s.split('-');
+  return `${d}/${m}/${a}`;
+}
 // Normaliza datas pt-BR ("13/10/2026") ou ISO ("2026-10-13") para ISO para comparação
 function paraISO(d) {
   if (!d) return '';
@@ -4196,9 +4220,34 @@ function usuarioAtual() { return currentUser ? currentUser.nome.split(' ')[0] : 
 
 function mudarDataProc(delta) {
   const input = document.getElementById('proc-data');
-  const d = new Date(input.value);
-  d.setDate(d.getDate() + delta);
-  input.value = d.toISOString().split('T')[0];
+  if (!input.value) return;
+  // Cria data em fuso local para evitar UTC off-by-one
+  const [a,m,d] = input.value.split('-').map(Number);
+  const dt = new Date(a, m-1, d + delta);
+  input.value = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+// Recalcula guia.valor somando procedimentos realizados não cancelados
+// Usa proc.valor_convenio se existir no convênio, caso contrário 0 (valor real deve ser cadastrado no convênio)
+function recalcularValorGuia(guiaId) {
+  const guias = DB.get('guias');
+  const idx = guias.findIndex(g => g.id === guiaId);
+  if (idx < 0) return;
+  const hist = (DB.get('hist_procs_' + guiaId) || []).filter(h => !h.cancelado);
+  const procs = DB.get('procedimentos');
+  const conv = (DB.get('convenios')||[]).find(c => c.id === guias[idx].convenio_id) || {};
+  const precosConv = conv.precos || {};
+  let total = 0;
+  hist.forEach(h => {
+    const proc = procs.find(p => p.id === h.proc_id) || {};
+    const valor = precosConv[h.proc_id] ?? proc.valor ?? 0;
+    total += Number(valor) || 0;
+  });
+  guias[idx].valor = total > 0
+    ? total.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})
+    : 'R$ 0,00';
+  guias[idx].dias = hist.length;
+  DB.set('guias', guias);
 }
 
 function salvarProcedimento() {
@@ -4207,7 +4256,7 @@ function salvarProcedimento() {
   const procs = DB.get('procedimentos');
   const proc = procs.find(p => p.id === parseInt(sel.value)) || {};
   const dataVal = document.getElementById('proc-data').value;
-  const dataFmt = dataVal ? new Date(dataVal).toLocaleDateString('pt-BR') : hoje();
+  const dataFmt = dataVal ? isoParaBR(dataVal) : hoje();
   const imsAtual = document.getElementById('proc-ims-atual').value;
 
   const hist = DB.get('hist_procs_' + pacienteAtivo.id) || [];
@@ -4220,6 +4269,9 @@ function salvarProcedimento() {
     DB.set('hist_ims_' + pacienteAtivo.id, histIMS);
     document.getElementById('det-ims-atual').textContent = imsAtual;
   }
+
+  // Recalcula valor total da guia com base nos procedimentos não cancelados
+  recalcularValorGuia(pacienteAtivo.id);
 
   closeModal('modal-lancar-proc');
   renderDetProcs(pacienteAtivo.id);
@@ -4248,6 +4300,13 @@ function salvarStatus() {
 // ===== NOVO ATENDIMENTO =====
 let _novoatSetorNome = null, _novoatLeitoNum = null, _novoatOrigem = null;
 
+// Versão segura: recebe ID do setor (numérico) em vez do nome (que pode ter caracteres especiais)
+function abrirNovoAtendimentoId(setorId, leitoEncoded, origem) {
+  const setor = (DB.get('setores')||[]).find(s => s.id === setorId);
+  if (!setor) return;
+  abrirNovoAtendimento(setor.nome, decodeURIComponent(leitoEncoded), origem);
+}
+
 function abrirNovoAtendimento(setorNome, leitoNum, origem) {
   _novoatSetorNome = setorNome;
   _novoatLeitoNum = leitoNum;
@@ -4255,10 +4314,11 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
 
   // Limpar campos
   ['novoat-num-at','novoat-nome','novoat-carteirinha','novoat-autorizacao','novoat-limite-sessoes','novoat-diag','novoat-obs'].forEach(id => document.getElementById(id).value='');
-  ['novoat-nascimento','novoat-data-intern','novoat-data-atend'].forEach(id => document.getElementById(id).value = new Date().toISOString().split('T')[0]);
+  ['novoat-nascimento','novoat-data-intern','novoat-data-atend'].forEach(id => document.getElementById(id).value = hojeISO());
   document.getElementById('novoat-convenio').value='';
   document.getElementById('novoat-status').value='';
   document.getElementById('novoat-clinica').value='';
+  document.getElementById('novoat-profissional').value='';
   document.getElementById('novoat-tipo').value='';
   document.getElementById('novoat-paliativo').checked=false;
   document.getElementById('novoat-ims-prev').value='';
@@ -4272,6 +4332,8 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
   document.getElementById('novoat-status').innerHTML = '<option value="">Selecione...</option>' + status.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
   const clinicas = DB.get('clinicas')||[];
   document.getElementById('novoat-clinica').innerHTML = '<option value="">Selecione...</option>' + clinicas.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+  const profs = (DB.get('profissionais')||[]).filter(p=>p.ativo!==0);
+  document.getElementById('novoat-profissional').innerHTML = '<option value="">Selecione (opcional)...</option>' + profs.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
 
   if (setorNome && leitoNum) {
     document.getElementById('novoat-setor-leito').textContent = `${setorNome} - ${leitoNum}`;
@@ -4295,7 +4357,7 @@ function novoatGerarLeitos() {
   const nomes = getLeitosNomes(setor);
   const guias = DB.get('guias');
   sel.innerHTML = '<option value="">Selecione o leito</option>' + nomes.map(n => {
-    const ocupado = guias.some(g => g.setor === `${setor.nome} - ${n}`);
+    const ocupado = guias.some(g => g.setor === `${setor.nome} - ${n}` && !g.alta);
     return `<option value="${n}" ${ocupado?'disabled style="color:#ccc"':''}>${n}${ocupado?' (ocupado)':''}</option>`;
   }).join('');
 }
@@ -4356,10 +4418,12 @@ function saveNovoAtendimento() {
   const num_autorizacao = document.getElementById('novoat-autorizacao').value.trim();
   const limite_sessoes = parseInt(document.getElementById('novoat-limite-sessoes').value) || null;
 
+  const profissionalId = parseInt(document.getElementById('novoat-profissional').value) || null;
   const guiaId = getNextId('guias');
   DB.push('guias', {
     id:guiaId, num_at:numAt, setor:setorLeito,
     paciente_id:pacId, convenio_id:convenioId,
+    profissional_id: profissionalId,
     carteirinha, num_autorizacao, limite_sessoes,
     internacao:fmtDate(dataIntern), atend:fmtDate(dataAtend),
     tipo_internacao:tipo, diagnostico:diag, clinica,
@@ -4413,13 +4477,13 @@ function salvarTransferencia() {
 function salvarMedidas() {
   const medidas = DB.get('medidas') || [];
   const dataVal = document.getElementById('medida-data').value;
-  const dataFmt = dataVal ? new Date(dataVal).toLocaleDateString('pt-BR') : hoje();
+  const dataFmt = dataVal ? isoParaBR(dataVal) : hoje();
   let salvou = false;
   medidas.forEach(m => {
     const input = document.getElementById('med-val-' + m.id);
     if (input && input.value !== '') {
       const hist = JSON.parse(DB.getItem('hist_medidas_' + pacienteAtivo.id) || '[]');
-      hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: new Date().toISOString().split('T')[0], usuario: usuarioAtual()});
+      hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: hojeISO(), usuario: usuarioAtual()});
       DB.setItem('hist_medidas_' + pacienteAtivo.id, JSON.stringify(hist));
       salvou = true;
     }
@@ -4446,7 +4510,7 @@ function salvarMedidas() {
 function abrirModalAlta() {
   if (!pacienteAtivo) return;
   // Preenche data padrão
-  document.getElementById('alta-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('alta-data').value = hojeISO();
   document.getElementById('alta-tipo').value = '';
   document.getElementById('alta-ims').value = '';
   document.getElementById('alta-obs').value = '';
@@ -4458,7 +4522,7 @@ function abrirModalAlta() {
 
   // Verifica alertas
   const alertasEl = document.getElementById('alta-alertas');
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   const alertas = [];
 
   // 1. Sem atendimento hoje
@@ -4647,7 +4711,7 @@ function verificarAlertaTurno() {
   const isFimTurno = hora === 12 || hora === 13 || hora === 18 || hora === 19;
   if (!isFimTurno) return;
 
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   const guias = DB.get('guias').filter(g => !g.alta);
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const semAtend = guias.filter(g => {
@@ -4760,7 +4824,7 @@ function salvarMobilizacao() {
   if (!pacienteAtivo) return;
   const registro = {
     id: Date.now(),
-    data: new Date().toISOString().split('T')[0],
+    data: hojeISO(),
     hora: new Date().toTimeString().slice(0,5),
     nivel: nivel.value,
     distancia: document.getElementById('mob-distancia').value,
@@ -4864,7 +4928,7 @@ function confirmarChecklist() {
   // Salvar registro do checklist
   if (pacienteAtivo) {
     const reg = {
-      data: new Date().toISOString().split('T')[0],
+      data: hojeISO(),
       hora: new Date().toTimeString().slice(0,5),
       itens_ok: itens.filter(i => document.getElementById('ck_'+i.id)?.checked).map(i=>i.id),
       itens_nao: naoMarcados,
@@ -4904,7 +4968,7 @@ function salvarAlterarMeta() {
   pacienteAtivo = guias[idx];
   // Registra no histórico de status
   const histStatus = DB.get('hist_status_' + pacienteAtivo.id);
-  histStatus.push({ data: new Date().toISOString().split('T')[0], status: `Meta alterada: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, usuario: currentUser?.nome || 'Sistema' });
+  histStatus.push({ data: hojeISO(), status: `Meta alterada: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, usuario: currentUser?.nome || 'Sistema' });
   DB.set('hist_status_' + pacienteAtivo.id, histStatus);
   closeModal('modal-alterar-meta');
   renderResumoDiario(pacienteAtivo.id);
@@ -4931,7 +4995,7 @@ function fecharNotifFora(e) {
 }
 
 function gerarNotificacoes() {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   const agora = new Date();
   const horaAtual = agora.getHours();
   // Turno: manhã 7-13, tarde 13-19, noite 19-7
@@ -5125,7 +5189,7 @@ function gerarRelatorioExecutivoPDF() {
 // ===== COBERTURA ASSISTENCIAL =====
 let chartOfSetorInstance = null;
 function renderCoberturaAssistencial() {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   document.getElementById('cobertura-data-ref').textContent = new Date().toLocaleDateString('pt-BR');
 
   const guias = DB.get('guias').filter(g => !g.alta);
@@ -5187,7 +5251,7 @@ function renderCoberturaAssistencial() {
 
 // ===== OPORTUNIDADE FINANCEIRA =====
 function renderOportunidadeFinanceira() {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   const guias = DB.get('guias').filter(g => !g.alta);
   const setores = DB.get('setores');
   const procs = DB.get('procedimentos');
@@ -5268,7 +5332,7 @@ function renderIndicadoresCobertura() {
   const deEl = document.getElementById('ind-de');
   const ateEl = document.getElementById('ind-ate');
   if (!deEl.value) { const d = new Date(); d.setDate(d.getDate()-30); deEl.value = d.toISOString().split('T')[0]; }
-  if (!ateEl.value) ateEl.value = new Date().toISOString().split('T')[0];
+  if (!ateEl.value) ateEl.value = hojeISO();
   const de = deEl.value, ate = ateEl.value;
   const filtroSetorIdInd = document.getElementById('ind-setor').value;
 
@@ -5353,7 +5417,7 @@ function renderIndicadoresCobertura() {
 
 function gerarRelatorioCoberturaExec() {
   const hoje = new Date().toLocaleDateString('pt-BR');
-  const hojeISO = new Date().toISOString().split('T')[0];
+  const hojeISOstr = hojeISO();
   const guias = DB.get('guias').filter(g => !g.alta);
   const setores = DB.get('setores');
   const pacientes = DB.get('pacientes');
@@ -5775,6 +5839,7 @@ function cancelarProcedimento(guiaId, realIdx) {
     hist[realIdx].cancelado_em = hoje();
     hist[realIdx].cancelado_por = usuarioAtual();
     DB.set('hist_procs_'+guiaId, hist);
+    recalcularValorGuia(guiaId);
     renderDetProcs(guiaId);
     atualizarAlertaSessoes(guiaId);
     showToast('Procedimento cancelado com registro.', '#e74c3c');
@@ -5926,10 +5991,10 @@ function gerarXMLTISS(guiaId) {
   const pac = pacs.find(p=>p.id===guia.paciente_id)||{};
   const conv = convs.find(c=>c.id===guia.convenio_id)||{};
   const hist = (DB.get('hist_procs_'+guiaId)||[]).filter(h=>!h.cancelado);
-  const hojeISO = new Date().toISOString().split('T')[0];
+  const hojeISOtiss = hojeISO();
   const itens = hist.map((h,i) => {
     const proc = procs.find(p=>p.id===h.proc_id)||{};
-    const dataServ = h.data ? paraISO(h.data) : hojeISO;
+    const dataServ = h.data ? paraISO(h.data) : hojeISOtiss;
     return `        <ans:procedimentoRealizado>
           <ans:sequencialItem>${i+1}</ans:sequencialItem>
           <ans:dataRealizacao>${dataServ}</ans:dataRealizacao>
@@ -6151,7 +6216,7 @@ function renderAlertaSemAtend() {
 function renderResumoDiario(guiaId) {
   const guia = (DB.get('guias')||[]).find(g=>g.id===guiaId);
   if (!guia) return;
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = hojeISO();
   const procs = DB.get('hist_procs_'+guiaId).filter(p=>!p.cancelado);
   const realizadosHoje = procs.filter(p=>paraISO(p.data)===hoje).length;
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
@@ -6295,15 +6360,15 @@ function imprimirProntuario() {
 
   const linhasProcs = hist.length ? hist.map(h=>{
     const p = procs.find(x=>x.id===h.proc_id)||{};
-    return `<tr><td>${h.data}</td><td>${p.nome||h.nome||'-'}</td><td>${h.usuario||'-'}</td></tr>`;
+    return `<tr><td>${esc(h.data)}</td><td>${esc(p.nome||h.nome||'-')}</td><td>${esc(h.usuario||'-')}</td></tr>`;
   }).join('') : '<tr><td colspan="3" style="color:#aaa;">Sem procedimentos</td></tr>';
 
   const linhasMed = histMed.length ? histMed.map(h=>
-    `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}</td></tr>`
+    `<tr><td>${esc(h.data)}</td><td>${esc(h.medida)}</td><td>${esc(String(h.valor))} ${esc(h.unidade||'')}</td></tr>`
   ).join('') : '<tr><td colspan="3" style="color:#aaa;">Sem medidas</td></tr>';
 
   const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><title>Prontuário - ${pac.nome||'-'}</title>
+  win.document.write(`<!DOCTYPE html><html><head><title>Prontuário — ${esc(pac.nome||'-')}</title>
   <style>
     body{font-family:Arial,sans-serif;padding:30px;color:#222;font-size:13px;}
     h1{font-size:20px;color:#0a1628;border-bottom:2px solid #0a1628;padding-bottom:8px;margin-bottom:20px;}
@@ -6319,17 +6384,17 @@ function imprimirProntuario() {
   </style></head><body>
   <h1>&#128203; Prontuário Fisioterapêutico — FISIO RAJA</h1>
   <div class="grid">
-    <div class="campo"><label>Paciente</label>${pac.nome||'-'}</div>
-    <div class="campo"><label>Nascimento</label>${pac.nascimento||'-'}</div>
-    <div class="campo"><label>Convênio</label>${conv.nome}</div>
-    <div class="campo"><label>Nº Carteirinha</label>${guia.carteirinha||'-'}</div>
-    <div class="campo"><label>Nº Autorização</label>${guia.num_autorizacao||'-'}</div>
-    <div class="campo"><label>Setor / Leito</label>${guia.setor||'-'}</div>
-    <div class="campo"><label>Tipo Internação</label>${guia.tipo_internacao||'-'}</div>
-    <div class="campo"><label>Diagnóstico</label>${guia.diagnostico||'-'}</div>
-    <div class="campo"><label>Data Internação</label>${guia.internacao||'-'}</div>
-    <div class="campo"><label>IMS Prévio</label>${guia.ims_previo||'-'}</div>
-    <div class="campo"><label>IMS Admissão</label>${guia.ims_admissao||'-'}</div>
+    <div class="campo"><label>Paciente</label>${esc(pac.nome||'-')}</div>
+    <div class="campo"><label>Nascimento</label>${esc(pac.nascimento||'-')}</div>
+    <div class="campo"><label>Convênio</label>${esc(conv.nome)}</div>
+    <div class="campo"><label>Nº Carteirinha</label>${esc(guia.carteirinha||'-')}</div>
+    <div class="campo"><label>Nº Autorização</label>${esc(guia.num_autorizacao||'-')}</div>
+    <div class="campo"><label>Setor / Leito</label>${esc(guia.setor||'-')}</div>
+    <div class="campo"><label>Tipo Internação</label>${esc(guia.tipo_internacao||'-')}</div>
+    <div class="campo"><label>Diagnóstico</label>${esc(guia.diagnostico||'-')}</div>
+    <div class="campo"><label>Data Internação</label>${esc(guia.internacao||'-')}</div>
+    <div class="campo"><label>IMS Prévio</label>${esc(String(guia.ims_previo??'-'))}</div>
+    <div class="campo"><label>IMS Admissão</label>${esc(String(guia.ims_admissao??'-'))}</div>
   </div>
   <h2>Procedimentos Realizados</h2>
   <table><thead><tr><th>Data</th><th>Procedimento</th><th>Profissional</th></tr></thead><tbody>${linhasProcs}</tbody></table>
@@ -6405,7 +6470,7 @@ function exportarBackup() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `fisio-raja-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `fisio-raja-backup-${hojeISO()}.json`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('Backup exportado e registrado no log de auditoria.');
