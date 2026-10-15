@@ -668,7 +668,7 @@
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Produtividade por Fisioterapeuta</h3><button class="btn btn-success btn-sm" onclick="exportarCSV('produtividade')">&#8659; CSV</button></div>
-        <table><thead><tr><th>Nome</th><th>Total</th><th>Qtd</th><th>Contabilizado</th><th>Qtd</th><th>N. Contabilizado</th><th>Qtd</th></tr></thead><tbody id="tb-produtividade"></tbody></table>
+        <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Total R$</th><th>Qtd Guias</th><th>Meta/Mês</th><th>% Meta</th><th>Contabilizado</th><th>N. Contabilizado</th></tr></thead><tbody id="tb-produtividade"></tbody></table>
       </div>
     </div>
 
@@ -774,7 +774,7 @@
       </div>
       <!-- Tabela de glosas detalhada -->
       <div class="card">
-        <div class="card-header"><h3>&#9776; Controle de Glosas</h3></div>
+        <div class="card-header"><h3>&#9776; Controle de Glosas</h3><button class="btn btn-success btn-sm" onclick="exportarCSV('glosas')">&#8659; CSV</button></div>
         <table><thead><tr><th>Data</th><th>Paciente</th><th>Convênio</th><th>Motivo</th><th>Valor</th><th>Status</th><th>Obs.</th><th>Ação</th></tr></thead>
         <tbody id="tb-fin-glosas"></tbody></table>
       </div>
@@ -1025,7 +1025,7 @@
         <div class="card" style="padding:20px;">
           <div style="font-weight:700;font-size:14px;color:#0a1628;margin-bottom:14px;">Dados da Internação</div>
           <div class="form-group"><label>Clínica Responsável</label>
-            <select id="novoat-clinica"><option value="">Selecione...</option><option>Clínica Médica</option><option>Cirurgia Geral</option><option>Ortopedia</option><option>Cardiologia</option><option>Pneumologia</option><option>Neurologia</option><option>UTI</option><option>Outro</option></select>
+            <select id="novoat-clinica"><option value="">Selecione...</option></select>
           </div>
           <div class="form-group"><label>Tipo da Internação</label>
             <select id="novoat-tipo"><option value="">Selecione...</option><option>Clínico</option><option>Cirúrgico</option><option>Obstétrico</option><option>Psiquiátrico</option></select>
@@ -1185,7 +1185,7 @@
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Profissionais</h3></div>
-        <table><thead><tr><th>Nome</th><th>CPF</th><th>Conselho</th><th>Número no Conselho</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="tb-cad-profissionais"></tbody></table>
+        <table><thead><tr><th>Nome</th><th>CPF</th><th>Conselho</th><th>Número</th><th>Especialidade</th><th>Meta/Mês</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="tb-cad-profissionais"></tbody></table>
       </div>
     </div>
 
@@ -1230,6 +1230,19 @@
           <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Ativo</th><th>Ações</th></tr></thead>
           <tbody id="tb-usuarios"></tbody>
         </table>
+      </div>
+
+      <!-- Clinicas Responsaveis -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <h3>&#127968; Clínicas Responsáveis</h3>
+          <small style="color:#888;">Aparecem no formulário de internação</small>
+        </div>
+        <div style="padding:12px 0 4px;display:flex;gap:8px;align-items:center;">
+          <input type="text" id="nova-clinica-nome" placeholder="Nome da clínica..." style="flex:1;padding:7px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;" />
+          <button class="btn btn-success btn-sm" onclick="adicionarClinica()">+ Adicionar</button>
+        </div>
+        <div id="lista-clinicas" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;"></div>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -1343,7 +1356,7 @@
               </label>
             </div>
           </div>
-          <table><thead><tr><th>Data</th><th>Procedimento</th><th>Usuário</th><th></th></tr></thead>
+          <table><thead><tr><th>Data</th><th>Procedimento</th><th>Usuário</th><th>Fat.</th><th></th></tr></thead>
           <tbody id="det-tb-procs"></tbody></table>
         </div>
         <div class="card">
@@ -1434,6 +1447,7 @@
 <div class="modal-overlay" id="modal-profissional">
   <div class="modal">
     <h2>Novo Profissional</h2>
+    <input type="hidden" id="prof-edit-id" />
     <div class="form-group"><label>Nome Completo *</label><input type="text" id="prof-nome" /></div>
     <div class="form-row">
       <div class="form-group"><label>CPF</label><input type="text" id="prof-cpf" /></div>
@@ -1441,6 +1455,10 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>Número no Conselho</label><input type="text" id="prof-numconselho" /></div>
+      <div class="form-group"><label>Especialidade</label><input type="text" id="prof-especialidade" placeholder="Ex: Respiratória, Neurológica..." /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Meta Mensal (guias)</label><input type="number" id="prof-meta-guias" min="0" placeholder="Ex: 30" /></div>
       <div class="form-group"><label>Ativo</label><select id="prof-ativo"><option value="1">Sim</option><option value="0">Não</option></select></div>
     </div>
     <div class="form-actions">
@@ -1864,7 +1882,7 @@
     </div>
     <div class="form-group">
       <label>Tipo da Alta *</label>
-      <select id="alta-tipo">
+      <select id="alta-tipo" onchange="onAltaTipoChange()">
         <option value="">Selecione</option>
         <option>Hospitalar</option>
         <option>Fisioterapêutica</option>
@@ -1872,6 +1890,36 @@
         <option>Transferência</option>
         <option>A pedido</option>
       </select>
+    </div>
+    <div id="alta-campos-fisio" style="display:none;border:1px solid #d5e8d4;border-radius:6px;background:#f6fff5;padding:12px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:#27ae60;margin-bottom:8px;">🩺 Alta Fisioterapêutica</div>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>Meta terapêutica atingida?</label>
+        <select id="alta-meta-atingida" style="padding:7px;border:1px solid #ddd;border-radius:5px;font-size:13px;width:100%;">
+          <option value="">Selecione</option>
+          <option>Sim — objetivos atingidos</option>
+          <option>Parcialmente — evolução satisfatória</option>
+          <option>Não — limitação clínica</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Resumo de Alta Fisioterapêutica</label>
+        <textarea id="alta-resumo-fisio" rows="2" placeholder="Descreva a evolução e o estado funcional na alta..." style="padding:9px;border:1px solid #ddd;border-radius:5px;font-size:13px;width:100%;resize:vertical;"></textarea>
+      </div>
+    </div>
+    <div id="alta-campos-hospitalar" style="display:none;border:1px solid #d0e4f5;border-radius:6px;background:#f5faff;padding:12px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:#2980b9;margin-bottom:8px;">🏥 Alta Hospitalar</div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Motivo da Alta Hospitalar</label>
+        <select id="alta-motivo-hospitalar" style="padding:7px;border:1px solid #ddd;border-radius:5px;font-size:13px;width:100%;">
+          <option value="">Selecione</option>
+          <option>Melhora clínica</option>
+          <option>Transferência para outro serviço</option>
+          <option>A pedido do paciente</option>
+          <option>Evasão</option>
+          <option>Óbito</option>
+        </select>
+      </div>
     </div>
     <div class="form-group">
       <label>IMS na Alta</label>
@@ -2058,11 +2106,18 @@ function initData() {
   // garante medidas padrão sempre existam
   if (DB.get('medidas').length === 0) {
     DB.set('medidas',[
-      {id:1,nome:'PE MAX',unidade:'cmH2O',valor_base:20},
-      {id:2,nome:'PI MAX',unidade:'cmH2O',valor_base:48},
-      {id:3,nome:'PEAK FLOW',unidade:'L/Min',valor_base:160},
-      {id:4,nome:'IMS',unidade:'pts',valor_base:6},
-      {id:5,nome:'MRC',unidade:'pts',valor_base:36},
+      {id:1,nome:'PE MAX',unidade:'cmH2O',valor_base:20,min_normal:60,max_normal:150},
+      {id:2,nome:'PI MAX',unidade:'cmH2O',valor_base:48,min_normal:60,max_normal:120},
+      {id:3,nome:'PEAK FLOW',unidade:'L/Min',valor_base:160,min_normal:320,max_normal:600},
+      {id:4,nome:'IMS',unidade:'pts',valor_base:6,min_normal:0,max_normal:10},
+      {id:5,nome:'MRC',unidade:'pts',valor_base:36,min_normal:48,max_normal:60},
+    ]);
+  }
+  if ((DB.get('clinicas')||[]).length === 0) {
+    DB.set('clinicas',[
+      {id:1,nome:'Clínica Médica'},{id:2,nome:'Cirurgia Geral'},{id:3,nome:'Ortopedia'},
+      {id:4,nome:'Cardiologia'},{id:5,nome:'Pneumologia'},{id:6,nome:'Neurologia'},
+      {id:7,nome:'UTI'},{id:8,nome:'Outro'},
     ]);
   }
 }
@@ -2467,9 +2522,27 @@ function renderConvenios() {
 
 function renderProfissionais() {
   document.getElementById('tb-cad-profissionais').innerHTML = DB.get('profissionais').map(p => `
-    <tr data-search="${p.nome.toLowerCase()}"><td>${p.nome}</td><td>${p.cpf||'-'}</td><td>${p.conselho}</td><td>${p.numconselho}</td>
-    <td><span class="icon-ativo ${p.ativo?'sim':'nao'}">${p.ativo?'✔':'✘'}</span></td>
-    <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`).join('');
+    <tr data-search="${p.nome.toLowerCase()}">
+      <td>${p.nome}</td><td>${p.cpf||'-'}</td><td>${p.conselho}</td><td>${p.numconselho||'-'}</td>
+      <td>${p.especialidade||'-'}</td>
+      <td style="text-align:center;">${p.meta_guias_mes ? `<span style="background:#eaf5ea;color:#27ae60;padding:2px 8px;border-radius:4px;font-size:12px;">${p.meta_guias_mes}/mês</span>` : '-'}</td>
+      <td><span class="icon-ativo ${p.ativo?'sim':'nao'}">${p.ativo?'✔':'✘'}</span></td>
+      <td><button class="btn btn-primary btn-sm" onclick="editarProfissional(${p.id})">Editar</button></td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:16px;">Nenhum profissional cadastrado</td></tr>';
+}
+
+function editarProfissional(id) {
+  const p = (DB.get('profissionais')||[]).find(x=>x.id===id);
+  if (!p) return;
+  document.getElementById('prof-edit-id').value = id;
+  document.getElementById('prof-nome').value = p.nome||'';
+  document.getElementById('prof-cpf').value = p.cpf||'';
+  document.getElementById('prof-conselho').value = p.conselho||'CREFITO';
+  document.getElementById('prof-numconselho').value = p.numconselho||'';
+  document.getElementById('prof-especialidade').value = p.especialidade||'';
+  document.getElementById('prof-meta-guias').value = p.meta_guias_mes||'';
+  document.getElementById('prof-ativo').value = p.ativo;
+  openModal('modal-profissional');
 }
 
 function renderProcedimentos() {
@@ -2568,6 +2641,7 @@ function renderLogAcesso() {
 }
 
 function renderUsuarios() {
+  renderListaClinicas();
   renderLogAcesso();
   document.getElementById('tb-usuarios').innerHTML = DB.get('usuarios').map(u => {
     const cls = u.perfil==='Gestão'?'perfil-gestao':u.perfil==='Secretaria'?'perfil-secretaria':'perfil-fisio';
@@ -2876,7 +2950,25 @@ function renderProdutividade() {
     const vNCont = ncont.reduce((s,g) => s + parseMoeda(g.valor), 0);
     totalGeral += vTotal; totalCont += vCont; totalNCont += vNCont;
     qtdTotal += guiasFisio.length; qtdCont += cont.length; qtdNCont += ncont.length;
-    return `<tr><td>${p.nome}</td><td>${fmtMoeda(vTotal)}</td><td>${guiasFisio.length}</td><td>${fmtMoeda(vCont)}</td><td>${cont.length}</td><td>${fmtMoeda(vNCont)}</td><td>${ncont.length}</td></tr>`;
+    const meta = p.meta_guias_mes || null;
+    const pctMeta = meta ? Math.round(guiasFisio.length / meta * 100) : null;
+    const corMeta = pctMeta == null ? '#888' : pctMeta >= 100 ? '#27ae60' : pctMeta >= 70 ? '#e67e22' : '#e74c3c';
+    const metaCell = meta
+      ? `<span style="font-size:12px;">${meta}/mês</span>`
+      : `<span style="color:#aaa;font-size:12px;">—</span>`;
+    const pctCell = pctMeta != null
+      ? `<span style="background:${corMeta}20;color:${corMeta};padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;">${pctMeta}%</span>`
+      : `<span style="color:#aaa;font-size:12px;">—</span>`;
+    return `<tr>
+      <td>${p.nome}</td>
+      <td style="font-size:12px;color:#666;">${p.especialidade||'-'}</td>
+      <td>${fmtMoeda(vTotal)}</td>
+      <td style="text-align:center;">${guiasFisio.length}</td>
+      <td style="text-align:center;">${metaCell}</td>
+      <td style="text-align:center;">${pctCell}</td>
+      <td>${fmtMoeda(vCont)} <small style="color:#888;">(${cont.length})</small></td>
+      <td>${fmtMoeda(vNCont)} <small style="color:#888;">(${ncont.length})</small></td>
+    </tr>`;
   });
 
   document.getElementById('tb-produtividade').innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Nenhum dado encontrado</td></tr>';
@@ -3044,7 +3136,24 @@ function saveConvenio() {
 function saveProfissional() {
   const nome = document.getElementById('prof-nome').value.trim();
   if (!nome) { alert('Nome é obrigatório'); return; }
-  DB.push('profissionais',{id:getNextId('profissionais'),nome,cpf:document.getElementById('prof-cpf').value,conselho:document.getElementById('prof-conselho').value,numconselho:document.getElementById('prof-numconselho').value,ativo:parseInt(document.getElementById('prof-ativo').value)});
+  const obj = {
+    nome,
+    cpf: document.getElementById('prof-cpf').value,
+    conselho: document.getElementById('prof-conselho').value,
+    numconselho: document.getElementById('prof-numconselho').value,
+    especialidade: document.getElementById('prof-especialidade').value.trim(),
+    meta_guias_mes: parseInt(document.getElementById('prof-meta-guias').value)||null,
+    ativo: parseInt(document.getElementById('prof-ativo').value)
+  };
+  const editId = parseInt(document.getElementById('prof-edit-id').value);
+  if (editId) {
+    const lista = DB.get('profissionais');
+    const idx = lista.findIndex(p=>p.id===editId);
+    if (idx>=0) { lista[idx] = {...lista[idx],...obj}; DB.set('profissionais',lista); }
+    document.getElementById('prof-edit-id').value='';
+  } else {
+    DB.push('profissionais',{id:getNextId('profissionais'),...obj});
+  }
   closeModal('modal-profissional'); renderProfissionais(); showToast('Profissional salvo!');
   document.getElementById('prof-nome').value='';
 }
@@ -3211,6 +3320,35 @@ function saveSetor() {
   document.getElementById('setor-nome').value='';
   document.getElementById('setor-leitos-nomes').value='';
   document.getElementById('modal-setor-titulo').textContent='Novo Setor';
+}
+
+function renderListaClinicas() {
+  const lista = document.getElementById('lista-clinicas');
+  if (!lista) return;
+  const clinicas = DB.get('clinicas')||[];
+  lista.innerHTML = clinicas.map(c =>
+    `<span style="background:#f0f2f5;padding:4px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px;">
+      ${c.nome}
+      <button onclick="removerClinica(${c.id})" style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;line-height:1;padding:0;">✕</button>
+    </span>`).join('') || '<span style="color:#aaa;font-size:12px;">Nenhuma clínica cadastrada</span>';
+}
+function adicionarClinica() {
+  const input = document.getElementById('nova-clinica-nome');
+  const nome = input.value.trim();
+  if (!nome) return;
+  const clinicas = DB.get('clinicas')||[];
+  if (clinicas.find(c=>c.nome.toLowerCase()===nome.toLowerCase())) { showToast('Clínica já existe', '#e74c3c'); return; }
+  clinicas.push({id: Date.now(), nome});
+  DB.set('clinicas', clinicas);
+  input.value='';
+  renderListaClinicas();
+  showToast('Clínica adicionada!');
+}
+function removerClinica(id) {
+  const clinicas = (DB.get('clinicas')||[]).filter(c=>c.id!==id);
+  DB.set('clinicas', clinicas);
+  renderListaClinicas();
+  showToast('Clínica removida');
 }
 
 async function saveUsuario() {
@@ -3556,8 +3694,24 @@ function renderDetProcs(guiaId) {
     const cancelBtn = !h.cancelado
       ? `<button style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;" title="Cancelar" onclick="cancelarProcedimento(${guiaId},${realIdx})">✕</button>`
       : '';
-    return `<tr><td>${h.data}</td><td>${nomeCell}</td><td>${h.usuario}</td><td>${cancelBtn}</td></tr>`;
+    const statusFat = h.cancelado ? '' : (() => {
+      const s = h.status_fat || 'Pendente';
+      const cfg = {Pendente:{bg:'#fff3cd',c:'#856404'},Validado:{bg:'#d1ecf1',c:'#0c5460'},Faturado:{bg:'#d4edda',c:'#155724'},Glosado:{bg:'#f8d7da',c:'#721c24'}};
+      const k = cfg[s]||cfg['Pendente'];
+      return `<button onclick="ciclarStatusProc(${guiaId},${realIdx})" style="background:${k.bg};color:${k.c};border:none;cursor:pointer;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;" title="Clique para alterar">${s}</button>`;
+    })();
+    return `<tr><td>${h.data}</td><td>${nomeCell}</td><td>${h.usuario}</td><td>${statusFat}</td><td>${cancelBtn}</td></tr>`;
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento no período</td></tr>';
+}
+
+function ciclarStatusProc(guiaId, idx) {
+  const ciclo = ['Pendente','Validado','Faturado','Glosado'];
+  const hist = DB.get('hist_procs_' + guiaId) || [];
+  if (!hist[idx]) return;
+  const atual = hist[idx].status_fat || 'Pendente';
+  hist[idx].status_fat = ciclo[(ciclo.indexOf(atual)+1)%ciclo.length];
+  DB.set('hist_procs_' + guiaId, hist);
+  renderDetProcs(guiaId);
 }
 
 function renderDetStatus(guiaId) {
@@ -3569,9 +3723,20 @@ function renderDetStatus(guiaId) {
 
 function renderDetMedidas(guiaId) {
   const hist = JSON.parse(DB.getItem('hist_medidas_' + guiaId) || '[]');
-  document.getElementById('det-tb-medidas').innerHTML = hist.length ? hist.slice().reverse().map(h =>
-    `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}</td><td>${h.usuario}</td></tr>`
-  ).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhuma medida lançada</td></tr>';
+  const cadastro = DB.get('medidas') || [];
+  document.getElementById('det-tb-medidas').innerHTML = hist.length ? hist.slice().reverse().map(h => {
+    const def = cadastro.find(m => m.nome === h.medida) || {};
+    const val = parseFloat(h.valor);
+    let badge = '';
+    if (!isNaN(val) && (def.min_normal != null || def.max_normal != null)) {
+      const abaixo = def.min_normal != null && val < def.min_normal;
+      const acima  = def.max_normal != null && val > def.max_normal;
+      if (abaixo || acima) {
+        badge = ` <span style="background:#fdecea;color:#e74c3c;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">⚠ ${abaixo?'Baixo':'Alto'}</span>`;
+      }
+    }
+    return `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}${badge}</td><td>${h.usuario}</td></tr>`;
+  }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhuma medida lançada</td></tr>';
   setTimeout(() => renderGraficoMedidas(guiaId), 80);
 }
 
@@ -3668,6 +3833,8 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
   document.getElementById('novoat-convenio').innerHTML = '<option value="">Selecione...</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   const status = DB.get('status_paciente');
   document.getElementById('novoat-status').innerHTML = '<option value="">Selecione...</option>' + status.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  const clinicas = DB.get('clinicas')||[];
+  document.getElementById('novoat-clinica').innerHTML = '<option value="">Selecione...</option>' + clinicas.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
 
   if (setorNome && leitoNum) {
     document.getElementById('novoat-setor-leito').textContent = `${setorNome} - ${leitoNum}`;
@@ -3821,9 +3988,22 @@ function salvarMedidas() {
     }
   });
   if (!salvou) { alert('Informe pelo menos uma medida'); return; }
+  // Verificar se alguma medida está fora do range
+  let alertaRange = '';
+  medidas.forEach(m => {
+    const input = document.getElementById('med-val-' + m.id);
+    if (input && input.value !== '' && (m.min_normal != null || m.max_normal != null)) {
+      const val = parseFloat(input.value);
+      if (!isNaN(val)) {
+        if (m.min_normal != null && val < m.min_normal) alertaRange += `⚠ ${m.nome}: ${val} abaixo do normal (mín ${m.min_normal})\n`;
+        if (m.max_normal != null && val > m.max_normal) alertaRange += `⚠ ${m.nome}: ${val} acima do normal (máx ${m.max_normal})\n`;
+      }
+    }
+  });
   closeModal('modal-lancar-medidas');
   renderDetMedidas(pacienteAtivo.id);
-  showToast('Medidas salvas!');
+  if (alertaRange) showToast('⚠ Valor fora da faixa normal — verifique as medidas', '#e67e22');
+  else showToast('Medidas salvas!');
 }
 
 function abrirModalAlta() {
@@ -3833,6 +4013,11 @@ function abrirModalAlta() {
   document.getElementById('alta-tipo').value = '';
   document.getElementById('alta-ims').value = '';
   document.getElementById('alta-obs').value = '';
+  document.getElementById('alta-campos-fisio').style.display = 'none';
+  document.getElementById('alta-campos-hospitalar').style.display = 'none';
+  document.getElementById('alta-meta-atingida').value = '';
+  document.getElementById('alta-resumo-fisio').value = '';
+  document.getElementById('alta-motivo-hospitalar').value = '';
 
   // Verifica alertas
   const alertasEl = document.getElementById('alta-alertas');
@@ -3873,6 +4058,12 @@ function abrirModalAlta() {
   openModal('modal-alta');
 }
 
+function onAltaTipoChange() {
+  const tipo = document.getElementById('alta-tipo').value;
+  document.getElementById('alta-campos-fisio').style.display = tipo === 'Fisioterapêutica' ? 'block' : 'none';
+  document.getElementById('alta-campos-hospitalar').style.display = tipo === 'Hospitalar' ? 'block' : 'none';
+}
+
 function salvarAlta() {
   const tipo = document.getElementById('alta-tipo').value;
   if (!tipo) { alert('Selecione o Tipo da Alta'); return; }
@@ -3889,6 +4080,12 @@ function salvarAlta() {
     guias[idx].tipo_alta = tipo;
     guias[idx].ims_alta = imsAlta;
     guias[idx].obs_alta = obs;
+    if (tipo === 'Fisioterapêutica') {
+      guias[idx].alta_meta_atingida = document.getElementById('alta-meta-atingida').value;
+      guias[idx].alta_resumo_fisio = document.getElementById('alta-resumo-fisio').value;
+    } else if (tipo === 'Hospitalar') {
+      guias[idx].alta_motivo_hospitalar = document.getElementById('alta-motivo-hospitalar').value;
+    }
     DB.set('guias', guias);
     pacienteAtivo = guias[idx];
   }
@@ -5249,6 +5446,19 @@ function exportarCSV(tipo) {
       const histIMS2=DB.get('hist_ims_'+g.id)||[];
       const imsAlta2=histIMS2.length?histIMS2[histIMS2.length-1].valor:'-';
       rows.push([pac2.nome||'-',g.setor||'-',conv2.nome||'-',g.internacao||'-',g.alta||'-',dias,g.tipo_alta||'-',g.ims_previo??'-',g.ims_admissao??'-',imsAlta2]);
+    });
+  }
+
+  if (tipo === 'glosas') {
+    filename = `glosas_${hojeStr}.csv`;
+    rows.push(['Data','Paciente','Convênio','Motivo','Valor R$','Status','Observação']);
+    const gls = DB.get('glosas')||[];
+    const pacs = DB.get('pacientes'), convs = DB.get('convenios'), guias = DB.get('guias');
+    gls.forEach(gl => {
+      const guia = guias.find(g=>g.id===gl.guia_id)||{};
+      const pac = pacs.find(p=>p.id===guia.paciente_id)||{};
+      const conv = convs.find(c=>c.id===guia.convenio_id)||{};
+      rows.push([gl.data||'-',pac.nome||'-',conv.nome||'-',gl.motivo||'-',(gl.valor||0).toFixed(2),gl.status||'-',gl.obs||'-']);
     });
   }
 
