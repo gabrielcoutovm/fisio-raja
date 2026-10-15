@@ -335,6 +335,7 @@
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
+<!-- ===== TELA DE LOGIN ===== -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
@@ -350,10 +351,64 @@
       <button type="button" onclick="const i=document.getElementById('login-pass');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;">👁</button>
     </div>
     <button class="btn-login" id="btn-login" onclick="doLogin()">Entrar</button>
-    <p style="margin-top:18px;font-size:11px;color:#999;text-align:center;line-height:1.5;">
+    <p style="text-align:center;margin-top:14px;">
+      <a href="#" onclick="mostrarRecuperarSenha();return false;" style="font-size:12px;color:#4a90d9;text-decoration:none;">Esqueci minha senha</a>
+    </p>
+    <p style="margin-top:10px;font-size:11px;color:#999;text-align:center;line-height:1.5;">
       Ao acessar, você concorda com o uso de dados conforme a
       <strong>LGPD (Lei 13.709/2018)</strong>.<br>
       Os dados de pacientes são confidenciais e de uso exclusivo dos profissionais autorizados.
+    </p>
+  </div>
+</div>
+
+<!-- ===== TELA RECUPERAR SENHA (solicitar link) ===== -->
+<div id="recuperar-senha-screen" style="display:none;">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>FISIO RAJA</h1>
+      <p>Recuperar Senha</p>
+    </div>
+    <p style="font-size:13px;color:#555;text-align:center;margin-bottom:16px;line-height:1.5;">
+      Digite seu e-mail. Você receberá um link para criar uma nova senha.
+    </p>
+    <p class="login-error" id="recuperar-error" style="display:none;">Não foi possível enviar o e-mail. Verifique o endereço.</p>
+    <p id="recuperar-sucesso" style="display:none;background:#d4edda;color:#155724;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;margin-bottom:12px;">
+      E-mail enviado! Verifique sua caixa de entrada e clique no link recebido.
+    </p>
+    <label>E-mail</label>
+    <input type="email" id="recuperar-email" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')enviarRecuperacao()" />
+    <button class="btn-login" id="btn-recuperar" onclick="enviarRecuperacao()">Enviar link</button>
+    <p style="text-align:center;margin-top:14px;">
+      <a href="#" onclick="mostrarLogin();return false;" style="font-size:12px;color:#4a90d9;text-decoration:none;">← Voltar para o login</a>
+    </p>
+  </div>
+</div>
+
+<!-- ===== TELA NOVA SENHA (após clicar no link do e-mail) ===== -->
+<div id="nova-senha-screen" style="display:none;">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>FISIO RAJA</h1>
+      <p>Criar Nova Senha</p>
+    </div>
+    <p style="font-size:13px;color:#555;text-align:center;margin-bottom:16px;line-height:1.5;">
+      Escolha uma senha segura com pelo menos 8 caracteres, uma maiúscula, um número e um símbolo.
+    </p>
+    <p class="login-error" id="nova-senha-error" style="display:none;">Erro ao salvar. Tente solicitar um novo link.</p>
+    <label>Nova Senha</label>
+    <div style="position:relative;">
+      <input type="password" id="nova-senha-input" placeholder="Mínimo 8 caracteres" style="width:100%;padding-right:42px;box-sizing:border-box;" />
+      <button type="button" onclick="const i=document.getElementById('nova-senha-input');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;">👁</button>
+    </div>
+    <label style="margin-top:12px;">Repetir Nova Senha</label>
+    <div style="position:relative;">
+      <input type="password" id="nova-senha-input2" placeholder="Repita a senha" style="width:100%;padding-right:42px;box-sizing:border-box;" onkeydown="if(event.key==='Enter')salvarNovaSenha()" />
+      <button type="button" onclick="const i=document.getElementById('nova-senha-input2');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;">👁</button>
+    </div>
+    <button class="btn-login" id="btn-nova-senha" onclick="salvarNovaSenha()" style="margin-top:16px;">Salvar nova senha</button>
+    <p style="text-align:center;margin-top:14px;">
+      <a href="#" onclick="mostrarLogin();return false;" style="font-size:12px;color:#4a90d9;text-decoration:none;">← Voltar para o login</a>
     </p>
   </div>
 </div>
@@ -2450,6 +2505,87 @@ MENUS['Secretaria'] = MENUS['Gestão'];
 
 // ===== SESSÃO =====
 let currentUser = null;
+let _recoveryToken = null; // token JWT de recuperação vindo do link do e-mail
+
+// ===== NAVEGAÇÃO ENTRE TELAS DE AUTENTICAÇÃO =====
+function mostrarLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('recuperar-senha-screen').style.display = 'none';
+  document.getElementById('nova-senha-screen').style.display = 'none';
+}
+function mostrarRecuperarSenha() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('recuperar-senha-screen').style.display = 'flex';
+  document.getElementById('nova-senha-screen').style.display = 'none';
+  document.getElementById('recuperar-error').style.display = 'none';
+  document.getElementById('recuperar-sucesso').style.display = 'none';
+  document.getElementById('recuperar-email').value = '';
+}
+function mostrarNovaSenha() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('recuperar-senha-screen').style.display = 'none';
+  document.getElementById('nova-senha-screen').style.display = 'flex';
+  document.getElementById('nova-senha-error').style.display = 'none';
+}
+
+// ===== ENVIAR LINK DE RECUPERAÇÃO =====
+async function enviarRecuperacao() {
+  const email = document.getElementById('recuperar-email').value.trim();
+  if (!email) { alert('Digite seu e-mail'); return; }
+  const btn = document.getElementById('btn-recuperar');
+  btn.textContent = 'Enviando...'; btn.disabled = true;
+  document.getElementById('recuperar-error').style.display = 'none';
+  document.getElementById('recuperar-sucesso').style.display = 'none';
+  try {
+    const r = await fetch(`${SB_AUTH_URL}/recover`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (r.ok || r.status === 200) {
+      document.getElementById('recuperar-sucesso').style.display = 'block';
+    } else {
+      document.getElementById('recuperar-error').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('recuperar-error').style.display = 'block';
+  }
+  btn.textContent = 'Enviar link'; btn.disabled = false;
+}
+
+// ===== SALVAR NOVA SENHA (com token de recuperação) =====
+async function salvarNovaSenha() {
+  const nova = document.getElementById('nova-senha-input').value;
+  const nova2 = document.getElementById('nova-senha-input2').value;
+  if (!nova) { alert('Digite a nova senha'); return; }
+  const forca = calcularForcaSenha(nova);
+  if (forca.score < 3) {
+    alert('Senha fraca.\n\nRequisitos:\n' + forca.requisitos.filter(r=>!r.ok).map(r=>'• '+r.texto).join('\n'));
+    return;
+  }
+  if (nova !== nova2) { alert('As senhas não coincidem'); return; }
+  if (!_recoveryToken) { alert('Token inválido. Solicite um novo link.'); return; }
+  const btn = document.getElementById('btn-nova-senha');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+  try {
+    const r = await fetch(`${SB_AUTH_URL}/user`, {
+      method: 'PUT',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + _recoveryToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: nova })
+    });
+    if (r.ok) {
+      alert('Senha alterada com sucesso! Faça login com a nova senha.');
+      _recoveryToken = null;
+      window.location.hash = '';
+      mostrarLogin();
+    } else {
+      document.getElementById('nova-senha-error').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('nova-senha-error').style.display = 'block';
+  }
+  btn.textContent = 'Salvar nova senha'; btn.disabled = false;
+}
 
 async function doLogin() {
   const email = document.getElementById('login-user').value.trim();
@@ -6482,6 +6618,15 @@ function exportarBackup() {
 // ===== INIT =====
 // ===== BOOTSTRAP ASYNC =====
 (async () => {
+  // Detecta token de recuperação de senha no hash da URL (#access_token=...&type=recovery)
+  const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+  if (hashParams.get('type') === 'recovery' && hashParams.get('access_token')) {
+    _recoveryToken = hashParams.get('access_token');
+    document.getElementById('login-screen').style.display = 'none';
+    mostrarNovaSenha();
+    return; // não carrega o app, só mostra tela de nova senha
+  }
+
   document.getElementById('loading-screen').style.display = 'flex';
   document.getElementById('login-screen').style.display = 'none';
   await carregarDados();
