@@ -10,7 +10,7 @@
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a1628; color: #333; display: flex; min-height: 100vh; }
 
     /* ===== LOGIN ===== */
-    #login-screen {
+    #login-screen, #recuperar-senha-screen, #nova-senha-screen {
       display: flex; align-items: center; justify-content: center;
       width: 100%; min-height: 100vh;
       background: linear-gradient(135deg, #0a1628 0%, #0d2247 50%, #0a1e3d 100%);
@@ -2514,6 +2514,7 @@ function mostrarLogin() {
   document.getElementById('nova-senha-screen').style.display = 'none';
 }
 function mostrarRecuperarSenha() {
+  ocultarAlertaSessao();
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('recuperar-senha-screen').style.display = 'flex';
   document.getElementById('nova-senha-screen').style.display = 'none';
@@ -2540,7 +2541,7 @@ async function enviarRecuperacao() {
     const r = await fetch(`${SB_AUTH_URL}/recover`, {
       method: 'POST',
       headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email, redirectTo: 'https://gabrielcoutovm.github.io/fisio-raja/' })
     });
     if (r.ok || r.status === 200) {
       document.getElementById('recuperar-sucesso').style.display = 'block';
