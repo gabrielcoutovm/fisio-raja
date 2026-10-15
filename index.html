@@ -2206,7 +2206,7 @@ async function fetchComRenovacao(url, opts) {
       // reconstrói headers com o novo token
       opts.headers = getHeaders();
       r = await fetch(url, opts);
-    } else {
+    } else if (currentUser) {
       mostrarAlertaSessao();
     }
   } else if (!r.ok) {
