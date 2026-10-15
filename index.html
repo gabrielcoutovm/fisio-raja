@@ -345,7 +345,10 @@
     <label>E-mail</label>
     <input type="email" id="login-user" placeholder="seu@email.com" />
     <label>Senha</label>
-    <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    <div style="position:relative;">
+      <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding-right:42px;box-sizing:border-box;" />
+      <button type="button" onclick="const i=document.getElementById('login-pass');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;">👁</button>
+    </div>
     <button class="btn-login" id="btn-login" onclick="doLogin()">Entrar</button>
     <p style="margin-top:18px;font-size:11px;color:#999;text-align:center;line-height:1.5;">
       Ao acessar, você concorda com o uso de dados conforme a
