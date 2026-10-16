@@ -2588,7 +2588,11 @@ async function salvarNovaSenha() {
       window.location.hash = '';
       mostrarLogin();
     } else {
-      document.getElementById('nova-senha-error').style.display = 'block';
+      let det = '';
+      try { const j = await r.json(); det = j.msg || j.message || j.error_description || JSON.stringify(j); } catch(_){}
+      const el = document.getElementById('nova-senha-error');
+      el.textContent = `Erro ${r.status}: ${det || 'Não foi possível salvar a senha.'}`;
+      el.style.display = 'block';
     }
   } catch(e) {
     document.getElementById('nova-senha-error').style.display = 'block';
