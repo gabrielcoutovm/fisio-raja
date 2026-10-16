@@ -2619,8 +2619,10 @@ async function doLogin() {
     });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
-      console.error('Auth erro:', r.status, err);
-      document.getElementById('login-error').style.display = 'block';
+      const msg = err.error_description || err.msg || err.message || JSON.stringify(err);
+      const el = document.getElementById('login-error');
+      el.textContent = `Erro ${r.status}: ${msg}`;
+      el.style.display = 'block';
       btn.textContent = 'Entrar'; btn.disabled = false;
       return;
     }
