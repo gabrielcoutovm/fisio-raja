@@ -2583,7 +2583,21 @@ async function salvarNovaSenha() {
       body: JSON.stringify({ password: nova })
     });
     if (r.ok) {
-      alert('Senha alterada com sucesso! Faça login com a nova senha.');
+      // Verifica se a senha foi realmente aplicada no Supabase
+      const emailAtual = (await fetch(`${SB_AUTH_URL}/user`, {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + _recoveryToken }
+      }).then(x=>x.json()).catch(()=>({}))).email || '';
+      const verif = await fetch(`${SB_AUTH_URL}/token?grant_type=password`, {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailAtual, password: nova })
+      });
+      if (verif.ok) {
+        alert('Senha alterada com sucesso! Faça login com a nova senha.');
+      } else {
+        const ve = await verif.json().catch(()=>({}));
+        alert('AVISO: A API retornou sucesso mas o login falhou.\nErro: ' + (ve.error_description || ve.msg || JSON.stringify(ve)));
+      }
       _recoveryToken = null;
       window.location.hash = '';
       mostrarLogin();
