@@ -552,13 +552,27 @@
       <div class="page-title">Guias - Fechadas</div>
       <div class="filter-card">
         <div class="filter-row">
-          <div class="filter-group"><label>Setores</label><input type="text" placeholder="Todos" /></div>
-          <div class="filter-group"><label>Convênios</label><input type="text" placeholder="Todos" /></div>
-          <div class="filter-group"><label>Paciente ou N. Atendimento</label><input type="text" placeholder="Buscar..." /></div>
-          <div class="filter-group"><label>Tipo da Alta</label><input type="text" placeholder="Todos" /></div>
+          <div class="filter-group"><label>Convênio</label><select id="gf-convenio" onchange="renderGuiasFechadas()"><option value="">Todos</option></select></div>
+          <div class="filter-group"><label>Tipo da Alta</label>
+            <select id="gf-tipo" onchange="renderGuiasFechadas()">
+              <option value="">Todos</option>
+              <option>Fisioterapêutica</option><option>Hospitalar</option><option>Óbito</option><option>A pedido</option>
+            </select>
+          </div>
+          <div class="filter-group"><label>De</label><input type="date" id="gf-de" onchange="renderGuiasFechadas()" /></div>
+          <div class="filter-group"><label>Até</label><input type="date" id="gf-ate" onchange="renderGuiasFechadas()" /></div>
+          <div class="filter-group"><label>Paciente / Nº Atend.</label><input type="text" id="gf-busca" placeholder="Buscar..." oninput="renderGuiasFechadas()" /></div>
+          <div class="filter-group" style="align-self:flex-end;"><button class="btn btn-success btn-sm" onclick="exportarCSV('guias-fechadas')">&#8659; CSV</button></div>
         </div>
       </div>
-      <div style="text-align:center;padding:40px;color:#888;font-weight:600;">Nenhuma Guia Fechada!</div>
+      <div class="card">
+        <div id="gf-kpis" style="display:flex;gap:14px;padding:10px 0 14px;flex-wrap:wrap;font-size:13px;"></div>
+        <table>
+          <thead><tr><th>Paciente</th><th>Setor</th><th>Convênio</th><th>Internação</th><th>Alta</th><th>Dias</th><th>Tipo Alta</th><th>Valor</th><th>Nº Atend.</th></tr></thead>
+          <tbody id="tb-guias-fechadas"></tbody>
+        </table>
+        <div id="gf-vazio" style="text-align:center;padding:40px;color:#888;display:none;">Nenhuma guia fechada encontrada.</div>
+      </div>
     </div>
 
     <!-- LOTES PENDENTE (só Gestão) -->
@@ -2160,6 +2174,16 @@ function getHeaders() {
 // ===== RENOVAÇÃO DE SESSÃO (refresh_token) =====
 let _sessaoAlertaVisivel = false;
 let _refreshInterval = null;
+let _inactivityTimer = null;
+const INACTIVITY_MS = 30 * 60 * 1000;
+function _resetInactivity() {
+  if (!currentUser) return;
+  clearTimeout(_inactivityTimer);
+  _inactivityTimer = setTimeout(() => {
+    if (currentUser) { alert('Sessão encerrada por inatividade (30 min).'); doLogout(); }
+  }, INACTIVITY_MS);
+}
+['mousemove','keydown','click','touchstart'].forEach(ev => document.addEventListener(ev, _resetInactivity, { passive: true }));
 
 async function renovarSessao() {
   const refresh = sessionStorage.getItem('fisioraja_refresh');
@@ -2658,6 +2682,7 @@ async function doLogin() {
 
 function _ativarSessao(user) {
   currentUser = user;
+  _resetInactivity();
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('topbar-username').textContent = user.nome.split(' ')[0].toUpperCase();
@@ -2684,6 +2709,7 @@ function doLogout() {
   sessionStorage.removeItem('fisioraja_token');
   sessionStorage.removeItem('fisioraja_refresh');
   if (_refreshInterval) { clearInterval(_refreshInterval); _refreshInterval = null; }
+  clearTimeout(_inactivityTimer); _inactivityTimer = null;
   ocultarAlertaSessao();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
@@ -2848,6 +2874,7 @@ function renderPage(id) {
     'cad-procedimentos': renderProcedimentos,
     'cad-setores': renderSetores,
     'guias-abertas': renderGuiasAbertas,
+    'guias-fechadas': renderGuiasFechadas,
     'lotes-pendente': renderLotesPendente,
     'lotes-concluida': renderLotesConcluida,
     'mapa-geral': renderMapaGeral,
@@ -3106,22 +3133,29 @@ function _popularFiltrosMapa() {
   const guias = DB.get('guias').filter(g => !g.alta);
 
   const selSetor = document.getElementById('mapa-filtro-setor');
-  if (selSetor && selSetor.options.length <= 1) {
-    setores.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.nome; selSetor.appendChild(o); });
+  if (selSetor) {
+    const v = selSetor.value;
+    selSetor.innerHTML = '<option value="">Todos</option>' + setores.map(s=>`<option value="${s.id}">${s.nome}</option>`).join('');
+    selSetor.value = v;
   }
   const selConv = document.getElementById('mapa-filtro-conv');
-  if (selConv && selConv.options.length <= 1) {
-    convs.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nome; selConv.appendChild(o); });
+  if (selConv) {
+    const v = selConv.value;
+    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+    selConv.value = v;
   }
   const selProf = document.getElementById('mapa-filtro-prof');
-  if (selProf && selProf.options.length <= 1) {
-    profs.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.nome; selProf.appendChild(o); });
+  if (selProf) {
+    const v = selProf.value;
+    selProf.innerHTML = '<option value="">Todos</option>' + profs.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+    selProf.value = v;
   }
-  // Status clínicos únicos dos pacientes ativos
   const selStatus = document.getElementById('mapa-filtro-status');
-  if (selStatus && selStatus.options.length <= 1) {
+  if (selStatus) {
+    const v = selStatus.value;
     const statusUnicos = [...new Set(guias.map(g => g.status).filter(Boolean))];
-    statusUnicos.forEach(st => { const o = document.createElement('option'); o.value = st; o.textContent = st; selStatus.appendChild(o); });
+    selStatus.innerHTML = '<option value="">Todos</option>' + statusUnicos.map(st=>`<option value="${st}">${st}</option>`).join('');
+    selStatus.value = v;
   }
 }
 
@@ -4736,7 +4770,7 @@ function salvarAlta() {
   if (!tipo) { alert('Selecione o Tipo da Alta'); return; }
   if (!pacienteAtivo) return;
 
-  const dataAlta = document.getElementById('alta-data').value;
+  const dataAlta = isoParaBR(document.getElementById('alta-data').value);
   const imsAlta = document.getElementById('alta-ims').value;
   const obs = document.getElementById('alta-obs').value;
 
@@ -5708,7 +5742,7 @@ function renderPainelFinanceiro() {
   }
   function parseMoeda(v){if(!v)return 0;return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;}
   function fmtMoeda(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
-  function parseDataBR(s){if(!s)return null;const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
+  function parseDataBR(s){if(!s)return null;if(!s.includes('/')){const d=new Date(s);return isNaN(d)?null:d;}const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
 
   const filtConv = parseInt(document.getElementById('fin-convenio').value)||0;
   const filtDe = document.getElementById('fin-de').value ? new Date(document.getElementById('fin-de').value) : null;
@@ -5931,13 +5965,83 @@ function excluirGlosa(id) {
 }
 
 // ===== ALTA FISIOTERAPÊUTICA =====
+function renderGuiasFechadas() {
+  const convs = DB.get('convenios'), pacs = DB.get('pacientes');
+  const selConv = document.getElementById('gf-convenio');
+  if (selConv && selConv.options.length <= 1) {
+    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  }
+  function parseFlexData(s){if(!s)return null;if(!s.includes('/')){const d=new Date(s);return isNaN(d)?null:d;}const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
+
+  const filtConv = parseInt(document.getElementById('gf-convenio').value)||0;
+  const filtTipo = document.getElementById('gf-tipo').value;
+  const filtDe  = document.getElementById('gf-de').value  ? new Date(document.getElementById('gf-de').value)  : null;
+  const filtAte = document.getElementById('gf-ate').value ? new Date(document.getElementById('gf-ate').value) : null;
+  if (filtAte) filtAte.setHours(23,59,59);
+  const busca = (document.getElementById('gf-busca').value||'').toLowerCase().trim();
+
+  let guias = DB.get('guias').filter(g => g.alta);
+  if (filtConv) guias = guias.filter(g => g.convenio_id === filtConv);
+  if (filtTipo) guias = guias.filter(g => g.tipo_alta === filtTipo);
+  if (filtDe)  guias = guias.filter(g => { const d=parseFlexData(g.alta); return d && d >= filtDe; });
+  if (filtAte) guias = guias.filter(g => { const d=parseFlexData(g.alta); return d && d <= filtAte; });
+  if (busca)   guias = guias.filter(g => {
+    const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+    return (pac.nome||'').toLowerCase().includes(busca) || (g.num_at||'').toLowerCase().includes(busca);
+  });
+
+  // KPIs
+  let totalDias = 0, countDias = 0;
+  guias.forEach(g => {
+    const intern = parseFlexData(g.internacao), alta = parseFlexData(g.alta);
+    if (intern && alta) { totalDias += Math.floor((alta-intern)/86400000); countDias++; }
+  });
+  const kpisEl = document.getElementById('gf-kpis');
+  if (kpisEl) kpisEl.innerHTML = guias.length ? [
+    { label:'Total fechadas', val: guias.length, cor:'#4a90d9', bg:'#e8f0fe' },
+    { label:'Fisioterapêuticas', val: guias.filter(g=>g.tipo_alta==='Fisioterapêutica').length, cor:'#27ae60', bg:'#d4edda' },
+    { label:'Média de dias', val: countDias ? Math.round(totalDias/countDias)+'d' : '-', cor:'#f39c12', bg:'#fff3cd' },
+  ].map(k=>`<span style="background:${k.bg};color:${k.cor};border-radius:8px;padding:4px 12px;font-weight:700;">${k.label}: ${k.val}</span>`).join('') : '';
+
+  const tbody = document.getElementById('tb-guias-fechadas');
+  const vazio = document.getElementById('gf-vazio');
+  if (!guias.length) {
+    tbody.innerHTML = '';
+    if (vazio) vazio.style.display = 'block';
+    return;
+  }
+  if (vazio) vazio.style.display = 'none';
+  tbody.innerHTML = guias.map(g => {
+    const pac = pacs.find(p=>p.id===g.paciente_id)||{};
+    const conv = convs.find(c=>c.id===g.convenio_id)||{};
+    const intern = parseFlexData(g.internacao), alta = parseFlexData(g.alta);
+    const dias = intern && alta ? Math.floor((alta-intern)/86400000) : '-';
+    const tipoBadge = g.tipo_alta === 'Óbito'
+      ? `<span style="background:#fde8e8;color:#e74c3c;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;">Óbito</span>`
+      : g.tipo_alta === 'Fisioterapêutica'
+      ? `<span style="background:#e8f5e9;color:#27ae60;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;">Fisio</span>`
+      : `<span style="background:#f0f0f0;color:#555;padding:2px 7px;border-radius:4px;font-size:11px;">${esc(g.tipo_alta||'-')}</span>`;
+    return `<tr>
+      <td><strong>${esc(pac.nome||'-')}</strong></td>
+      <td>${esc(g.setor||'-')}</td>
+      <td>${esc(conv.nome||'-')}</td>
+      <td>${g.internacao||'-'}</td>
+      <td>${g.alta||'-'}</td>
+      <td style="text-align:center;font-weight:600;">${dias}</td>
+      <td>${tipoBadge}</td>
+      <td style="text-align:right;">${g.valor||'R$ 0,00'}</td>
+      <td>${esc(g.num_at||'-')}</td>
+    </tr>`;
+  }).join('');
+}
+
 function renderRelAltaFisio() {
   const convs = DB.get('convenios');
   const selConv = document.getElementById('altafisio-convenio');
   if (selConv && selConv.options.length <= 1) {
     selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
   }
-  function parseDataBR(s){if(!s)return null;const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
+  function parseDataBR(s){if(!s)return null;if(!s.includes('/')){const d=new Date(s);return isNaN(d)?null:d;}const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
 
   const filtConv = parseInt(document.getElementById('altafisio-convenio').value)||0;
   const filtTipo = document.getElementById('altafisio-tipo').value;
@@ -6121,6 +6225,20 @@ function exportarCSV(tipo) {
       const histIMS2=DB.get('hist_ims_'+g.id)||[];
       const imsAlta2=histIMS2.length?histIMS2[histIMS2.length-1].valor:'-';
       rows.push([pac2.nome||'-',g.setor||'-',conv2.nome||'-',g.internacao||'-',g.alta||'-',dias,g.tipo_alta||'-',g.ims_previo??'-',g.ims_admissao??'-',imsAlta2]);
+    });
+  }
+
+  if (tipo === 'guias-fechadas') {
+    filename = `guias_fechadas_${hojeStr}.csv`;
+    rows.push(['Paciente','Setor','Convênio','Internação','Alta','Dias','Tipo Alta','Valor','Nº Atend.']);
+    const pacs3 = DB.get('pacientes'), convs3 = DB.get('convenios');
+    DB.get('guias').filter(g=>g.alta).forEach(g=>{
+      const pac3=pacs3.find(p=>p.id===g.paciente_id)||{};
+      const conv3=convs3.find(c=>c.id===g.convenio_id)||{};
+      function px(s){if(!s)return null;if(!s.includes('/')){const d=new Date(s);return isNaN(d)?null:d;}const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
+      const intern=px(g.internacao),alta=px(g.alta);
+      const dias=intern&&alta?Math.floor((alta-intern)/86400000):'-';
+      rows.push([pac3.nome||'-',g.setor||'-',conv3.nome||'-',g.internacao||'-',g.alta||'-',dias,g.tipo_alta||'-',g.valor||'R$ 0,00',g.num_at||'-']);
     });
   }
 
