@@ -2928,7 +2928,7 @@ function renderPacientes() {
 function renderConvenios() {
   document.getElementById('tb-cad-convenios').innerHTML = DB.get('convenios').map(c => `
     <tr data-search="${c.nome.toLowerCase()}">
-      <td>${c.nome}</td><td>${c.ans||'-'}</td><td>${c.cod||'-'}</td>
+      <td>${esc(c.nome)}</td><td>${esc(c.ans||'-')}</td><td>${esc(c.cod||'-')}</td>
       <td style="text-align:center;font-weight:700;color:#4a90d9;">${c.max_apt || 1}x</td>
       <td style="text-align:center;font-weight:700;color:#e74c3c;">${c.max_uti || 1}x</td>
       <td><span class="icon-ativo ${c.ativo?'sim':'nao'}">${c.ativo?'✔':'✘'}</span></td>
@@ -3064,8 +3064,8 @@ function renderUsuarios() {
     const emailExibir = u.email || u.login || '-';
     const podeRedefinir = u.email && u.id !== currentUser.id;
     return `<tr data-search="${u.nome.toLowerCase()} ${emailExibir.toLowerCase()}">
-      <td>${u.nome}</td>
-      <td style="font-size:12px;color:#666;">${emailExibir}</td>
+      <td>${esc(u.nome)}</td>
+      <td style="font-size:12px;color:#666;">${esc(emailExibir)}</td>
       <td><span class="${cls}">${u.perfil}</span></td>
       <td><span class="icon-ativo ${u.ativo?'sim':'nao'}">${u.ativo?'✔':'✘'}</span></td>
       <td style="white-space:nowrap;">
@@ -3330,9 +3330,9 @@ function renderRelAtend() {
     if (!hist.length) return;
     const rows = hist.map(h => {
       const proc = procs.find(p=>p.id===h.proc_id)||{};
-      return `<tr><td>${h.data||'-'}</td><td>${proc.codigo||'-'}</td><td>${proc.nome||h.nome||'-'}</td><td>1</td>
+      return `<tr><td>${esc(h.data||'-')}</td><td>${esc(proc.codigo||'-')}</td><td>${esc(proc.nome||h.nome||'-')}</td><td>1</td>
         <td><span style="background:#4a90d9;color:#fff;border-radius:20px;padding:2px 12px;font-size:12px;">✓</span></td>
-        <td>${h.usuario||'-'}</td></tr>`;
+        <td>${esc(h.usuario||'-')}</td></tr>`;
     }).join('');
     html += `<div style="margin-bottom:20px;">
       <div style="color:#e74c3c;font-weight:700;font-size:13px;margin-bottom:8px;">${g.setor||'-'} - ${pac.nome||'-'} (${conv.nome||'-'})
@@ -3352,7 +3352,7 @@ function renderRelPacientes() {
     const badgeHtml = temAlta
       ? `<span class="badge" style="background:#e0e0e0;color:#555;">Alta</span>`
       : `<span class="badge badge-success">Em Aberto</span>`;
-    return `<tr><td>${p.nome}</td><td>${guia.num_at||'-'}</td><td>${conv.nome||'-'}</td>
+    return `<tr><td>${esc(p.nome)}</td><td>${esc(guia.num_at||'-')}</td><td>${esc(conv.nome||'-')}</td>
       <td>${badgeHtml}</td>
       <td>${guia.valor||'-'}</td><td>${guia.internacao||'-'}</td><td>${guia.alta||'-'}</td></tr>`;
   }).join('');
@@ -3387,8 +3387,8 @@ function renderProdutividade() {
       ? `<span style="background:${corMeta}20;color:${corMeta};padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;">${pctMeta}%</span>`
       : `<span style="color:#aaa;font-size:12px;">—</span>`;
     return `<tr>
-      <td>${p.nome}</td>
-      <td style="font-size:12px;color:#666;">${p.especialidade||'-'}</td>
+      <td>${esc(p.nome)}</td>
+      <td style="font-size:12px;color:#666;">${esc(p.especialidade||'-')}</td>
       <td>${fmtMoeda(vTotal)}</td>
       <td style="text-align:center;">${guiasFisio.length}</td>
       <td style="text-align:center;">${metaCell}</td>
@@ -4397,7 +4397,7 @@ function renderDetMedidas(guiaId) {
         badge = ` <span style="background:#fdecea;color:#e74c3c;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">⚠ ${abaixo?'Baixo':'Alto'}</span>`;
       }
     }
-    return `<tr><td>${h.data}</td><td>${h.medida}</td><td>${h.valor} ${h.unidade||''}${badge}</td><td>${h.usuario}</td></tr>`;
+    return `<tr><td>${esc(h.data)}</td><td>${esc(h.medida)}</td><td>${esc(String(h.valor))} ${esc(h.unidade||'')}${badge}</td><td>${esc(h.usuario)}</td></tr>`;
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhuma medida lançada</td></tr>';
   setTimeout(() => renderGraficoMedidas(guiaId), 80);
 }
@@ -4405,7 +4405,7 @@ function renderDetMedidas(guiaId) {
 function renderDetSetor(guiaId) {
   const hist = DB.get('hist_setor_' + guiaId) || [];
   document.getElementById('det-tb-setor').innerHTML = hist.length ? hist.slice().reverse().map(h =>
-    `<tr><td>${h.data}</td><td>${h.setor}</td><td>${h.usuario}</td></tr>`
+    `<tr><td>${esc(h.data)}</td><td>${esc(h.setor)}</td><td>${esc(h.usuario)}</td></tr>`
   ).join('') : '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:16px;">Sem transferências</td></tr>';
 }
 
@@ -5115,7 +5115,7 @@ function renderMobilizacao(guiaId) {
   });
 
   document.getElementById('tb-mob-hist').innerHTML = hist.slice().reverse().map(h =>
-    `<tr><td>${h.data} ${h.hora||''}</td><td>${MOB_LABELS[h.nivel]||h.nivel}</td><td>${h.distancia||'-'}</td><td>${h.obs||'-'}</td><td>${h.usuario}</td></tr>`
+    `<tr><td>${esc(h.data)} ${esc(h.hora||'')}</td><td>${esc(MOB_LABELS[h.nivel]||h.nivel)}</td><td>${esc(h.distancia||'-')}</td><td>${esc(h.obs||'-')}</td><td>${esc(h.usuario)}</td></tr>`
   ).join('');
 }
 
@@ -5326,16 +5326,16 @@ function gerarRelatorioExecutivoPDF() {
   const guiasAtivas = guias.filter(g=>!g.alta);
   const setores_pdf_pacs = DB.get('pacientes');
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
-  const hojeISO = hoje.toISOString().split('T')[0];
+  const hojeISOlocal = hojeISO();
 
   // KPIs principais
   let atendHoje = 0, metaHoje = 0, altasMes = 0;
   guiasAtivas.forEach(g => {
     const meta = metaMap[g.meta_diaria]??1;
     metaHoje += meta;
-    atendHoje += DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISO&&!p.cancelado).length;
+    atendHoje += DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISOlocal&&!p.cancelado).length;
   });
-  guias.filter(g=>g.alta&&g.alta.startsWith(hojeISO.slice(0,7))).forEach(()=>altasMes++);
+  guias.filter(g=>g.alta&&g.alta.startsWith(hojeISOlocal.slice(0,7))).forEach(()=>altasMes++);
   const cobHoje = metaHoje > 0 ? Math.round(atendHoje/metaHoje*100) : 0;
 
   const glosas = DB.get('glosas') || [];
@@ -5400,7 +5400,7 @@ function gerarRelatorioExecutivoPDF() {
   <table><thead><tr><th>Paciente</th><th>Setor/Leito</th><th>Meta</th><th>Realizados</th><th>Situação</th></tr></thead><tbody>
   ${guiasAtivas.map(g=>{
     const meta=metaMap[g.meta_diaria]??1;
-    const real=DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISO&&!p.cancelado).length;
+    const real=DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISOlocal&&!p.cancelado).length;
     const sit=meta===0?'Dispensado':real>=meta?'Meta atingida':real>0?'Parcial':'Não atendido';
     const pacN=(setores_pdf_pacs.find(p=>p.id===g.paciente_id)||{}).nome||('Pac.'+g.paciente_id);
     return `<tr><td>${pacN}</td><td>${g.setor||'-'}</td><td>${(g.meta_diaria||'1x').replace(/_/g,' ')}</td><td>${real}</td><td><span class="badge ${sit==='Meta atingida'?'verde':sit==='Não atendido'?'vermelho':'amarelo'}">${sit}</span></td></tr>`;
@@ -5510,9 +5510,9 @@ function renderOportunidadeFinanceira() {
       const conv = (DB.get('convenios')||[]).find(c => c.id === g.convenio_id) || {};
       const pacNome = (DB.get('pacientes').find(p => p.id === g.paciente_id)||{}).nome || ('Pac. '+g.paciente_id);
       deficitRows.push(`<tr>
-        <td>${pacNome}</td>
-        <td>${g.setor||'-'}</td>
-        <td>${conv.nome||'-'}</td>
+        <td>${esc(pacNome)}</td>
+        <td>${esc(g.setor||'-')}</td>
+        <td>${esc(conv.nome||'-')}</td>
         <td>${g.meta_diaria ? g.meta_diaria.replace('_',' ') : '1x'}</td>
         <td>${realizadosHoje.length}</td>
         <td style="color:#e74c3c;font-weight:600;">${deficit}</td>
@@ -5658,7 +5658,7 @@ function gerarRelatorioCoberturaExec() {
     const meta = metaMap[g.meta_diaria] ?? 1;
     if (meta === 0) return;
     total++;
-    const histHoje = DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISO&&!p.cancelado);
+    const histHoje = DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISOstr&&!p.cancelado);
     const real = histHoje.length;
     const setorObj = setores.find(s=>g.setor&&g.setor.startsWith(s.nome+' - '))||{};
     const setor = setorObj.nome || (g.setor ? g.setor.split(' - ')[0] : 'Sem setor');
@@ -5930,13 +5930,13 @@ function renderPainelFinanceiro() {
         const c = convs.find(x=>x.id===g.convenio_id)||{nome:'-'};
         const cls = statusClasse[gl.status]||'glosa-status-pendente';
         return `<tr>
-          <td>${gl.data||'-'}</td>
-          <td>${p.nome||'-'}</td>
-          <td>${c.nome}</td>
-          <td>${gl.motivo||'-'}</td>
+          <td>${esc(gl.data||'-')}</td>
+          <td>${esc(p.nome||'-')}</td>
+          <td>${esc(c.nome)}</td>
+          <td>${esc(gl.motivo||'-')}</td>
           <td style="color:#e74c3c;font-weight:600;">R$ ${(gl.valor||0).toFixed(2).replace('.',',')}</td>
-          <td><button class="glosa-status ${cls}" onclick="alterarStatusGlosa(${gl.id})">${gl.status||'Pendente'}</button></td>
-          <td style="font-size:12px;color:#888;">${gl.obs||'-'}</td>
+          <td><button class="glosa-status ${cls}" onclick="alterarStatusGlosa(${gl.id})">${esc(gl.status||'Pendente')}</button></td>
+          <td style="font-size:12px;color:#888;">${esc(gl.obs||'-')}</td>
           <td><button style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:13px;" onclick="excluirGlosa(${gl.id})" title="Excluir">✕</button></td>
         </tr>`;
       }).join('')
