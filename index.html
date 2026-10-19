@@ -609,7 +609,7 @@
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Lotes de Guias Concluídas</h3></div>
         <table>
-          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Data Geração</th><th>Protocolo</th><th>Nº Guias</th><th>Valor Total</th></tr></thead>
+          <thead><tr><th>Convênio</th><th>Competência</th><th>Nº Lote</th><th>Status</th><th>Geração</th><th>Fechamento</th><th>Protocolo</th><th>Nº Guias</th><th>Valor Total</th></tr></thead>
           <tbody id="tb-lotes-concluida"></tbody>
         </table>
       </div>
@@ -1913,6 +1913,26 @@
   </div>
 </div>
 
+<!-- Modal Gerenciar Lote -->
+<div class="modal-overlay" id="modal-gerenciar-lote">
+  <div class="modal" style="max-width:680px;">
+    <h2 id="mgr-lote-titulo">Gerenciar Lote</h2>
+    <input type="hidden" id="mgr-lote-id" />
+    <div id="mgr-lote-info" style="font-size:13px;color:#555;margin-bottom:14px;"></div>
+    <div style="font-size:12px;font-weight:600;color:#888;text-transform:uppercase;margin-bottom:8px;">Guias elegíveis do convênio (com alta)</div>
+    <div style="max-height:340px;overflow-y:auto;border:1px solid #eee;border-radius:6px;padding:8px;">
+      <div id="mgr-lote-guias" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <div id="mgr-lote-vazio" style="text-align:center;padding:24px;color:#aaa;display:none;">Nenhuma guia elegível encontrada para este convênio.</div>
+    </div>
+    <div style="font-size:12px;color:#888;margin-top:8px;" id="mgr-lote-resumo"></div>
+    <div class="form-actions" style="margin-top:16px;">
+      <button class="btn" onclick="closeModal('modal-gerenciar-lote')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarVinculoGuiasLote()">Salvar vínculos</button>
+      <button class="btn btn-success" onclick="fecharLote()" id="btn-fechar-lote">✔ Fechar Lote</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-criar-lote">
   <div class="modal" style="max-width:420px;">
     <h2>Criar Novo Lote</h2>
@@ -3089,7 +3109,11 @@ function renderLotesPendente() {
     return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
     <td><span style="color:#f39c12;font-weight:600;">${l.status}</span></td>
     <td>${l.data}</td><td>${protocolo}</td><td>${qtd}</td><td>${total}</td>
-    <td><button class="btn btn-sm" style="background:#0a1628;color:#fff;font-size:11px;" onclick="gerarXMLLote(${l.id})">XML TISS</button></td></tr>`;
+    <td style="display:flex;gap:5px;flex-wrap:nowrap;">
+      <button class="btn btn-sm btn-primary" onclick="abrirModalGerenciarLote(${l.id})">Gerenciar</button>
+      <button class="btn btn-sm" style="background:#0a1628;color:#fff;font-size:11px;" onclick="gerarXMLLote(${l.id})">XML</button>
+      <button class="btn btn-sm btn-success" onclick="fecharLoteConfirm(${l.id})" title="Marca todas as guias como contabilizadas e conclui o lote">Fechar</button>
+    </td></tr>`;
   }).join('') : '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote pendente</td></tr>';
 }
 
@@ -3099,8 +3123,8 @@ function renderLotesConcluida() {
     const {total, qtd} = calcTotalLote(l);
     const protocolo = l.num_protocolo ? `<span style="font-size:11px;color:#555;">${l.num_protocolo}</span>` : '<span style="font-size:11px;color:#bbb;">—</span>';
     return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
-    <td><span style="color:#27ae60;font-weight:600;">Finalizada</span></td>
-    <td>${l.data}</td><td>${protocolo}</td><td>${qtd}</td><td>${total}</td></tr>`;
+    <td><span style="color:#27ae60;font-weight:600;">Concluído</span></td>
+    <td>${l.data}</td><td>${l.data_conclusao||'-'}</td><td>${protocolo}</td><td>${qtd}</td><td>${total}</td></tr>`;
   }).join('') : '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote concluído</td></tr>';
 }
 
@@ -6366,6 +6390,132 @@ function salvarNovoLote() {
   closeModal('modal-criar-lote');
   renderLotesPendente();
   showToast('Lote criado!');
+}
+
+// ===== GERENCIAR LOTE =====
+function abrirModalGerenciarLote(loteId) {
+  const lotes = DB.get('lotes');
+  const lote = lotes.find(l => l.id === loteId);
+  if (!lote) return;
+
+  document.getElementById('mgr-lote-id').value = loteId;
+  document.getElementById('mgr-lote-titulo').textContent = `Lote #${lote.id} — ${lote.convenio}`;
+  document.getElementById('mgr-lote-info').textContent = `Competência: ${lote.competencia||'-'} · Criado em: ${lote.data||'-'}`;
+
+  const guias = DB.get('guias');
+  const pacs  = DB.get('pacientes');
+
+  // Elegíveis: têm alta, mesmo convênio, não contabilizadas em outro lote
+  const elegiveis = guias.filter(g =>
+    g.alta &&
+    g.convenio_id === lote.convenio_id &&
+    (!g.lote_id || g.lote_id === loteId)
+  );
+
+  const container = document.getElementById('mgr-lote-guias');
+  const vazio = document.getElementById('mgr-lote-vazio');
+
+  if (!elegiveis.length) {
+    container.innerHTML = '';
+    vazio.style.display = 'block';
+  } else {
+    vazio.style.display = 'none';
+    container.innerHTML = elegiveis.map(g => {
+      const pac = pacs.find(p => p.id === g.paciente_id) || {};
+      const checked = g.lote_id === loteId ? 'checked' : '';
+      const contabBadge = g.contabilizado
+        ? `<span style="font-size:11px;background:#e8f5e9;color:#27ae60;border-radius:4px;padding:1px 6px;margin-left:6px;">contabilizado</span>` : '';
+      return `<label style="display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid #eee;border-radius:5px;cursor:pointer;background:#fafafa;">
+        <input type="checkbox" data-guia="${g.id}" ${checked} style="width:16px;height:16px;cursor:pointer;" onchange="_atualizarResumoLote()" />
+        <span style="flex:1;font-size:13px;"><strong>${esc(pac.nome||'-')}</strong> · ${esc(g.setor||'-')} · Alta: ${g.alta||'-'} · ${g.valor||'R$ 0,00'}${contabBadge}</span>
+      </label>`;
+    }).join('');
+  }
+
+  _atualizarResumoLote();
+  openModal('modal-gerenciar-lote');
+}
+
+function _atualizarResumoLote() {
+  const checks = document.querySelectorAll('#mgr-lote-guias input[type=checkbox]:checked');
+  const guias  = DB.get('guias');
+  let total = 0;
+  checks.forEach(cb => {
+    const g = guias.find(x => x.id === parseInt(cb.dataset.guia));
+    if (g) total += parseMoeda(g.valor||'0');
+  });
+  document.getElementById('mgr-lote-resumo').textContent =
+    `${checks.length} guia${checks.length !== 1 ? 's' : ''} selecionada${checks.length !== 1 ? 's' : ''} · Total: ${fmtMoeda(total)}`;
+}
+
+function parseMoeda(v) { if (!v) return 0; return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim()) || 0; }
+function fmtMoeda(v)   { return 'R$ ' + v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+
+function salvarVinculoGuiasLote() {
+  const loteId = parseInt(document.getElementById('mgr-lote-id').value);
+  const checks  = document.querySelectorAll('#mgr-lote-guias input[type=checkbox]');
+  const guias   = DB.get('guias');
+  checks.forEach(cb => {
+    const idx = guias.findIndex(g => g.id === parseInt(cb.dataset.guia));
+    if (idx < 0) return;
+    if (cb.checked) {
+      guias[idx].lote_id = loteId;
+    } else if (guias[idx].lote_id === loteId) {
+      delete guias[idx].lote_id;
+    }
+  });
+  DB.set('guias', guias);
+  closeModal('modal-gerenciar-lote');
+  renderLotesPendente();
+  showToast('Guias vinculadas ao lote!', '#27ae60');
+}
+
+function fecharLoteConfirm(loteId) {
+  const lotes = DB.get('lotes');
+  const lote  = lotes.find(l => l.id === loteId);
+  if (!lote) return;
+  const guiasNoLote = DB.get('guias').filter(g => g.lote_id === loteId);
+  if (!guiasNoLote.length) {
+    alert('Adicione ao menos uma guia ao lote antes de fechá-lo.\n\nClique em "Gerenciar" para vincular guias.');
+    return;
+  }
+  if (!confirm(`Fechar o Lote #${loteId} (${lote.convenio}) com ${guiasNoLote.length} guia${guiasNoLote.length>1?'s':''}?\n\nIsso marcará todas como CONTABILIZADAS e o lote não poderá mais ser editado.`)) return;
+  _executarFechamentoLote(loteId);
+}
+
+function fecharLote() {
+  const loteId = parseInt(document.getElementById('mgr-lote-id').value);
+  // Salva vínculos antes de fechar
+  salvarVinculoGuiasLote();
+  setTimeout(() => fecharLoteConfirm(loteId), 100);
+}
+
+function _executarFechamentoLote(loteId) {
+  const guias = DB.get('guias');
+  guias.forEach((g, i) => {
+    if (g.lote_id === loteId) {
+      guias[i].contabilizado = true;
+    }
+  });
+  DB.set('guias', guias);
+
+  const lotes = DB.get('lotes');
+  const li = lotes.findIndex(l => l.id === loteId);
+  if (li >= 0) {
+    const total = guias.filter(g => g.lote_id === loteId).reduce((s,g) => s + parseMoeda(g.valor), 0);
+    lotes[li].concluido    = true;
+    lotes[li].status       = 'Concluído';
+    lotes[li].data_conclusao = hoje();
+    lotes[li].valor        = fmtMoeda(total);
+    lotes[li].guias        = guias.filter(g => g.lote_id === loteId).length;
+  }
+  DB.set('lotes', lotes);
+
+  closeModal('modal-gerenciar-lote');
+  renderLotesPendente();
+  renderLotesConcluida();
+  showToast(`Lote #${loteId} fechado com sucesso!`, '#27ae60');
+  nav('lotes-concluida');
 }
 
 // ===== BUSCA GLOBAL =====
