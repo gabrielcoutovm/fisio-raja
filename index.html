@@ -2583,21 +2583,7 @@ async function salvarNovaSenha() {
       body: JSON.stringify({ password: nova })
     });
     if (r.ok) {
-      // Verifica se a senha foi realmente aplicada no Supabase
-      const emailAtual = (await fetch(`${SB_AUTH_URL}/user`, {
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + _recoveryToken }
-      }).then(x=>x.json()).catch(()=>({}))).email || '';
-      const verif = await fetch(`${SB_AUTH_URL}/token?grant_type=password`, {
-        method: 'POST',
-        headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailAtual, password: nova })
-      });
-      if (verif.ok) {
-        alert('Senha alterada com sucesso!\nE-mail no Supabase: ' + emailAtual + '\nFaça login com a nova senha.');
-      } else {
-        const ve = await verif.json().catch(()=>({}));
-        alert('AVISO: senha salva mas login falhou.\nE-mail usado: ' + emailAtual + '\nErro: ' + (ve.error_description || ve.msg || JSON.stringify(ve)));
-      }
+      alert('Senha alterada com sucesso! Faça login com a nova senha.');
       _recoveryToken = null;
       window.location.hash = '';
       mostrarLogin();
@@ -2653,10 +2639,8 @@ async function doLogin() {
     const emailLow = email.toLowerCase();
     const user = usuarios.find(u => (u.email||'').toLowerCase() === emailLow && u.ativo == 1);
     if (!user) {
-      const el2 = document.getElementById('login-error');
-      const u0 = usuarios[0] || {};
-      el2.textContent = 'Autenticado, mas sem perfil ativo. Email buscado: [' + email + '] | Email no store: [' + u0.email + '] | ativo: ' + u0.ativo;
-      el2.style.display = 'block';
+      document.getElementById('login-error').textContent = 'E-mail ou senha incorretos.';
+      document.getElementById('login-error').style.display = 'block';
       btn.textContent = 'Entrar'; btn.disabled = false;
       return;
     }
