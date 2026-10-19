@@ -2227,6 +2227,7 @@ function esc(s) {
 }
 
 const _mem = {};
+let _carregamentoOk = false;
 
 async function sbGet() {
   try {
@@ -2280,6 +2281,10 @@ async function carregarPacientes() {
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
   set: (k, v) => {
+    if (!_carregamentoOk && k !== '__raja_v2') {
+      alert('⚠️ Conexão com o banco ainda não confirmada.\n\nAguarde alguns segundos e tente novamente.\n\nSe o problema persistir, recarregue a página.');
+      return;
+    }
     if (k === 'pacientes') {
       // Detecta exclusões comparando com o cache anterior e apaga na tabela
       const antes = Array.isArray(_mem['pacientes']) ? _mem['pacientes'] : [];
@@ -2319,6 +2324,7 @@ async function carregarDados() {
     if (!rStore.ok) { console.warn('Supabase retornou:', rStore.status); return; }
     const rows = await rStore.json();
     rows.forEach(row => { _mem[row.key] = row.value; });
+    _carregamentoOk = true;
   } catch(e) {
     clearTimeout(timer);
     console.warn('Supabase indisponível, modo offline:', e.message);
@@ -3362,7 +3368,7 @@ function updateConvenioSelects() {
 }
 
 // ===== SALVAR =====
-function getNextId(key) { const d = DB.get(key); return d.length?Math.max(...d.map(x=>x.id))+1:1; }
+function getNextId(key) { return Date.now() + Math.floor(Math.random() * 1000); }
 
 function savePaciente() {
   const nome = document.getElementById('pac-nome').value.trim();
@@ -4385,11 +4391,11 @@ function recalcularValorGuia(guiaId) {
   const hist = (DB.get('hist_procs_' + guiaId) || []).filter(h => !h.cancelado);
   const procs = DB.get('procedimentos');
   const conv = (DB.get('convenios')||[]).find(c => c.id === guias[idx].convenio_id) || {};
-  const precosConv = conv.precos || {};
+  const procsConv = conv.procedimentos || [];
   let total = 0;
   hist.forEach(h => {
-    const proc = procs.find(p => p.id === h.proc_id) || {};
-    const valor = precosConv[h.proc_id] ?? proc.valor ?? 0;
+    const entradaConv = procsConv.find(p => p.proc_id === h.proc_id);
+    const valor = entradaConv?.valor ?? 0;
     total += Number(valor) || 0;
   });
   guias[idx].valor = total > 0
