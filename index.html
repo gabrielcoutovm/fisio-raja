@@ -2385,6 +2385,69 @@ async function carregarPacientes() {
   } catch(e) { console.warn('Pacientes load error:', e.message); }
 }
 
+// ===== TABELA DEDICADA: guias =====
+// Grava/sincroniza uma ou mais guias na tabela própria (upsert por id)
+function sbUpsertGuias(guias) {
+  if (!guias || !guias.length) return;
+  const rows = guias.map(g => ({
+    id: g.id,
+    num_at: g.num_at || null,
+    setor: g.setor || null,
+    paciente_id: g.paciente_id || null,
+    convenio_id: g.convenio_id || null,
+    profissional_id: g.profissional_id || null,
+    carteirinha: g.carteirinha || null,
+    num_autorizacao: g.num_autorizacao || null,
+    limite_sessoes: g.limite_sessoes || null,
+    internacao: g.internacao || null,
+    atend: g.atend || null,
+    tipo_internacao: g.tipo_internacao || null,
+    diagnostico: g.diagnostico || null,
+    clinica: g.clinica || null,
+    status: g.status || null,
+    obs: g.obs || null,
+    paliativo: g.paliativo || false,
+    ims_previo: g.ims_previo != null ? g.ims_previo : null,
+    ims_admissao: g.ims_admissao != null ? g.ims_admissao : null,
+    meta_diaria: g.meta_diaria || null,
+    dias: g.dias != null ? g.dias : 0,
+    valor: g.valor || null,
+    alta: g.alta || null,
+    tipo_alta: g.tipo_alta || null,
+    ims_alta: g.ims_alta || null,
+    obs_alta: g.obs_alta || null,
+    alta_meta_atingida: g.alta_meta_atingida || null,
+    alta_resumo_fisio: g.alta_resumo_fisio || null,
+    alta_motivo_hospitalar: g.alta_motivo_hospitalar || null,
+    lote_id: g.lote_id || null,
+    contabilizado: g.contabilizado || false,
+    concluido: g.concluido || false,
+    updated_at: new Date().toISOString()
+  }));
+  fetchComRenovacao(`${SB_URL}/guias?on_conflict=id`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(rows)
+  }).catch(e => console.warn('Guias upsert error:', e.message));
+}
+
+// Remove uma guia da tabela pelo id
+function sbDeleteGuia(id) {
+  fetchComRenovacao(`${SB_URL}/guias?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  }).catch(e => console.warn('Guia delete error:', e.message));
+}
+
+// Carrega todas as guias da tabela dedicada para o cache
+async function carregarGuias() {
+  try {
+    const r = await fetch(`${SB_URL}/guias?select=*&order=id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    _mem['guias'] = await r.json();
+  } catch(e) { console.warn('Guias load error:', e.message); }
+}
+
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
   set: (k, v) => {
@@ -2399,6 +2462,13 @@ const DB = {
       antes.forEach(p => { if (!idsNovos.has(p.id)) sbDeletePaciente(p.id); });
       _mem['pacientes'] = v;
       sbUpsertPacientes(v);
+    } else if (k === 'guias') {
+      // Detecta exclusões comparando com o cache anterior e apaga na tabela
+      const antesG = Array.isArray(_mem['guias']) ? _mem['guias'] : [];
+      const idsNovosG = new Set(v.map(g => g.id));
+      antesG.forEach(g => { if (!idsNovosG.has(g.id)) sbDeleteGuia(g.id); });
+      _mem['guias'] = v;
+      sbUpsertGuias(v);
     } else {
       _mem[k] = v;
       sbSet(k, v);
@@ -2410,6 +2480,9 @@ const DB = {
     if (k === 'pacientes') {
       _mem['pacientes'] = a;
       sbUpsertPacientes([v]); // upsert só o novo
+    } else if (k === 'guias') {
+      _mem['guias'] = a;
+      sbUpsertGuias([v]); // upsert só a nova guia
     } else {
       DB.set(k, a);
     }
@@ -2425,7 +2498,8 @@ async function carregarDados() {
   try {
     const [rStore] = await Promise.all([
       fetch(`${SB_URL}/store?select=key,value,updated_at&order=updated_at.asc`, { headers: getHeaders(), signal: ctrl.signal }),
-      carregarPacientes()
+      carregarPacientes(),
+      carregarGuias()
     ]);
     clearTimeout(timer);
     if (!rStore.ok) { console.warn('Supabase retornou:', rStore.status); return; }
@@ -2442,7 +2516,7 @@ function assinarMudancas() {
   // Polling a cada 30s para sincronizar entre dispositivos
   setInterval(async () => {
     const antes = JSON.stringify(_mem);
-    await Promise.all([sbGet(), carregarPacientes()]);
+    await Promise.all([sbGet(), carregarPacientes(), carregarGuias()]);
     if (JSON.stringify(_mem) !== antes) {
       const activePage = document.querySelector('.page.active');
       if (activePage) {
