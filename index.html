@@ -2448,6 +2448,79 @@ async function carregarGuias() {
   } catch(e) { console.warn('Guias load error:', e.message); }
 }
 
+// ===== TABELA DEDICADA: hist_procs =====
+// Insere um procedimento e retorna o registro com o id gerado pelo banco
+async function sbInsertHistProc(guiaId, entrada) {
+  const body = {
+    guia_id: guiaId,
+    proc_id: entrada.proc_id || null,
+    nome: entrada.nome || null,
+    data: entrada.data || null,
+    usuario: entrada.usuario || null,
+    status_fat: entrada.status_fat || 'Pendente'
+  };
+  try {
+    const r = await fetchComRenovacao(`${SB_URL}/hist_procs`, {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    return rows[0]; // contém o id serial gerado
+  } catch(e) {
+    console.warn('hist_procs insert error:', e.message);
+    return null;
+  }
+}
+
+// Atualiza campos de um registro de hist_procs pelo id serial
+function sbUpdateHistProc(rowId, fields) {
+  fetchComRenovacao(`${SB_URL}/hist_procs?id=eq.${rowId}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(fields)
+  }).catch(e => console.warn('hist_procs update error:', e.message));
+}
+
+// Remove todos os hist_procs de uma guia (ao excluir a guia)
+function sbDeleteHistProcsGuia(guiaId) {
+  fetchComRenovacao(`${SB_URL}/hist_procs?guia_id=eq.${guiaId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  }).catch(e => console.warn('hist_procs delete error:', e.message));
+}
+
+// Carrega hist_procs de uma guia específica para o cache
+async function carregarHistProcs(guiaId) {
+  try {
+    const r = await fetch(`${SB_URL}/hist_procs?guia_id=eq.${guiaId}&order=id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    const rows = await r.json();
+    // Mapeia _row_id para compatibilidade com o cache local
+    _mem['hist_procs_' + guiaId] = rows.map(h => ({ ...h, _row_id: h.id }));
+  } catch(e) { console.warn('hist_procs load error:', e.message); }
+}
+
+// Carrega hist_procs de todas as guias ativas de uma vez (boot)
+async function carregarTodosHistProcs() {
+  const guiasAtivas = (_mem['guias'] || []).filter(g => !g.alta);
+  if (!guiasAtivas.length) return;
+  const ids = guiasAtivas.map(g => g.id).join(',');
+  try {
+    const r = await fetch(`${SB_URL}/hist_procs?guia_id=in.(${ids})&order=guia_id.asc,id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    const rows = await r.json();
+    // Agrupa por guia_id no cache
+    const byGuia = {};
+    rows.forEach(h => {
+      if (!byGuia[h.guia_id]) byGuia[h.guia_id] = [];
+      byGuia[h.guia_id].push({ ...h, _row_id: h.id });
+    });
+    guiasAtivas.forEach(g => { _mem['hist_procs_' + g.id] = byGuia[g.id] || []; });
+  } catch(e) { console.warn('hist_procs bulk load error:', e.message); }
+}
+
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
   set: (k, v) => {
@@ -2506,6 +2579,8 @@ async function carregarDados() {
     const rows = await rStore.json();
     rows.forEach(row => { _mem[row.key] = row.value; });
     _carregamentoOk = true;
+    // Carrega hist_procs das guias ativas após ter as guias no cache
+    carregarTodosHistProcs();
   } catch(e) {
     clearTimeout(timer);
     console.warn('Supabase indisponível, modo offline:', e.message);
@@ -4102,8 +4177,9 @@ function excluirGuiasVencidas(ids) {
   let guias = DB.get('guias') || [];
   ids.forEach(id => {
     guias = guias.filter(g => g.id !== id);
+    sbDeleteHistProcsGuia(id); // apaga da tabela SQL
     ['hist_procs_','hist_status_','hist_medidas_','hist_ims_','hist_setor_'].forEach(p => {
-      DB.set(p + id, []);
+      _mem[p + id] = []; // limpa cache local
       try { DB.setItem(p + id, '[]'); } catch(e) {}
     });
   });
@@ -4528,31 +4604,36 @@ function renderDetProcs(guiaId) {
   });
 
   document.getElementById('det-tb-procs').innerHTML = filtrado.length ? filtrado.map((h) => {
-    const realIdx = hist.length - 1 - hist.slice().reverse().indexOf(h);
+    // Usa _row_id (id serial do banco) quando disponível; fallback para índice posicional
+    const rowKey = h._row_id != null ? h._row_id : (hist.length - 1 - hist.slice().reverse().indexOf(h));
+    const useRowId = h._row_id != null;
     const proc = procs.find(p=>p.id===h.proc_id)||{};
     const nomeCell = h.cancelado
       ? `<span style="text-decoration:line-through;color:#aaa;">${esc(proc.nome||h.nome||'-')}</span> <span style="font-size:11px;color:#e74c3c;">(cancelado: ${esc(h.motivo_cancelamento||'')})</span>`
       : esc(proc.nome||h.nome||'-');
     const cancelBtn = !h.cancelado
-      ? `<button style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;" title="Cancelar" onclick="cancelarProcedimento(${guiaId},${realIdx})">✕</button>`
+      ? `<button style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:14px;" title="Cancelar" onclick="cancelarProcedimento(${guiaId},${rowKey},${useRowId})">✕</button>`
       : '';
     const statusFat = h.cancelado ? '' : (() => {
       const s = h.status_fat || 'Pendente';
       const cfg = {Pendente:{bg:'#fff3cd',c:'#856404'},Validado:{bg:'#d1ecf1',c:'#0c5460'},Faturado:{bg:'#d4edda',c:'#155724'},Glosado:{bg:'#f8d7da',c:'#721c24'}};
       const k = cfg[s]||cfg['Pendente'];
-      return `<button onclick="ciclarStatusProc(${guiaId},${realIdx})" style="background:${k.bg};color:${k.c};border:none;cursor:pointer;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;" title="Clique para alterar">${esc(s)}</button>`;
+      return `<button onclick="ciclarStatusProc(${guiaId},${rowKey},${useRowId})" style="background:${k.bg};color:${k.c};border:none;cursor:pointer;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;" title="Clique para alterar">${esc(s)}</button>`;
     })();
     return `<tr><td>${esc(h.data)}</td><td>${nomeCell}</td><td>${esc(h.usuario)}</td><td>${statusFat}</td><td>${cancelBtn}</td></tr>`;
   }).join('') : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum procedimento no período</td></tr>';
 }
 
-function ciclarStatusProc(guiaId, idx) {
+function ciclarStatusProc(guiaId, rowKey, useRowId) {
   const ciclo = ['Pendente','Validado','Faturado','Glosado'];
   const hist = DB.get('hist_procs_' + guiaId) || [];
-  if (!hist[idx]) return;
-  const atual = hist[idx].status_fat || 'Pendente';
-  hist[idx].status_fat = ciclo[(ciclo.indexOf(atual)+1)%ciclo.length];
-  DB.set('hist_procs_' + guiaId, hist);
+  const entry = useRowId ? hist.find(h => h._row_id === rowKey) : hist[rowKey];
+  if (!entry) return;
+  const atual = entry.status_fat || 'Pendente';
+  entry.status_fat = ciclo[(ciclo.indexOf(atual)+1)%ciclo.length];
+  _mem['hist_procs_' + guiaId] = hist;
+  if (useRowId) sbUpdateHistProc(rowKey, { status_fat: entry.status_fat });
+  else sbSet('hist_procs_' + guiaId, hist); // fallback legado
   renderDetProcs(guiaId);
 }
 
@@ -4654,7 +4735,7 @@ function recalcularTodosValores() {
   showToast(`Valores recalculados para ${guias.length} guia${guias.length > 1 ? 's' : ''}!`, '#27ae60');
 }
 
-function salvarProcedimento() {
+async function salvarProcedimento() {
   const sel = document.querySelector('input[name="proc-sel"]:checked');
   if (!sel) { alert('Selecione um procedimento'); return; }
   const procs = DB.get('procedimentos');
@@ -4663,9 +4744,13 @@ function salvarProcedimento() {
   const dataFmt = dataVal ? isoParaBR(dataVal) : hoje();
   const imsAtual = document.getElementById('proc-ims-atual').value;
 
+  const novaEntrada = {proc_id: proc.id, nome: proc.nome, data: dataFmt, usuario: usuarioAtual()};
+  // INSERT atômico na tabela — resolve race condition de múltiplos lançamentos simultâneos
+  const row = await sbInsertHistProc(pacienteAtivo.id, novaEntrada);
+  const entradaComId = row ? { ...novaEntrada, _row_id: row.id, status_fat: row.status_fat || 'Pendente' } : novaEntrada;
   const hist = DB.get('hist_procs_' + pacienteAtivo.id) || [];
-  hist.push({proc_id: proc.id, nome: proc.nome, data: dataFmt, usuario: usuarioAtual()});
-  DB.set('hist_procs_' + pacienteAtivo.id, hist);
+  hist.push(entradaComId);
+  _mem['hist_procs_' + pacienteAtivo.id] = hist; // atualiza só o cache, sem sbSet (já foi ao banco)
 
   if (imsAtual !== '') {
     const histIMS = DB.get('hist_ims_' + pacienteAtivo.id) || [];
@@ -5146,8 +5231,9 @@ function confirmarExcluirPaciente() {
   DB.set('guias', guias);
 
   // Remove históricos desta guia
+  sbDeleteHistProcsGuia(guiaId); // apaga da tabela SQL
   ['hist_procs_', 'hist_ims_', 'hist_status_'].forEach(prefix => {
-    DB.set(prefix + guiaId, []);
+    _mem[prefix + guiaId] = []; // limpa cache local sem gravar no store
   });
   ['hist_medidas_', 'hist_mob_', 'hist_checklist_'].forEach(prefix => {
     DB.setItem(prefix + guiaId, '[]');
@@ -6303,16 +6389,19 @@ function renderRelAltaFisio() {
 }
 
 // ===== CANCELAR PROCEDIMENTO =====
-function cancelarProcedimento(guiaId, realIdx) {
+function cancelarProcedimento(guiaId, rowKey, useRowId) {
   const motivo = prompt('Motivo do cancelamento (obrigatório):');
   if (!motivo || !motivo.trim()) return;
   const hist = DB.get('hist_procs_'+guiaId)||[];
-  if (hist[realIdx]) {
-    hist[realIdx].cancelado = true;
-    hist[realIdx].motivo_cancelamento = motivo.trim();
-    hist[realIdx].cancelado_em = hoje();
-    hist[realIdx].cancelado_por = usuarioAtual();
-    DB.set('hist_procs_'+guiaId, hist);
+  const entry = useRowId ? hist.find(h => h._row_id === rowKey) : hist[rowKey];
+  if (entry) {
+    entry.cancelado = true;
+    entry.motivo_cancelamento = motivo.trim();
+    entry.cancelado_em = hoje();
+    entry.cancelado_por = usuarioAtual();
+    _mem['hist_procs_' + guiaId] = hist;
+    if (useRowId) sbUpdateHistProc(rowKey, { cancelado: true, motivo_cancelamento: entry.motivo_cancelamento, cancelado_em: entry.cancelado_em, cancelado_por: entry.cancelado_por });
+    else sbSet('hist_procs_' + guiaId, hist); // fallback legado
     recalcularValorGuia(guiaId);
     renderDetProcs(guiaId);
     atualizarAlertaSessoes(guiaId);
