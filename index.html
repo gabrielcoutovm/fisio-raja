@@ -1770,6 +1770,10 @@
       </div>
       <div class="form-group"><label>Ativo</label><select id="usr-ativo"><option value="1">Sim</option><option value="0">Não</option></select></div>
     </div>
+    <div class="form-group">
+      <label>UUID Supabase Auth <small style="color:#888;">(cole após criar no painel → Authentication → Users)</small></label>
+      <input type="text" id="usr-auth-uid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" style="font-family:monospace;font-size:12px;" />
+    </div>
     <div style="background:#f0f8ff;border:1px solid #bee3f8;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#2b6cb0;">
       <strong>Níveis de acesso:</strong><br>
       🔐 <strong>Gestão</strong> — Dashboard, Guias, Lotes, Mapas, Relatórios, Cadastros, Usuários<br>
@@ -4028,6 +4032,8 @@ async function saveUsuario() {
       usuarios[idx].nome = nome;
       usuarios[idx].perfil = document.getElementById('usr-perfil').value;
       usuarios[idx].ativo = parseInt(document.getElementById('usr-ativo').value);
+      const authUidEdit = (document.getElementById('usr-auth-uid').value || '').trim();
+      if (authUidEdit) usuarios[idx].auth_uid = authUidEdit;
       DB.set('usuarios', usuarios);
       showToast('Usuário atualizado!');
     }
@@ -4053,10 +4059,12 @@ async function saveUsuario() {
         return;
       }
       // Adiciona perfil ao store
+      const authUid = (document.getElementById('usr-auth-uid').value || '').trim() || null;
       DB.push('usuarios', {
         id: getNextId('usuarios'), nome, email,
         perfil: document.getElementById('usr-perfil').value,
-        ativo: parseInt(document.getElementById('usr-ativo').value)
+        ativo: parseInt(document.getElementById('usr-ativo').value),
+        auth_uid: authUid
       });
       showToast('Perfil registrado! Certifique-se de que a conta Supabase foi criada.', '#27ae60', 5000);
     } catch(e) {
@@ -4067,7 +4075,7 @@ async function saveUsuario() {
   }
 
   closeModal('modal-usuario'); renderUsuarios();
-  ['usr-nome','usr-email','usr-senha','usr-senha2'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['usr-nome','usr-email','usr-senha','usr-senha2','usr-auth-uid'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('usr-id').value = '';
   btn.textContent = 'Salvar'; btn.disabled = false;
 }
@@ -4083,6 +4091,7 @@ function openEditUsuario(id) {
   document.getElementById('usr-senha2').value = '';
   document.getElementById('usr-perfil').value = u.perfil;
   document.getElementById('usr-ativo').value = u.ativo;
+  document.getElementById('usr-auth-uid').value = u.auth_uid || '';
   // Na edição, esconde bloco de senha (não se altera senha de outro por aqui)
   document.getElementById('usr-senha-bloco').style.display = 'none';
   openModal('modal-usuario');
@@ -4091,7 +4100,7 @@ function openEditUsuario(id) {
 function abrirModalNovoUsuario() {
   document.getElementById('modal-usuario-titulo').textContent = 'Novo Usuário';
   document.getElementById('usr-id').value = '';
-  ['usr-nome','usr-email','usr-senha','usr-senha2'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['usr-nome','usr-email','usr-senha','usr-senha2','usr-auth-uid'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('usr-perfil').value = 'Fisioterapeuta';
   document.getElementById('usr-ativo').value = '1';
   document.getElementById('usr-senha-bloco').style.display = 'block';
@@ -4109,10 +4118,47 @@ async function enviarResetSenha(email, nome) {
   else showToast('Erro ao enviar e-mail. Verifique o endereço.', '#e74c3c');
 }
 
-function toggleUsuarioAtivo(id) {
+async function toggleUsuarioAtivo(id) {
   const usuarios = DB.get('usuarios');
   const idx = usuarios.findIndex(u=>u.id===id);
-  if (idx>=0) { usuarios[idx].ativo = usuarios[idx].ativo?0:1; DB.set('usuarios',usuarios); renderUsuarios(); showToast('Status atualizado!'); }
+  if (idx < 0) return;
+
+  const u = usuarios[idx];
+  const novoAtivo = u.ativo ? 0 : 1;
+  const acao = novoAtivo ? 'ativar' : 'desativar';
+
+  if (!confirm(`Deseja ${acao} o usuário "${u.nome}"?`)) return;
+
+  // Se o usuário tiver auth_uid, revoga/restaura o acesso no Supabase Auth via Edge Function
+  if (u.auth_uid) {
+    try {
+      const token = sessionStorage.getItem('fisioraja_token');
+      const resp = await fetch(
+        `https://jmivnztamomufqysmgiz.supabase.co/functions/v1/desativar-usuario`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ auth_uid: u.auth_uid, ativar: !!novoAtivo })
+        }
+      );
+      const data = await resp.json();
+      if (!resp.ok) {
+        showToast('Erro ao alterar acesso: ' + (data.error || resp.status), '#e74c3c', 5000);
+        return;
+      }
+    } catch(e) {
+      showToast('Erro de rede ao chamar Edge Function.', '#e74c3c');
+      return;
+    }
+  }
+
+  usuarios[idx].ativo = novoAtivo;
+  DB.set('usuarios', usuarios);
+  renderUsuarios();
+  showToast(`Usuário ${novoAtivo ? 'ativado' : 'desativado'} com sucesso!`, novoAtivo ? '#27ae60' : '#e74c3c');
 }
 
 async function alterarSenha() {
