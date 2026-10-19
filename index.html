@@ -2511,7 +2511,6 @@ async function carregarTodosHistProcs() {
     const r = await fetch(`${SB_URL}/hist_procs?guia_id=in.(${ids})&order=guia_id.asc,id.asc`, { headers: getHeaders() });
     if (!r.ok) return;
     const rows = await r.json();
-    // Agrupa por guia_id no cache
     const byGuia = {};
     rows.forEach(h => {
       if (!byGuia[h.guia_id]) byGuia[h.guia_id] = [];
@@ -2519,6 +2518,62 @@ async function carregarTodosHistProcs() {
     });
     guiasAtivas.forEach(g => { _mem['hist_procs_' + g.id] = byGuia[g.id] || []; });
   } catch(e) { console.warn('hist_procs bulk load error:', e.message); }
+}
+
+// ===== TABELA DEDICADA: hist_status =====
+function sbInsertHistStatus(guiaId, entrada) {
+  const body = { guia_id: guiaId, nome: entrada.nome || null, status: entrada.status || null, cor: entrada.cor || null, data: entrada.data || null, usuario: entrada.usuario || null };
+  fetchComRenovacao(`${SB_URL}/hist_status`, {
+    method: 'POST', headers: getHeaders(), body: JSON.stringify(body)
+  }).catch(e => console.warn('hist_status insert error:', e.message));
+}
+
+function sbDeleteHistStatusGuia(guiaId) {
+  fetchComRenovacao(`${SB_URL}/hist_status?guia_id=eq.${guiaId}`, {
+    method: 'DELETE', headers: getHeaders()
+  }).catch(e => console.warn('hist_status delete error:', e.message));
+}
+
+async function carregarTodosHistStatus() {
+  const guiasAtivas = (_mem['guias'] || []).filter(g => !g.alta);
+  if (!guiasAtivas.length) return;
+  const ids = guiasAtivas.map(g => g.id).join(',');
+  try {
+    const r = await fetch(`${SB_URL}/hist_status?guia_id=in.(${ids})&order=guia_id.asc,id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    const rows = await r.json();
+    const byGuia = {};
+    rows.forEach(h => { if (!byGuia[h.guia_id]) byGuia[h.guia_id] = []; byGuia[h.guia_id].push(h); });
+    guiasAtivas.forEach(g => { _mem['hist_status_' + g.id] = byGuia[g.id] || []; });
+  } catch(e) { console.warn('hist_status bulk load error:', e.message); }
+}
+
+// ===== TABELA DEDICADA: hist_ims =====
+function sbInsertHistIMS(guiaId, entrada) {
+  const body = { guia_id: guiaId, valor: entrada.valor != null ? entrada.valor : null, data: entrada.data || null, usuario: entrada.usuario || null };
+  fetchComRenovacao(`${SB_URL}/hist_ims`, {
+    method: 'POST', headers: getHeaders(), body: JSON.stringify(body)
+  }).catch(e => console.warn('hist_ims insert error:', e.message));
+}
+
+function sbDeleteHistIMSGuia(guiaId) {
+  fetchComRenovacao(`${SB_URL}/hist_ims?guia_id=eq.${guiaId}`, {
+    method: 'DELETE', headers: getHeaders()
+  }).catch(e => console.warn('hist_ims delete error:', e.message));
+}
+
+async function carregarTodosHistIMS() {
+  const guiasAtivas = (_mem['guias'] || []).filter(g => !g.alta);
+  if (!guiasAtivas.length) return;
+  const ids = guiasAtivas.map(g => g.id).join(',');
+  try {
+    const r = await fetch(`${SB_URL}/hist_ims?guia_id=in.(${ids})&order=guia_id.asc,id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    const rows = await r.json();
+    const byGuia = {};
+    rows.forEach(h => { if (!byGuia[h.guia_id]) byGuia[h.guia_id] = []; byGuia[h.guia_id].push(h); });
+    guiasAtivas.forEach(g => { _mem['hist_ims_' + g.id] = byGuia[g.id] || []; });
+  } catch(e) { console.warn('hist_ims bulk load error:', e.message); }
 }
 
 const DB = {
@@ -2579,8 +2634,10 @@ async function carregarDados() {
     const rows = await rStore.json();
     rows.forEach(row => { _mem[row.key] = row.value; });
     _carregamentoOk = true;
-    // Carrega hist_procs das guias ativas após ter as guias no cache
+    // Carrega históricos das guias ativas após ter as guias no cache
     carregarTodosHistProcs();
+    carregarTodosHistStatus();
+    carregarTodosHistIMS();
   } catch(e) {
     clearTimeout(timer);
     console.warn('Supabase indisponível, modo offline:', e.message);
@@ -4177,9 +4234,11 @@ function excluirGuiasVencidas(ids) {
   let guias = DB.get('guias') || [];
   ids.forEach(id => {
     guias = guias.filter(g => g.id !== id);
-    sbDeleteHistProcsGuia(id); // apaga da tabela SQL
+    sbDeleteHistProcsGuia(id);
+    sbDeleteHistStatusGuia(id);
+    sbDeleteHistIMSGuia(id);
     ['hist_procs_','hist_status_','hist_medidas_','hist_ims_','hist_setor_'].forEach(p => {
-      _mem[p + id] = []; // limpa cache local
+      _mem[p + id] = [];
       try { DB.setItem(p + id, '[]'); } catch(e) {}
     });
   });
@@ -4754,8 +4813,10 @@ async function salvarProcedimento() {
 
   if (imsAtual !== '') {
     const histIMS = DB.get('hist_ims_' + pacienteAtivo.id) || [];
-    histIMS.push({valor: parseInt(imsAtual), data: dataFmt, usuario: usuarioAtual()});
-    DB.set('hist_ims_' + pacienteAtivo.id, histIMS);
+    const novaEntradaIMS = {valor: parseInt(imsAtual), data: dataFmt, usuario: usuarioAtual()};
+    histIMS.push(novaEntradaIMS);
+    _mem['hist_ims_' + pacienteAtivo.id] = histIMS;
+    sbInsertHistIMS(pacienteAtivo.id, novaEntradaIMS);
     document.getElementById('det-ims-atual').textContent = imsAtual;
   }
 
@@ -4774,8 +4835,10 @@ function salvarStatus() {
   if (!sel) { alert('Selecione um status'); return; }
   const cor = sel.getAttribute('data-cor');
   const hist = DB.get('hist_status_' + pacienteAtivo.id) || [];
-  hist.push({nome: sel.value, cor, data: hoje(), usuario: usuarioAtual()});
-  DB.set('hist_status_' + pacienteAtivo.id, hist);
+  const novaEntradaStatus = {nome: sel.value, cor, data: hoje(), usuario: usuarioAtual()};
+  hist.push(novaEntradaStatus);
+  _mem['hist_status_' + pacienteAtivo.id] = hist;
+  sbInsertHistStatus(pacienteAtivo.id, novaEntradaStatus);
 
   document.getElementById('det-status').textContent = sel.value;
   document.getElementById('det-status-box').style.background = cor;
@@ -5231,9 +5294,11 @@ function confirmarExcluirPaciente() {
   DB.set('guias', guias);
 
   // Remove históricos desta guia
-  sbDeleteHistProcsGuia(guiaId); // apaga da tabela SQL
+  sbDeleteHistProcsGuia(guiaId);
+  sbDeleteHistStatusGuia(guiaId);
+  sbDeleteHistIMSGuia(guiaId);
   ['hist_procs_', 'hist_ims_', 'hist_status_'].forEach(prefix => {
-    _mem[prefix + guiaId] = []; // limpa cache local sem gravar no store
+    _mem[prefix + guiaId] = [];
   });
   ['hist_medidas_', 'hist_mob_', 'hist_checklist_'].forEach(prefix => {
     DB.setItem(prefix + guiaId, '[]');
@@ -5458,8 +5523,10 @@ function salvarAlterarMeta() {
   pacienteAtivo = guias[idx];
   // Registra no histórico de status
   const histStatus = DB.get('hist_status_' + pacienteAtivo.id);
-  histStatus.push({ data: hojeISO(), status: `Meta alterada: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, usuario: currentUser?.nome || 'Sistema' });
-  DB.set('hist_status_' + pacienteAtivo.id, histStatus);
+  const entradaMeta = { data: hojeISO(), status: `Meta alterada: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, usuario: currentUser?.nome || 'Sistema' };
+  histStatus.push(entradaMeta);
+  _mem['hist_status_' + pacienteAtivo.id] = histStatus;
+  sbInsertHistStatus(pacienteAtivo.id, entradaMeta);
   closeModal('modal-alterar-meta');
   renderResumoDiario(pacienteAtivo.id);
   renderLinhaTempo(pacienteAtivo.id);
