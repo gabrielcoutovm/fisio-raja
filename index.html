@@ -2650,7 +2650,8 @@ async function doLogin() {
     // Recarrega dados com o token autenticado e busca perfil pelo e-mail
     await carregarDados();
     const usuarios = DB.get('usuarios');
-    const user = usuarios.find(u => u.email === email && u.ativo == 1);
+    const emailLow = email.toLowerCase();
+    const user = usuarios.find(u => (u.email||'').toLowerCase() === emailLow && u.ativo == 1);
     if (!user) {
       const el2 = document.getElementById('login-error');
       const u0 = usuarios[0] || {};
