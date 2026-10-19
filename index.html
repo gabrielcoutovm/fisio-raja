@@ -2343,14 +2343,6 @@ function assinarMudancas() {
 
 // ===== DADOS INICIAIS =====
 function initData() {
-  // limpa dados de demonstração de versões anteriores
-  if (!DB.getItem('raja_v2')) {
-    ['convenios','setores','profissionais','procedimentos','lotes','guias'].forEach(k => {
-      if (DB.get(k).length > 0) DB.set(k, []);
-    });
-    DB.setItem('raja_v2','1');
-  }
-
   // garante medidas padrão sempre existam
   if (DB.get('medidas').length === 0) {
     DB.set('medidas',[
@@ -2639,6 +2631,8 @@ async function doLogin() {
     const emailLow = email.toLowerCase();
     const user = usuarios.find(u => (u.email||'').toLowerCase() === emailLow && u.ativo == 1);
     if (!user) {
+      sessionStorage.removeItem('fisioraja_token');
+      sessionStorage.removeItem('fisioraja_refresh');
       document.getElementById('login-error').textContent = 'E-mail ou senha incorretos.';
       document.getElementById('login-error').style.display = 'block';
       btn.textContent = 'Entrar'; btn.disabled = false;
@@ -2748,9 +2742,9 @@ function renderRelIMS() {
   const seteDias = new Date(hoje); seteDias.setDate(hoje.getDate() - 7);
 
   // altas nos últimos 7 dias
-  const comAlta = guias.filter(g => g.alta && g.data_alta);
+  const comAlta = guias.filter(g => g.alta);
   const altasRecentes = comAlta.filter(g => {
-    const partes = g.data_alta.split('/');
+    const partes = g.alta.split('/');
     if (partes.length < 3) return false;
     const d = new Date(partes[2], partes[1]-1, partes[0]);
     return d >= seteDias;
@@ -2771,7 +2765,7 @@ function renderRelIMS() {
       const partes = g.internacao.split('/');
       if (partes.length >= 3) {
         const intern = new Date(partes[2], partes[1]-1, partes[0]);
-        const dataAlta = g.data_alta ? (() => { const p2=g.data_alta.split('/'); return new Date(p2[2],p2[1]-1,p2[0]); })() : hoje;
+        const dataAlta = g.alta ? (() => { const p2=g.alta.split('/'); return new Date(p2[2],p2[1]-1,p2[0]); })() : hoje;
         const dias = Math.round((dataAlta - intern) / (24*3600*1000));
         if (dias < 3) return true;
       }
@@ -3084,7 +3078,7 @@ function renderMapaGeral() {
   document.getElementById('mapa-geral-container').innerHTML = setores.map(s => {
     const nomes = getLeitosNomes(s);
     const leitosHtml = nomes.map(num => {
-      const guia = guias.find(g => g.setor === `${s.nome} - ${num}`);
+      const guia = guias.find(g => g.setor === `${s.nome} - ${num}` && !g.alta);
       const pac = guia ? pacs.find(p => p.id === guia.paciente_id) : null;
       const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
       if (!pac) { const _si=s.id, _ni=encodeURIComponent(num); return `<div class="leito-cell livre" onclick="abrirNovoAtendimentoId(${_si},'${_ni}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${num}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`; }
@@ -6167,7 +6161,7 @@ function gerarXMLTISS(guiaId) {
     <ans:identificacaoTransacao>
       <ans:tipoTransacao>ENVIO_LOTE_GUIAS</ans:tipoTransacao>
       <ans:sequencialTransacao>1</ans:sequencialTransacao>
-      <ans:dataRegistroTransacao>${hojeISO}</ans:dataRegistroTransacao>
+      <ans:dataRegistroTransacao>${hojeISO()}</ans:dataRegistroTransacao>
     </ans:identificacaoTransacao>
     <ans:destino><ans:registroANS>${conv.ans||''}</ans:registroANS></ans:destino>
   </ans:cabecalho>
@@ -6196,7 +6190,7 @@ ${itens}
   const blob = new Blob([xml], {type:'application/xml;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href=url; a.download=`TISS_${guia.num_at||guia.id}_${hojeISO}.xml`; a.click();
+  a.href=url; a.download=`TISS_${guia.num_at||guia.id}_${hojeISO()}.xml`; a.click();
   URL.revokeObjectURL(url);
   showToast('XML TISS gerado!', '#4a90d9');
 }
