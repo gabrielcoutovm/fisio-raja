@@ -742,7 +742,10 @@
           <div class="filter-group"><label>Convênio</label><select id="fin-convenio"><option value="">Todos</option></select></div>
           <div class="filter-group"><label>De</label><input type="date" id="fin-de" /></div>
           <div class="filter-group"><label>Até</label><input type="date" id="fin-ate" /></div>
-          <div class="filter-group" style="justify-content:flex-end;flex:0"><button class="btn btn-primary" onclick="renderPainelFinanceiro()">Atualizar</button></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0;gap:8px;display:flex;">
+            <button class="btn btn-secondary" onclick="recalcularTodosValores()" title="Recalcula os valores de todas as guias com base nos preços atuais dos convênios">&#8635; Recalcular valores</button>
+            <button class="btn btn-primary" onclick="renderPainelFinanceiro()">Atualizar</button>
+          </div>
         </div>
       </div>
       <!-- KPI Cards Row 1 -->
@@ -4403,6 +4406,14 @@ function recalcularValorGuia(guiaId) {
     : 'R$ 0,00';
   guias[idx].dias = hist.length;
   DB.set('guias', guias);
+}
+
+function recalcularTodosValores() {
+  const guias = DB.get('guias');
+  if (!guias.length) { showToast('Nenhuma guia encontrada.', '#e74c3c'); return; }
+  guias.forEach(g => recalcularValorGuia(g.id));
+  renderPainelFinanceiro();
+  showToast(`Valores recalculados para ${guias.length} guia${guias.length > 1 ? 's' : ''}!`, '#27ae60');
 }
 
 function salvarProcedimento() {
