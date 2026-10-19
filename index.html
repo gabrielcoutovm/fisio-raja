@@ -2652,8 +2652,9 @@ async function doLogin() {
     const usuarios = DB.get('usuarios');
     const user = usuarios.find(u => u.email === email && u.ativo == 1);
     if (!user) {
-      console.error('Usuário autenticado mas sem perfil no store. Email:', email, 'Usuarios:', usuarios);
-      document.getElementById('login-error').style.display = 'block';
+      const el2 = document.getElementById('login-error');
+      el2.textContent = 'Autenticado, mas sem perfil ativo no sistema para: ' + email + ' (total usuários: ' + usuarios.length + ')';
+      el2.style.display = 'block';
       btn.textContent = 'Entrar'; btn.disabled = false;
       return;
     }
