@@ -2593,10 +2593,10 @@ async function salvarNovaSenha() {
         body: JSON.stringify({ email: emailAtual, password: nova })
       });
       if (verif.ok) {
-        alert('Senha alterada com sucesso! Faça login com a nova senha.');
+        alert('Senha alterada com sucesso!\nE-mail no Supabase: ' + emailAtual + '\nFaça login com a nova senha.');
       } else {
         const ve = await verif.json().catch(()=>({}));
-        alert('AVISO: A API retornou sucesso mas o login falhou.\nErro: ' + (ve.error_description || ve.msg || JSON.stringify(ve)));
+        alert('AVISO: senha salva mas login falhou.\nE-mail usado: ' + emailAtual + '\nErro: ' + (ve.error_description || ve.msg || JSON.stringify(ve)));
       }
       _recoveryToken = null;
       window.location.hash = '';
