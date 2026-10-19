@@ -2183,6 +2183,62 @@
 const SB_URL = 'https://jmivnztamomufqysmgiz.supabase.co/rest/v1';
 const SB_AUTH_URL = 'https://jmivnztamomufqysmgiz.supabase.co/auth/v1';
 const SB_KEY = 'sb_publishable_yh0w6lopBj5jsVIaMGD8LQ_nt0YgMmA';
+const SB_FUNCTIONS_URL = 'https://jmivnztamomufqysmgiz.supabase.co/functions/v1';
+
+// ===== CAMADA PROFILES (tabela com RLS — protege escalação de privilégios) =====
+const Profiles = {
+  // Lê todos os perfis via REST (autenticado)
+  async getAll() {
+    const r = await fetch(`${SB_URL}/profiles?select=*&order=nome.asc`, { headers: getHeaders() });
+    if (!r.ok) throw new Error('Erro ao carregar perfis: ' + r.status);
+    return await r.json();
+  },
+  // Busca um perfil pelo e-mail
+  async getByEmail(email) {
+    const r = await fetch(`${SB_URL}/profiles?email=eq.${encodeURIComponent(email)}&select=*&limit=1`, { headers: getHeaders() });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0] || null;
+  },
+  // Insere novo perfil (INSERT direto — service_role via Edge Function não necessário para criação)
+  async insert(profile) {
+    const r = await fetch(`${SB_URL}/profiles`, {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(profile)
+    });
+    if (!r.ok) throw new Error('Erro ao criar perfil: ' + (await r.text()));
+    return (await r.json())[0];
+  },
+  // Atualiza nome/auth_uid do próprio usuário (RLS permite apenas o próprio row, sem mudar perfil/ativo)
+  async updateOwn(id, fields) {
+    const r = await fetch(`${SB_URL}/profiles?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...getHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(fields)
+    });
+    if (!r.ok) throw new Error('Erro ao atualizar perfil: ' + (await r.text()));
+    return (await r.json())[0];
+  },
+  // Atualiza perfil/ativo de outro usuário — vai pela Edge Function (bypassa RLS)
+  async adminUpdate(id, fields) {
+    const token = sessionStorage.getItem('fisioraja_token');
+    const r = await fetch(`${SB_FUNCTIONS_URL}/gerenciar-perfil`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ profile_id: id, ...fields })
+    });
+    if (!r.ok) throw new Error('Erro na Edge Function: ' + (await r.text()));
+    return await r.json();
+  }
+};
+
+// Cache local de perfis para evitar múltiplas requisições na mesma sessão
+let _profilesCache = null;
+async function getProfilesCached(force = false) {
+  if (!_profilesCache || force) _profilesCache = await Profiles.getAll();
+  return _profilesCache;
+}
 
 // Headers sempre usam o token JWT da sessão autenticada (nunca a chave anon para dados)
 function getHeaders() {
@@ -2682,11 +2738,11 @@ async function doLogin() {
     if (_refreshInterval) clearInterval(_refreshInterval);
     _refreshInterval = setInterval(renovarSessao, 50 * 60 * 1000);
 
-    // Recarrega dados com o token autenticado e busca perfil pelo e-mail
+    // Recarrega dados e busca perfil pelo e-mail (tabela profiles com RLS)
     await carregarDados();
-    const usuarios = DB.get('usuarios');
     const emailLow = email.toLowerCase();
-    const user = usuarios.find(u => (u.email||'').toLowerCase() === emailLow && u.ativo == 1);
+    const user = await Profiles.getByEmail(emailLow).catch(() => null)
+      || DB.get('usuarios').find(u => (u.email||'').toLowerCase() === emailLow && u.ativo == 1); // fallback legado
     if (!user) {
       sessionStorage.removeItem('fisioraja_token');
       sessionStorage.removeItem('fisioraja_refresh');
@@ -3060,12 +3116,21 @@ function renderLogAcesso() {
   }).join('');
 }
 
-function renderUsuarios() {
+async function renderUsuarios() {
   renderListaClinicas();
   renderLogAcesso();
-  document.getElementById('tb-usuarios').innerHTML = DB.get('usuarios').map(u => {
+  const tb = document.getElementById('tb-usuarios');
+  tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:16px;">Carregando...</td></tr>';
+  let usuarios;
+  try {
+    usuarios = await getProfilesCached(true);
+  } catch(e) {
+    // fallback para o store caso a tabela profiles ainda não exista
+    usuarios = DB.get('usuarios');
+  }
+  tb.innerHTML = usuarios.map(u => {
     const cls = u.perfil==='Gestão'?'perfil-gestao':u.perfil==='Secretaria'?'perfil-secretaria':'perfil-fisio';
-    const emailExibir = u.email || u.login || '-';
+    const emailExibir = u.email || '-';
     const podeRedefinir = u.email && u.id !== currentUser.id;
     return `<tr data-search="${u.nome.toLowerCase()} ${emailExibir.toLowerCase()}">
       <td>${esc(u.nome)}</td>
@@ -4025,53 +4090,52 @@ async function saveUsuario() {
     }
   }
 
-  if (editId) {
-    // Edição: atualiza apenas nome, perfil, ativo (e-mail não muda)
-    const idx = usuarios.findIndex(u => u.id === parseInt(editId));
-    if (idx >= 0) {
-      usuarios[idx].nome = nome;
-      usuarios[idx].perfil = document.getElementById('usr-perfil').value;
-      usuarios[idx].ativo = parseInt(document.getElementById('usr-ativo').value);
-      const authUidEdit = (document.getElementById('usr-auth-uid').value || '').trim();
-      if (authUidEdit) usuarios[idx].auth_uid = authUidEdit;
-      DB.set('usuarios', usuarios);
-      showToast('Usuário atualizado!');
-    }
-  } else {
-    // Novo usuário: valida e cria no Supabase Auth
-    if (senha !== senha2) { alert('As senhas não coincidem'); return; }
-    const emailExiste = usuarios.find(u => u.email === email);
-    if (emailExiste) { alert('Já existe um usuário com esse e-mail'); return; }
+  const perfil = document.getElementById('usr-perfil').value;
+  const ativo  = parseInt(document.getElementById('usr-ativo').value);
+  const authUid = (document.getElementById('usr-auth-uid').value || '').trim() || null;
 
-    btn.textContent = 'Salvando...'; btn.disabled = true;
-    try {
-      // ⚠️ Por segurança, a conta Supabase Auth deve ser criada pelo administrador
-      // diretamente no painel: Authentication → Users → Invite user / Add user.
-      // Aqui registramos apenas o perfil local após a conta já existir.
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+  try {
+    if (editId) {
+      // Edição: nome, auth_uid sempre permitidos; perfil e ativo precisam da Edge Function
+      const id = parseInt(editId);
+      const updateFields = { nome };
+      if (authUid) updateFields.auth_uid = authUid;
+      // Campos admin (perfil, ativo) vão pela Edge Function
+      const novoPerfilOuAtivo = perfil !== usuarios.find(u=>u.id===id)?.perfil || ativo !== usuarios.find(u=>u.id===id)?.ativo;
+      if (novoPerfilOuAtivo) {
+        await Profiles.adminUpdate(id, { nome, perfil, ativo, auth_uid: authUid });
+      } else {
+        await Profiles.updateOwn(id, updateFields);
+      }
+      // Mantém store sincronizado como fallback
+      const idx = usuarios.findIndex(u => u.id === id);
+      if (idx >= 0) { usuarios[idx] = { ...usuarios[idx], nome, perfil, ativo, ...(authUid ? {auth_uid: authUid} : {}) }; DB.set('usuarios', usuarios); }
+      showToast('Usuário atualizado!');
+    } else {
+      // Novo usuário
+      if (senha !== senha2) { alert('As senhas não coincidem'); btn.textContent='Salvar'; btn.disabled=false; return; }
+      const emailExiste = usuarios.find(u => u.email === email);
+      if (emailExiste) { alert('Já existe um usuário com esse e-mail'); btn.textContent='Salvar'; btn.disabled=false; return; }
       if (!confirm(
         'ATENÇÃO — Passo obrigatório antes de salvar:\n\n' +
         '1. Acesse o painel Supabase → Authentication → Users\n' +
         '2. Clique em "Invite user" e cadastre o e-mail: ' + email + '\n' +
-        '3. Defina a senha diretamente no painel\n\n' +
+        '3. Cole o UUID gerado no campo "UUID Supabase Auth"\n\n' +
         'A conta já foi criada no painel?\n(Clique OK para registrar o perfil aqui)'
-      )) {
-        btn.textContent = 'Salvar'; btn.disabled = false;
-        return;
-      }
-      // Adiciona perfil ao store
-      const authUid = (document.getElementById('usr-auth-uid').value || '').trim() || null;
-      DB.push('usuarios', {
-        id: getNextId('usuarios'), nome, email,
-        perfil: document.getElementById('usr-perfil').value,
-        ativo: parseInt(document.getElementById('usr-ativo').value),
-        auth_uid: authUid
-      });
-      showToast('Perfil registrado! Certifique-se de que a conta Supabase foi criada.', '#27ae60', 5000);
-    } catch(e) {
-      alert('Erro de conexão: ' + e.message);
-      btn.textContent = 'Salvar'; btn.disabled = false;
-      return;
+      )) { btn.textContent='Salvar'; btn.disabled=false; return; }
+      const newId = getNextId('usuarios');
+      const newProfile = { id: newId, nome, email, perfil, ativo, auth_uid: authUid };
+      // Insere na tabela profiles (RLS permite INSERT de qualquer autenticado)
+      await Profiles.insert(newProfile);
+      // Mantém store sincronizado como fallback
+      DB.push('usuarios', newProfile);
+      showToast('Perfil registrado!', '#27ae60', 4000);
     }
+  } catch(e) {
+    alert('Erro: ' + e.message);
+    btn.textContent = 'Salvar'; btn.disabled = false;
+    return;
   }
 
   closeModal('modal-usuario'); renderUsuarios();
@@ -4081,7 +4145,7 @@ async function saveUsuario() {
 }
 
 function openEditUsuario(id) {
-  const u = DB.get('usuarios').find(u => u.id === id);
+  const u = (_profilesCache || DB.get('usuarios')).find(u => u.id === id);
   if (!u) return;
   document.getElementById('modal-usuario-titulo').textContent = 'Editar Usuário';
   document.getElementById('usr-id').value = u.id;
@@ -4119,46 +4183,42 @@ async function enviarResetSenha(email, nome) {
 }
 
 async function toggleUsuarioAtivo(id) {
-  const usuarios = DB.get('usuarios');
-  const idx = usuarios.findIndex(u=>u.id===id);
-  if (idx < 0) return;
+  const usuarios = _profilesCache || DB.get('usuarios');
+  const u = usuarios.find(u=>u.id===id);
+  if (!u) return;
 
-  const u = usuarios[idx];
   const novoAtivo = u.ativo ? 0 : 1;
   const acao = novoAtivo ? 'ativar' : 'desativar';
-
   if (!confirm(`Deseja ${acao} o usuário "${u.nome}"?`)) return;
 
-  // Se o usuário tiver auth_uid, revoga/restaura o acesso no Supabase Auth via Edge Function
-  if (u.auth_uid) {
-    try {
-      const token = sessionStorage.getItem('fisioraja_token');
-      const resp = await fetch(
-        `https://jmivnztamomufqysmgiz.supabase.co/functions/v1/desativar-usuario`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ auth_uid: u.auth_uid, ativar: !!novoAtivo })
-        }
-      );
-      const data = await resp.json();
-      if (!resp.ok) {
-        showToast('Erro ao alterar acesso: ' + (data.error || resp.status), '#e74c3c', 5000);
-        return;
-      }
-    } catch(e) {
-      showToast('Erro de rede ao chamar Edge Function.', '#e74c3c');
-      return;
-    }
-  }
+  try {
+    // Atualiza ativo na tabela profiles via Edge Function (bypassa RLS)
+    await Profiles.adminUpdate(id, { ativo: novoAtivo });
 
-  usuarios[idx].ativo = novoAtivo;
-  DB.set('usuarios', usuarios);
-  renderUsuarios();
-  showToast(`Usuário ${novoAtivo ? 'ativado' : 'desativado'} com sucesso!`, novoAtivo ? '#27ae60' : '#e74c3c');
+    // Se tiver auth_uid, revoga/restaura acesso no Supabase Auth
+    if (u.auth_uid) {
+      const token = sessionStorage.getItem('fisioraja_token');
+      const resp = await fetch(`${SB_FUNCTIONS_URL}/desativar-usuario`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ auth_uid: u.auth_uid, ativar: !!novoAtivo })
+      });
+      if (!resp.ok) {
+        const d = await resp.json();
+        showToast('Aviso: perfil atualizado, mas erro no Auth: ' + (d.error || resp.status), '#f39c12', 5000);
+      }
+    }
+
+    // Mantém store sincronizado
+    const storeUsuarios = DB.get('usuarios');
+    const idx = storeUsuarios.findIndex(u=>u.id===id);
+    if (idx >= 0) { storeUsuarios[idx].ativo = novoAtivo; DB.set('usuarios', storeUsuarios); }
+
+    renderUsuarios();
+    showToast(`Usuário ${novoAtivo ? 'ativado' : 'desativado'} com sucesso!`, novoAtivo ? '#27ae60' : '#e74c3c');
+  } catch(e) {
+    showToast('Erro: ' + e.message, '#e74c3c');
+  }
 }
 
 async function alterarSenha() {
@@ -6985,8 +7045,8 @@ function exportarBackup() {
       });
       if (r.ok) {
         const authUser = await r.json();
-        const usuarios = DB.get('usuarios');
-        const user = usuarios.find(u => u.email === authUser.email && u.ativo == 1);
+        const user = await Profiles.getByEmail(authUser.email).catch(() => null)
+          || DB.get('usuarios').find(u => u.email === authUser.email && u.ativo == 1);
         if (user) {
           _ativarSessao(user);
           restaurou = true;
