@@ -3438,7 +3438,7 @@ function renderPacientes() {
 
 function renderConvenios() {
   document.getElementById('tb-cad-convenios').innerHTML = DB.get('convenios').map(c => `
-    <tr data-search="${c.nome.toLowerCase()}">
+    <tr data-search="${esc(c.nome).toLowerCase()}">
       <td>${esc(c.nome)}</td><td>${esc(c.ans||'-')}</td><td>${esc(c.cod||'-')}</td>
       <td style="text-align:center;font-weight:700;color:#4a90d9;">${c.max_apt || 1}x</td>
       <td style="text-align:center;font-weight:700;color:#e74c3c;">${c.max_uti || 1}x</td>
@@ -3618,10 +3618,10 @@ async function renderUsuarios() {
     const cls = u.perfil==='Gestão'?'perfil-gestao':u.perfil==='Secretaria'?'perfil-secretaria':'perfil-fisio';
     const emailExibir = u.email || '-';
     const podeRedefinir = u.email && u.id !== currentUser.id;
-    return `<tr data-search="${u.nome.toLowerCase()} ${emailExibir.toLowerCase()}">
+    return `<tr data-search="${esc(u.nome).toLowerCase()} ${esc(emailExibir).toLowerCase()}">
       <td>${esc(u.nome)}</td>
       <td style="font-size:12px;color:#666;">${esc(emailExibir)}</td>
-      <td><span class="${cls}">${u.perfil}</span></td>
+      <td><span class="${cls}">${esc(u.perfil)}</span></td>
       <td><span class="icon-ativo ${u.ativo?'sim':'nao'}">${u.ativo?'✔':'✘'}</span></td>
       <td style="white-space:nowrap;">
         <button class="btn btn-primary btn-sm" onclick="openEditUsuario(${u.id})">Editar</button>
@@ -3759,12 +3759,12 @@ function renderMapaGeral() {
       const guia = guias.find(g => g.setor === `${s.nome} - ${num}` && !g.alta);
       const pac = guia ? pacs.find(p => p.id === guia.paciente_id) : null;
       const conv = pac && guia ? convs.find(c => c.id === guia.convenio_id) : null;
-      if (!pac) { const _si=s.id, _ni=encodeURIComponent(num); return `<div class="leito-cell livre" onclick="abrirNovoAtendimentoId(${_si},'${_ni}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${num}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`; }
+      if (!pac) { const _si=s.id, _ni=encodeURIComponent(num); return `<div class="leito-cell livre" onclick="abrirNovoAtendimentoId(${_si},'${_ni}','mapa-geral')" style="cursor:pointer;" title="Clique para internar paciente"><div class="leito-num">${esc(num)}</div><div style="font-size:9px;color:#aaa;margin-top:2px;">+ internar</div></div>`; }
       const hist = DB.get('hist_procs_'+guia.id)||[];
       const atendidoHoje = hist.some(h=>!h.cancelado&&h.data===hojeStr);
       const classeExtra = guia.alta ? 'alta-fisio' : (atendidoHoje ? '' : 'sem-atend');
       const titulo = guia.alta ? 'Alta fisioterapêutica' : (atendidoHoje ? '' : 'Sem atendimento hoje');
-      return `<div class="leito-cell ocupado ${classeExtra}" onclick="abrirPacienteDetalhe(${guia.id})" title="${esc(titulo)}"><div class="leito-num">${num}</div><div class="leito-nome">${esc(pac.nome.split(' ').slice(0,2).join(' '))}</div><div class="leito-conv">(${esc(conv?conv.nome:'')})</div></div>`;
+      return `<div class="leito-cell ocupado ${classeExtra}" onclick="abrirPacienteDetalhe(${guia.id})" title="${esc(titulo)}"><div class="leito-num">${esc(num)}</div><div class="leito-nome">${esc(pac.nome.split(' ').slice(0,2).join(' '))}</div><div class="leito-conv">(${esc(conv?conv.nome:'')})</div></div>`;
     }).join('');
     return `<div class="mapa-setor"><div class="mapa-setor-title">${esc(s.nome)}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
   }).join('');
