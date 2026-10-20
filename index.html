@@ -1323,7 +1323,7 @@
       <div class="search-bar">
         <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-usuarios', this.value)" />
         <button class="btn btn-success" onclick="abrirModalNovoUsuario()">+ Novo Usuário</button>
-        <button class="btn btn-navy" onclick="exportarBackup()" style="margin-left:8px;">&#128190; Exportar Backup (JSON)</button>
+        <button id="btn-exportar-backup" class="btn btn-navy" onclick="exportarBackup()" style="margin-left:8px;display:none;">&#128190; Exportar Backup (JSON)</button>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Usuários</h3></div>
@@ -3202,6 +3202,8 @@ function _ativarSessao(user) {
   if (menuGerenciar) menuGerenciar.style.display = ['Gestão','Secretaria'].includes(user.perfil) ? 'flex' : 'none';
   const menuLGPD = document.getElementById('topbar-nav-lgpd');
   if (menuLGPD) menuLGPD.style.display = user.perfil === 'Gestão' ? 'flex' : 'none';
+  const btnBackup = document.getElementById('btn-exportar-backup');
+  if (btnBackup) btnBackup.style.display = user.perfil === 'Gestão' ? 'inline-block' : 'none';
   document.getElementById('sidebar-menu').innerHTML = MENUS[user.perfil] || MENUS['Fisioterapeuta'];
   document.getElementById('login-error').style.display = 'none';
   initApp();
@@ -7586,6 +7588,7 @@ function salvarGlosa() {
 
 // ===== BACKUP COMPLETO =====
 function exportarBackup() {
+  if (currentUser?.perfil !== 'Gestão') { showToast('Acesso negado. Apenas Gestão pode exportar o backup.', '#e74c3c'); return; }
   const confirmado = confirm(
     '⚠️ ATENÇÃO — DADOS PESSOAIS SENSÍVEIS\n\n' +
     'Este arquivo contém dados de saúde de pacientes classificados como sensíveis pela LGPD (Lei 13.709/2018).\n\n' +
