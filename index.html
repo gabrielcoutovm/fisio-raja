@@ -2907,7 +2907,18 @@ function assinarMudancas() {
   // Polling a cada 30s para sincronizar entre dispositivos
   setInterval(async () => {
     const antes = JSON.stringify(_mem);
-    await Promise.all([sbGet(), carregarPacientes(), carregarGuias(), carregarLotes(), carregarGlosas()]);
+    // Recarrega guias e históricos juntos — sem isso, procedimentos adicionados em outro
+    // dispositivo aparecem na guia mas o cache de hist_procs_X fica desatualizado,
+    // fazendo recalcularValorGuia e relatórios lerem dados errados.
+    await Promise.all([
+      sbGet(),
+      carregarPacientes(),
+      carregarGuias(),
+      carregarLotes(),
+      carregarGlosas()
+    ]);
+    // Recarrega históricos APÓS as guias (usa _mem['guias'] que acabou de ser atualizado)
+    await Promise.all([carregarTodosHistProcs(), carregarTodosHistStatus(), carregarTodosHistIMS()]);
     if (JSON.stringify(_mem) !== antes) {
       const activePage = document.querySelector('.page.active');
       if (activePage) {
