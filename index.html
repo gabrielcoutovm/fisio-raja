@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FISIO RAJA - Gestão de Fisioterapia Hospitalar</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha256-s4B2di9zY7yekStouOA0gmeY213ya7YfAA7C56MTe8c=" crossorigin="anonymous"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a1628; color: #333; display: flex; min-height: 100vh; }
@@ -1286,7 +1286,7 @@
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Profissionais</h3></div>
-        <table><thead><tr><th>Nome</th><th>CPF</th><th>Conselho</th><th>Número</th><th>Especialidade</th><th>Meta/Mês</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="tb-cad-profissionais"></tbody></table>
+        <table><thead><tr><th>Nome</th><th id="th-prof-cpf">CPF</th><th>Conselho</th><th>Número</th><th>Especialidade</th><th>Meta/Mês</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="tb-cad-profissionais"></tbody></table>
       </div>
     </div>
 
@@ -3450,7 +3450,7 @@ function renderConvenios() {
 function renderProfissionais() {
   document.getElementById('tb-cad-profissionais').innerHTML = DB.get('profissionais').map(p => `
     <tr data-search="${esc(p.nome).toLowerCase()}">
-      <td>${esc(p.nome)}</td><td>${esc(p.cpf||'-')}</td><td>${esc(p.conselho)}</td><td>${esc(p.numconselho||'-')}</td>
+      <td>${esc(p.nome)}</td><td>${currentUser?.perfil==='Gestão' ? esc(p.cpf||'-') : '••••••••••'}</td><td>${esc(p.conselho)}</td><td>${esc(p.numconselho||'-')}</td>
       <td>${esc(p.especialidade||'-')}</td>
       <td style="text-align:center;">${p.meta_guias_mes ? `<span style="background:#eaf5ea;color:#27ae60;padding:2px 8px;border-radius:4px;font-size:12px;">${p.meta_guias_mes}/mês</span>` : '-'}</td>
       <td><span class="icon-ativo ${p.ativo?'sim':'nao'}">${p.ativo?'✔':'✘'}</span></td>
