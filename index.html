@@ -2737,7 +2737,7 @@ async function sbInsertAuditLog(tipo, detalhes, guiaId) {
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
   set: (k, v) => {
-    if (!_carregamentoOk && k !== '__raja_v2') {
+    if (!_carregamentoOk) {
       alert('⚠️ Conexão com o banco ainda não confirmada.\n\nAguarde alguns segundos e tente novamente.\n\nSe o problema persistir, recarregue a página.');
       return;
     }
@@ -2813,6 +2813,7 @@ async function carregarDados() {
     rows.forEach(row => { _mem[row.key] = row.value; });
     _carregamentoOk = true;
     _erroCarregamento = null;
+    initIdSeq();
     // Carrega históricos das guias ativas após ter as guias no cache
     carregarTodosHistProcs();
     carregarTodosHistStatus();
@@ -4010,7 +4011,23 @@ function updateConvenioSelects() {
 }
 
 // ===== SALVAR =====
-function getNextId(key) { return Date.now() + Math.floor(Math.random() * 1000); }
+let _idSeq = 0;
+
+function initIdSeq() {
+  const allIds = [
+    ...(_mem['guias'] || []), ...(_mem['pacientes'] || []),
+    ...(_mem['lotes'] || []), ...(_mem['glosas'] || []),
+    ...(_mem['convenios'] || []), ...(_mem['setores'] || []),
+    ...(_mem['profissionais'] || []), ...(_mem['procedimentos'] || [])
+  ].map(x => Number(x.id) || 0);
+  const maxExistente = allIds.length ? Math.max(...allIds) : 0;
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  // Offset aleatório (0-9999) garante que duas sessões simultâneas partam de bases diferentes
+  _idSeq = Math.max(maxExistente, Date.now()) + 1 + (arr[0] % 10000);
+}
+
+function getNextId(key) { return ++_idSeq; }
 
 function savePaciente() {
   const nome = document.getElementById('pac-nome').value.trim();
