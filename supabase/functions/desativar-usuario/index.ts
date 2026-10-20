@@ -34,6 +34,25 @@ serve(async (req) => {
       });
     }
 
+    // Cliente admin com service_role (necessário para verificar perfil e alterar Auth)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Verifica se o chamador tem perfil Gestão
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('perfil')
+      .eq('auth_uid', user.id)
+      .single();
+
+    if (!callerProfile || callerProfile.perfil !== 'Gestão') {
+      return new Response(JSON.stringify({ error: 'Sem permissão. Apenas Gestão pode desativar usuários.' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Lê o body
     const { auth_uid, ativar } = await req.json();
     if (!auth_uid) {
@@ -48,12 +67,6 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-
-    // Cliente admin com service_role para alterar o Auth
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
 
     const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(auth_uid, {
       ban_duration: ativar ? 'none' : '876000h', // 100 anos = desativado permanentemente
