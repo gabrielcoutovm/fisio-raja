@@ -3335,7 +3335,7 @@ function excluirProcedimento(id) {
 
 function renderSetores() {
   document.getElementById('tb-cad-setores').innerHTML = DB.get('setores').map(s => `
-    <tr data-search="${s.nome.toLowerCase()}"><td>${s.nome}</td><td>${s.tipo}</td><td>${s.leitos}</td>
+    <tr data-search="${esc(s.nome).toLowerCase()}"><td>${esc(s.nome)}</td><td>${esc(s.tipo||'')}</td><td>${s.leitos}</td>
     <td><button class="btn btn-primary btn-sm" onclick="openEditSetor(${s.id})">Editar</button></td></tr>`).join('');
 }
 
@@ -4843,7 +4843,7 @@ function recalcularValorGuia(guiaId) {
   const procsConv = conv.procedimentos || [];
   let total = 0;
   hist.forEach(h => {
-    const entradaConv = procsConv.find(p => p.proc_id === h.proc_id);
+    const entradaConv = procsConv.find(p => String(p.proc_id) === String(h.proc_id));
     const valor = entradaConv?.valor ?? 0;
     total += Number(valor) || 0;
   });
@@ -5294,7 +5294,7 @@ function gerarXMLAltaAutomatico(guia) {
             </ans:contratadoSolicitante>
           </ans:dadosSolicitante>
           <ans:dadosAtendimento>
-            <ans:dataInicioFaturamento>${guia.data_internacao || dataHoje}</ans:dataInicioFaturamento>
+            <ans:dataInicioFaturamento>${guia.internacao ? guia.internacao.split('/').reverse().join('-') : dataHoje}</ans:dataInicioFaturamento>
             <ans:dataFimFaturamento>${guia.alta || dataHoje}</ans:dataFimFaturamento>
             <ans:tipoAtendimento>06</ans:tipoAtendimento>
             <ans:indicacaoAcidente>9</ans:indicacaoAcidente>
@@ -7059,7 +7059,7 @@ function renderResumoDiario(guiaId) {
   const realizadosHoje = procs.filter(p=>paraISO(p.data)===hoje).length;
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const meta = metaMap[guia.meta_diaria]??1;
-  const diasIntern = guia.data_internacao ? Math.floor((new Date()-new Date(guia.data_internacao+'T00:00:00'))/86400000) : '-';
+  const diasIntern = guia.internacao ? Math.floor((new Date()-new Date(guia.internacao.split('/').reverse().join('-')+'T00:00:00'))/86400000) : '-';
   const histIMS = DB.get('hist_ims_'+guiaId)||[];
   const imsAtual = histIMS.length>0 ? histIMS[histIMS.length-1].valor : (guia.ims_admissao||'-');
   const pendentes = meta > 0 ? Math.max(0, meta-realizadosHoje) : 0;
@@ -7094,13 +7094,13 @@ function renderLinhaTempo(guiaId) {
     DB.get('hist_procs_'+guiaId).filter(p=>paraISO(p.data)>=limiteISO).forEach(p=>{
       const procNome = (DB.get('procedimentos')||[]).find(pr=>pr.id===p.proc_id)?.nome || 'Procedimento';
       eventos.push({data:p.data, hora:p.hora||'', tipo:'proc', icon:'🩺', cor:'#4a90d9',
-        texto: p.status==='cancelado' ? `<s>${procNome}</s> <span style="color:#e74c3c;font-size:11px;">(cancelado: ${p.cancelamento?.motivo||''})</span>` : procNome,
-        sub: p.usuario||'' });
+        texto: p.status==='cancelado' ? `<s>${esc(procNome)}</s> <span style="color:#e74c3c;font-size:11px;">(cancelado: ${esc(p.cancelamento?.motivo||'')})</span>` : esc(procNome),
+        sub: esc(p.usuario||'') });
     });
   }
   if (filtro==='tudo'||filtro==='status') {
     DB.get('hist_status_'+guiaId).filter(s=>paraISO(s.data)>=limiteISO).forEach(s=>{
-      eventos.push({data:s.data, hora:'', tipo:'status', icon:'🔔', cor:'#f39c12', texto:`Status → ${s.status}`, sub:s.usuario||''});
+      eventos.push({data:s.data, hora:'', tipo:'status', icon:'🔔', cor:'#f39c12', texto:`Status → ${esc(s.nome||s.status||'')}`, sub:esc(s.usuario||'')});
     });
   }
   if (filtro==='tudo'||filtro==='medidas') {
@@ -7126,7 +7126,7 @@ function renderLinhaTempo(guiaId) {
     html += `<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 0;">
       <span style="font-size:16px;line-height:1.3;">${ev.icon}</span>
       <div style="flex:1;">
-        <div style="font-size:13px;color:#0a1628;">${ev.texto}${ev.hora?' <span style="color:#aaa;font-size:11px;">• '+ev.hora+'</span>':''}</div>
+        <div style="font-size:13px;color:#0a1628;">${ev.texto}${ev.hora?' <span style="color:#aaa;font-size:11px;">• '+esc(ev.hora)+'</span>':''}</div>
         ${ev.sub?`<div style="font-size:11px;color:#aaa;">${ev.sub}</div>`:''}
       </div>
     </div>`;
