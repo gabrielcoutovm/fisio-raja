@@ -2576,6 +2576,58 @@ async function carregarTodosHistIMS() {
   } catch(e) { console.warn('hist_ims bulk load error:', e.message); }
 }
 
+// ===== TABELA DEDICADA: lotes =====
+function sbUpsertLotes(lotes) {
+  if (!lotes || !lotes.length) return;
+  const rows = lotes.map(l => ({
+    id: l.id, convenio: l.convenio || null, convenio_id: l.convenio_id || null,
+    competencia: l.competencia || null, num_protocolo: l.num_protocolo || null,
+    status: l.status || 'Pendente', data: l.data || null,
+    guias: l.guias || 0, valor: l.valor || null,
+    concluido: l.concluido || false, data_conclusao: l.data_conclusao || null,
+    updated_at: new Date().toISOString()
+  }));
+  fetchComRenovacao(`${SB_URL}/lotes?on_conflict=id`, {
+    method: 'POST', headers: getHeaders(), body: JSON.stringify(rows)
+  }).catch(e => console.warn('Lotes upsert error:', e.message));
+}
+
+async function carregarLotes() {
+  try {
+    const r = await fetch(`${SB_URL}/lotes?select=*&order=id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    _mem['lotes'] = await r.json();
+  } catch(e) { console.warn('Lotes load error:', e.message); }
+}
+
+// ===== TABELA DEDICADA: glosas =====
+function sbUpsertGlosas(glosas) {
+  if (!glosas || !glosas.length) return;
+  const rows = glosas.map(g => ({
+    id: g.id, guia_id: g.guia_id || null, valor: g.valor || null,
+    motivo: g.motivo || null, obs: g.obs || null,
+    status: g.status || 'Pendente', data: g.data || null,
+    usuario: g.usuario || null, updated_at: new Date().toISOString()
+  }));
+  fetchComRenovacao(`${SB_URL}/glosas?on_conflict=id`, {
+    method: 'POST', headers: getHeaders(), body: JSON.stringify(rows)
+  }).catch(e => console.warn('Glosas upsert error:', e.message));
+}
+
+function sbDeleteGlosa(id) {
+  fetchComRenovacao(`${SB_URL}/glosas?id=eq.${id}`, {
+    method: 'DELETE', headers: getHeaders()
+  }).catch(e => console.warn('Glosa delete error:', e.message));
+}
+
+async function carregarGlosas() {
+  try {
+    const r = await fetch(`${SB_URL}/glosas?select=*&order=id.asc`, { headers: getHeaders() });
+    if (!r.ok) return;
+    _mem['glosas'] = await r.json();
+  } catch(e) { console.warn('Glosas load error:', e.message); }
+}
+
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
   set: (k, v) => {
@@ -2591,12 +2643,20 @@ const DB = {
       _mem['pacientes'] = v;
       sbUpsertPacientes(v);
     } else if (k === 'guias') {
-      // Detecta exclusões comparando com o cache anterior e apaga na tabela
       const antesG = Array.isArray(_mem['guias']) ? _mem['guias'] : [];
       const idsNovosG = new Set(v.map(g => g.id));
       antesG.forEach(g => { if (!idsNovosG.has(g.id)) sbDeleteGuia(g.id); });
       _mem['guias'] = v;
       sbUpsertGuias(v);
+    } else if (k === 'lotes') {
+      _mem['lotes'] = v;
+      sbUpsertLotes(v);
+    } else if (k === 'glosas') {
+      const antesGl = Array.isArray(_mem['glosas']) ? _mem['glosas'] : [];
+      const idsNovosGl = new Set(v.map(g => g.id));
+      antesGl.forEach(g => { if (!idsNovosGl.has(g.id)) sbDeleteGlosa(g.id); });
+      _mem['glosas'] = v;
+      sbUpsertGlosas(v);
     } else {
       _mem[k] = v;
       sbSet(k, v);
@@ -2607,10 +2667,16 @@ const DB = {
     a.push(v);
     if (k === 'pacientes') {
       _mem['pacientes'] = a;
-      sbUpsertPacientes([v]); // upsert só o novo
+      sbUpsertPacientes([v]);
     } else if (k === 'guias') {
       _mem['guias'] = a;
-      sbUpsertGuias([v]); // upsert só a nova guia
+      sbUpsertGuias([v]);
+    } else if (k === 'lotes') {
+      _mem['lotes'] = a;
+      sbUpsertLotes([v]);
+    } else if (k === 'glosas') {
+      _mem['glosas'] = a;
+      sbUpsertGlosas([v]);
     } else {
       DB.set(k, a);
     }
@@ -2627,7 +2693,9 @@ async function carregarDados() {
     const [rStore] = await Promise.all([
       fetch(`${SB_URL}/store?select=key,value,updated_at&order=updated_at.asc`, { headers: getHeaders(), signal: ctrl.signal }),
       carregarPacientes(),
-      carregarGuias()
+      carregarGuias(),
+      carregarLotes(),
+      carregarGlosas()
     ]);
     clearTimeout(timer);
     if (!rStore.ok) { console.warn('Supabase retornou:', rStore.status); return; }
@@ -2648,7 +2716,7 @@ function assinarMudancas() {
   // Polling a cada 30s para sincronizar entre dispositivos
   setInterval(async () => {
     const antes = JSON.stringify(_mem);
-    await Promise.all([sbGet(), carregarPacientes(), carregarGuias()]);
+    await Promise.all([sbGet(), carregarPacientes(), carregarGuias(), carregarLotes(), carregarGlosas()]);
     if (JSON.stringify(_mem) !== antes) {
       const activePage = document.querySelector('.page.active');
       if (activePage) {
