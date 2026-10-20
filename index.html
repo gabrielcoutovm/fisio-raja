@@ -3186,6 +3186,8 @@ async function doLogin() {
     }
   } catch(e) {
     console.error('doLogin exception:', e);
+    sessionStorage.removeItem('fisioraja_token');
+    sessionStorage.removeItem('fisioraja_refresh');
     document.getElementById('login-error').style.display = 'block';
     btn.textContent = 'Entrar'; btn.disabled = false;
   }
