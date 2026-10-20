@@ -1446,7 +1446,7 @@
               <li>Notifique o DPO imediatamente</li>
               <li>Isole o sistema se necessário (revogar acessos, trocar senhas)</li>
               <li>Documente: o quê, quando, quem foi afetado, como ocorreu</li>
-              <li><strong>Notifique a ANPD em até 72h</strong> — Portal gov.br/anpd → Reporte um Incidente</li>
+              <li><strong>Notifique a ANPD em até 3 dias úteis</strong> (Res. CD/ANPD nº 15/2024) — Portal gov.br/anpd → Reporte um Incidente</li>
               <li>Notifique os titulares afetados com clareza e em prazo razoável</li>
               <li>Registre o incidente abaixo e as ações tomadas</li>
             </ol>
@@ -2287,12 +2287,44 @@ const Profiles = {
     if (!r.ok) throw new Error('Erro ao carregar perfis: ' + r.status);
     return await r.json();
   },
-  // Busca um perfil pelo e-mail
+  // Busca um perfil pelo e-mail (uso administrativo; NÃO usar para login)
   async getByEmail(email) {
     const r = await fetch(`${SB_URL}/profiles?email=eq.${encodeURIComponent(email)}&select=*&limit=1`, { headers: getHeaders() });
     if (!r.ok) return null;
     const rows = await r.json();
     return rows[0] || null;
+  },
+  // Perfil do usuário logado, identificado pelo UUID do Supabase Auth (não pelo e-mail).
+  // Se o perfil ainda não tem auth_uid, vincula uma única vez, desde que exista
+  // exatamente 1 perfil com aquele e-mail e ainda sem vínculo.
+  async getMine() {
+    const token = sessionStorage.getItem('fisioraja_token');
+    if (!token) return null;
+    const ru = await fetch(`${SB_AUTH_URL}/user`, { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + token } });
+    if (!ru.ok) return null;
+    const authUser = await ru.json();
+    if (!authUser?.id) return null;
+
+    const r1 = await fetch(`${SB_URL}/profiles?auth_uid=eq.${encodeURIComponent(authUser.id)}&select=*`, { headers: getHeaders() });
+    if (!r1.ok) return null;
+    const meus = await r1.json();
+    if (meus.length === 1) return meus[0];
+    if (meus.length > 1) { console.error('Mais de um perfil com o mesmo auth_uid'); return null; }
+
+    // Primeiro acesso: vincula o perfil criado pela Gestão ao UUID do Auth
+    const email = (authUser.email || '').toLowerCase();
+    const r2 = await fetch(`${SB_URL}/profiles?email=ilike.${encodeURIComponent(email)}&select=*`, { headers: getHeaders() });
+    if (!r2.ok) return null;
+    const porEmail = (await r2.json()).filter(p => (p.email || '').toLowerCase() === email);
+    if (porEmail.length !== 1 || porEmail[0].auth_uid) return null;
+    const r3 = await fetch(`${SB_URL}/profiles?id=eq.${porEmail[0].id}&auth_uid=is.null`, {
+      method: 'PATCH',
+      headers: { ...getHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify({ auth_uid: authUser.id })
+    });
+    if (!r3.ok) return null;
+    const vinc = await r3.json();
+    return vinc[0] || null;
   },
   // Insere novo perfil (INSERT direto — service_role via Edge Function não necessário para criação)
   async insert(profile) {
@@ -2440,13 +2472,18 @@ async function sbGet() {
   } catch(e) { console.warn('Supabase load error:', e.message); }
 }
 
+function _sbErro(contexto, msg) {
+  console.warn(contexto, msg);
+  showToast(`Erro ao salvar (${contexto}). Verifique a conexão e tente novamente.`, '#e74c3c');
+}
+
 function sbSet(key, value) {
   const body = JSON.stringify({ key, value, updated_at: new Date().toISOString() });
   fetchComRenovacao(`${SB_URL}/store?on_conflict=key`, {
     method: 'POST',
     headers: getHeaders(),
     body
-  }).catch(e => console.warn('Supabase save error:', e.message));
+  }).catch(e => _sbErro('store', e.message));
 }
 
 // ===== TABELA DEDICADA: pacientes =====
@@ -2460,7 +2497,7 @@ function sbUpsertPacientes(pacs) {
       id: p.id, nome: p.nome, nascimento: p.nascimento || null,
       convenio_id: p.convenio_id || null, updated_at: new Date().toISOString()
     })))
-  }).catch(e => console.warn('Pacientes upsert error:', e.message));
+  }).catch(e => _sbErro('pacientes', e.message));
 }
 
 // Remove um paciente da tabela pelo id
@@ -2468,7 +2505,7 @@ function sbDeletePaciente(id) {
   fetchComRenovacao(`${SB_URL}/pacientes?id=eq.${id}`, {
     method: 'DELETE',
     headers: getHeaders()
-  }).catch(e => console.warn('Paciente delete error:', e.message));
+  }).catch(e => _sbErro('paciente delete', e.message));
 }
 
 // Carrega todos os pacientes da tabela dedicada para o cache
@@ -2517,13 +2554,18 @@ function sbUpsertGuias(guias) {
     lote_id: g.lote_id || null,
     contabilizado: g.contabilizado || false,
     concluido: g.concluido || false,
+    // Inativação (soft delete LGPD) — precisa ir ao banco, senão o prontuário volta após recarregar
+    inativo: g.inativo || false,
+    inativo_em: g.inativo_em || null,
+    inativo_motivo: g.inativo_motivo || null,
+    inativo_por: g.inativo_por || null,
     updated_at: new Date().toISOString()
   }));
   fetchComRenovacao(`${SB_URL}/guias?on_conflict=id`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(rows)
-  }).catch(e => console.warn('Guias upsert error:', e.message));
+  }).catch(e => _sbErro('guias', e.message));
 }
 
 // Remove uma guia da tabela pelo id
@@ -2531,7 +2573,7 @@ function sbDeleteGuia(id) {
   fetchComRenovacao(`${SB_URL}/guias?id=eq.${id}`, {
     method: 'DELETE',
     headers: getHeaders()
-  }).catch(e => console.warn('Guia delete error:', e.message));
+  }).catch(e => _sbErro('guia delete', e.message));
 }
 
 // Carrega todas as guias da tabela dedicada para o cache
@@ -2575,7 +2617,7 @@ function sbUpdateHistProc(rowId, fields) {
     method: 'PATCH',
     headers: getHeaders(),
     body: JSON.stringify(fields)
-  }).catch(e => console.warn('hist_procs update error:', e.message));
+  }).catch(e => _sbErro('hist_procs', e.message));
 }
 
 // Remove todos os hist_procs de uma guia (ao excluir a guia)
@@ -2583,7 +2625,7 @@ function sbDeleteHistProcsGuia(guiaId) {
   fetchComRenovacao(`${SB_URL}/hist_procs?guia_id=eq.${guiaId}`, {
     method: 'DELETE',
     headers: getHeaders()
-  }).catch(e => console.warn('hist_procs delete error:', e.message));
+  }).catch(e => _sbErro('hist_procs delete', e.message));
 }
 
 // Carrega hist_procs de uma guia específica para o cache
@@ -2597,22 +2639,49 @@ async function carregarHistProcs(guiaId) {
   } catch(e) { console.warn('hist_procs load error:', e.message); }
 }
 
-// Carrega hist_procs de todas as guias ativas de uma vez (boot)
-async function carregarTodosHistProcs() {
-  const guiasAtivas = (_mem['guias'] || []).filter(g => !g.alta);
-  if (!guiasAtivas.length) return;
-  const ids = guiasAtivas.map(g => g.id).join(',');
-  try {
-    const r = await fetch(`${SB_URL}/hist_procs?guia_id=in.(${ids})&order=guia_id.asc,id.asc`, { headers: getHeaders() });
-    if (!r.ok) return;
-    const rows = await r.json();
+// ===== CARGA DE HISTÓRICOS (todas as guias, inclusive com alta) =====
+// Guias cujo histórico de procedimentos foi carregado do banco com sucesso.
+// recalcularValorGuia só regrava o valor de guias presentes aqui (ou criadas nesta sessão).
+const _histProcsCarregados = new Set();
+
+// Busca uma tabela de histórico para todas as guias, em blocos de ids e com paginação
+// (o Supabase devolve no máximo 1000 linhas por requisição).
+async function _carregarHistTabela(tabela, prefixo, mapRow) {
+  const guias = (_mem['guias'] || []);
+  if (!guias.length) return new Set();
+  const carregadas = new Set();
+  const TAM_BLOCO = 100, PAGINA = 1000;
+  for (let i = 0; i < guias.length; i += TAM_BLOCO) {
+    const bloco = guias.slice(i, i + TAM_BLOCO);
+    const ids = bloco.map(g => g.id).join(',');
     const byGuia = {};
-    rows.forEach(h => {
-      if (!byGuia[h.guia_id]) byGuia[h.guia_id] = [];
-      byGuia[h.guia_id].push({ ...h, _row_id: h.id });
+    let offset = 0, ok = true;
+    try {
+      while (true) {
+        const r = await fetch(`${SB_URL}/${tabela}?guia_id=in.(${ids})&order=guia_id.asc,id.asc&limit=${PAGINA}&offset=${offset}`, { headers: getHeaders() });
+        if (!r.ok) { ok = false; break; }
+        const rows = await r.json();
+        rows.forEach(h => { (byGuia[h.guia_id] = byGuia[h.guia_id] || []).push(mapRow ? mapRow(h) : h); });
+        if (rows.length < PAGINA) break;
+        offset += PAGINA;
+      }
+    } catch(e) { ok = false; console.warn(tabela + ' load error:', e.message); }
+    if (!ok) continue; // mantém o que já estava no cache para este bloco
+    bloco.forEach(g => {
+      const key = prefixo + g.id;
+      // Se o banco não tem linhas, preserva histórico legado que veio do store (versões antigas)
+      const legado = Array.isArray(_mem[key]) ? _mem[key].filter(h => h._row_id == null && h.id == null) : [];
+      _mem[key] = byGuia[g.id] || legado;
+      carregadas.add(g.id);
     });
-    guiasAtivas.forEach(g => { _mem['hist_procs_' + g.id] = byGuia[g.id] || []; });
-  } catch(e) { console.warn('hist_procs bulk load error:', e.message); }
+  }
+  return carregadas;
+}
+
+// Carrega hist_procs de TODAS as guias (abertas e com alta)
+async function carregarTodosHistProcs() {
+  const ok = await _carregarHistTabela('hist_procs', 'hist_procs_', h => ({ ...h, _row_id: h.id }));
+  ok.forEach(id => _histProcsCarregados.add(id));
 }
 
 // ===== TABELA DEDICADA: hist_status =====
@@ -2620,27 +2689,17 @@ function sbInsertHistStatus(guiaId, entrada) {
   const body = { guia_id: guiaId, nome: entrada.nome || null, status: entrada.status || null, cor: entrada.cor || null, data: entrada.data || null, usuario: entrada.usuario || null };
   fetchComRenovacao(`${SB_URL}/hist_status`, {
     method: 'POST', headers: getHeaders(), body: JSON.stringify(body)
-  }).catch(e => console.warn('hist_status insert error:', e.message));
+  }).catch(e => _sbErro('hist_status', e.message));
 }
 
 function sbDeleteHistStatusGuia(guiaId) {
   fetchComRenovacao(`${SB_URL}/hist_status?guia_id=eq.${guiaId}`, {
     method: 'DELETE', headers: getHeaders()
-  }).catch(e => console.warn('hist_status delete error:', e.message));
+  }).catch(e => _sbErro('hist_status delete', e.message));
 }
 
 async function carregarTodosHistStatus() {
-  const guiasAtivas = (_mem['guias'] || []).filter(g => !g.alta);
-  if (!guiasAtivas.length) return;
-  const ids = guiasAtivas.map(g => g.id).join(',');
-  try {
-    const r = await fetch(`${SB_URL}/hist_status?guia_id=in.(${ids})&order=guia_id.asc,id.asc`, { headers: getHeaders() });
-    if (!r.ok) return;
-    const rows = await r.json();
-    const byGuia = {};
-    rows.forEach(h => { if (!byGuia[h.guia_id]) byGuia[h.guia_id] = []; byGuia[h.guia_id].push(h); });
-    guiasAtivas.forEach(g => { _mem['hist_status_' + g.id] = byGuia[g.id] || []; });
-  } catch(e) { console.warn('hist_status bulk load error:', e.message); }
+  await _carregarHistTabela('hist_status', 'hist_status_');
 }
 
 // ===== TABELA DEDICADA: hist_ims =====
@@ -2648,27 +2707,17 @@ function sbInsertHistIMS(guiaId, entrada) {
   const body = { guia_id: guiaId, valor: entrada.valor != null ? entrada.valor : null, data: entrada.data || null, usuario: entrada.usuario || null };
   fetchComRenovacao(`${SB_URL}/hist_ims`, {
     method: 'POST', headers: getHeaders(), body: JSON.stringify(body)
-  }).catch(e => console.warn('hist_ims insert error:', e.message));
+  }).catch(e => _sbErro('hist_ims', e.message));
 }
 
 function sbDeleteHistIMSGuia(guiaId) {
   fetchComRenovacao(`${SB_URL}/hist_ims?guia_id=eq.${guiaId}`, {
     method: 'DELETE', headers: getHeaders()
-  }).catch(e => console.warn('hist_ims delete error:', e.message));
+  }).catch(e => _sbErro('hist_ims delete', e.message));
 }
 
 async function carregarTodosHistIMS() {
-  const guiasAtivas = (_mem['guias'] || []).filter(g => !g.alta);
-  if (!guiasAtivas.length) return;
-  const ids = guiasAtivas.map(g => g.id).join(',');
-  try {
-    const r = await fetch(`${SB_URL}/hist_ims?guia_id=in.(${ids})&order=guia_id.asc,id.asc`, { headers: getHeaders() });
-    if (!r.ok) return;
-    const rows = await r.json();
-    const byGuia = {};
-    rows.forEach(h => { if (!byGuia[h.guia_id]) byGuia[h.guia_id] = []; byGuia[h.guia_id].push(h); });
-    guiasAtivas.forEach(g => { _mem['hist_ims_' + g.id] = byGuia[g.id] || []; });
-  } catch(e) { console.warn('hist_ims bulk load error:', e.message); }
+  await _carregarHistTabela('hist_ims', 'hist_ims_');
 }
 
 // ===== TABELA DEDICADA: lotes =====
@@ -2684,7 +2733,7 @@ function sbUpsertLotes(lotes) {
   }));
   fetchComRenovacao(`${SB_URL}/lotes?on_conflict=id`, {
     method: 'POST', headers: getHeaders(), body: JSON.stringify(rows)
-  }).catch(e => console.warn('Lotes upsert error:', e.message));
+  }).catch(e => _sbErro('lotes', e.message));
 }
 
 async function carregarLotes() {
@@ -2706,13 +2755,13 @@ function sbUpsertGlosas(glosas) {
   }));
   fetchComRenovacao(`${SB_URL}/glosas?on_conflict=id`, {
     method: 'POST', headers: getHeaders(), body: JSON.stringify(rows)
-  }).catch(e => console.warn('Glosas upsert error:', e.message));
+  }).catch(e => _sbErro('glosas', e.message));
 }
 
 function sbDeleteGlosa(id) {
   fetchComRenovacao(`${SB_URL}/glosas?id=eq.${id}`, {
     method: 'DELETE', headers: getHeaders()
-  }).catch(e => console.warn('Glosa delete error:', e.message));
+  }).catch(e => _sbErro('glosa delete', e.message));
 }
 
 async function carregarGlosas() {
@@ -2821,10 +2870,9 @@ async function carregarDados() {
     _carregamentoOk = true;
     _erroCarregamento = null;
     initIdSeq();
-    // Carrega históricos das guias ativas após ter as guias no cache
-    carregarTodosHistProcs();
-    carregarTodosHistStatus();
-    carregarTodosHistIMS();
+    // Carrega históricos de TODAS as guias (inclusive com alta) antes de liberar o app,
+    // para que relatórios, financeiro e recálculo de valores enxerguem os procedimentos
+    await Promise.all([carregarTodosHistProcs(), carregarTodosHistStatus(), carregarTodosHistIMS()]);
   } catch(e) {
     clearTimeout(timer);
     const motivo = e.name === 'AbortError' ? 'Tempo limite de 6s esgotado' : e.message;
@@ -3158,9 +3206,9 @@ async function doLogin() {
     if (_refreshTemp) sessionStorage.setItem('fisioraja_refresh', _refreshTemp);
     await carregarDados();
 
-    const emailLow = email.toLowerCase();
-    const user = await Profiles.getByEmail(emailLow).catch(() => null)
-      || DB.get('usuarios').find(u => (u.email||'').toLowerCase() === emailLow && u.ativo == 1);
+    // Perfil vem só da tabela profiles (protegida por RLS), pelo UUID do Auth.
+    // Sem fallback para o store: lá qualquer usuário poderia se promover a Gestão.
+    const user = await Profiles.getMine().catch(() => null);
 
     // Remove token se perfil não existe ou está inativo
     if (!user || user.ativo == 0) {
@@ -3580,7 +3628,7 @@ async function renderLogAcesso() {
 function renderInativados() {
   const el = document.getElementById('lista-inativados');
   if (!el) return;
-  if (currentUser?.perfil !== 'admin') {
+  if (currentUser?.perfil !== 'Gestão') {
     el.innerHTML = '<span style="color:#888;">Acesso restrito a administradores.</span>';
     return;
   }
@@ -5160,13 +5208,21 @@ function mudarDataProc(delta) {
 
 // Recalcula guia.valor somando procedimentos realizados não cancelados
 // Usa proc.valor_convenio se existir no convênio, caso contrário 0 (valor real deve ser cadastrado no convênio)
-function recalcularValorGuia(guiaId) {
+// Recalcula o valor de uma guia a partir dos procedimentos não cancelados.
+// Retorna true se o valor mudou. Com salvar=true grava SÓ esta guia no banco
+// (não regrava a lista inteira, evitando sobrescrever alterações de colegas).
+function recalcularValorGuia(guiaId, salvar = true) {
   const guias = DB.get('guias');
   const idx = guias.findIndex(g => g.id === guiaId);
-  if (idx < 0) return;
-  const hist = (DB.get('hist_procs_' + guiaId) || []).filter(h => !h.cancelado);
-  const procs = DB.get('procedimentos');
-  const conv = (DB.get('convenios')||[]).find(c => c.id === guias[idx].convenio_id) || {};
+  if (idx < 0) return false;
+  const guia = guias[idx];
+  // Guia já faturada (lote fechado) não tem o valor alterado
+  if (guia.contabilizado) return false;
+  // Sem histórico carregado do banco, não há como recalcular: preserva o valor atual
+  const histBruto = DB.get('hist_procs_' + guiaId) || [];
+  if (!_histProcsCarregados.has(guiaId) && !histBruto.length) return false;
+  const hist = histBruto.filter(h => !h.cancelado);
+  const conv = (DB.get('convenios')||[]).find(c => c.id === guia.convenio_id) || {};
   const procsConv = conv.procedimentos || [];
   let total = 0;
   hist.forEach(h => {
@@ -5174,19 +5230,27 @@ function recalcularValorGuia(guiaId) {
     const valor = entradaConv?.valor ?? 0;
     total += Number(valor) || 0;
   });
-  guias[idx].valor = total > 0
+  const novoValor = total > 0
     ? total.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})
     : 'R$ 0,00';
-  guias[idx].dias = hist.length;
-  DB.set('guias', guias);
+  const mudou = guia.valor !== novoValor || guia.dias !== hist.length;
+  guia.valor = novoValor;
+  guia.dias = hist.length;
+  if (mudou && salvar) {
+    if (!_carregamentoOk) return mudou;
+    sbUpsertGuias([guia]);
+  }
+  return mudou;
 }
 
 function recalcularTodosValores() {
-  const guias = DB.get('guias');
-  if (!guias.length) { showToast('Nenhuma guia encontrada.', '#e74c3c'); return; }
-  guias.forEach(g => recalcularValorGuia(g.id));
+  if (!_carregamentoOk) { alert('Conexão com o banco ainda não confirmada. Tente novamente em instantes.'); return; }
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.contabilizado);
+  if (!guias.length) { showToast('Nenhuma guia em aberto para recalcular.', '#e74c3c'); return; }
+  const alteradas = guias.filter(g => recalcularValorGuia(g.id, false));
+  if (alteradas.length) sbUpsertGuias(alteradas);
   renderPainelFinanceiro();
-  showToast(`Valores recalculados para ${guias.length} guia${guias.length > 1 ? 's' : ''}!`, '#27ae60');
+  showToast(`${alteradas.length} de ${guias.length} guia${guias.length > 1 ? 's' : ''} com valor atualizado (guias faturadas não são alteradas).`, '#27ae60', 5000);
 }
 
 async function salvarProcedimento() {
@@ -5201,6 +5265,7 @@ async function salvarProcedimento() {
   const novaEntrada = {proc_id: proc.id, nome: proc.nome, data: dataFmt, usuario: usuarioAtual()};
   // INSERT atômico na tabela — resolve race condition de múltiplos lançamentos simultâneos
   const row = await sbInsertHistProc(pacienteAtivo.id, novaEntrada);
+  _histProcsCarregados.add(pacienteAtivo.id);
   const entradaComId = row ? { ...novaEntrada, _row_id: row.id, status_fat: row.status_fat || 'Pendente' } : novaEntrada;
   const hist = DB.get('hist_procs_' + pacienteAtivo.id) || [];
   hist.push(entradaComId);
@@ -7124,9 +7189,10 @@ function abrirModalGerenciarLote(loteId) {
   const guias = DB.get('guias');
   const pacs  = DB.get('pacientes');
 
-  // Elegíveis: têm alta, mesmo convênio, não contabilizadas em outro lote
+  // Elegíveis: têm alta, mesmo convênio, não inativadas, não contabilizadas em outro lote
   const elegiveis = guias.filter(g =>
     g.alta &&
+    !g.inativo &&
     g.convenio_id === lote.convenio_id &&
     (!g.lote_id || g.lote_id === loteId)
   );
@@ -7659,8 +7725,7 @@ function exportarBackup() {
       });
       if (r.ok) {
         const authUser = await r.json();
-        const user = await Profiles.getByEmail(authUser.email).catch(() => null)
-          || DB.get('usuarios').find(u => u.email === authUser.email && u.ativo == 1);
+        const user = await Profiles.getMine().catch(() => null);
         if (user && user.ativo != 0) {
           _ativarSessao(user);
           restaurou = true;
