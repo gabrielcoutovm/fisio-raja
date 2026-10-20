@@ -715,10 +715,13 @@
       <div class="page-title">Atendimentos Geral</div>
       <div class="filter-card">
         <div class="filter-row">
-          <div class="filter-group"><label>Setor</label><select><option>Todos</option></select></div>
-          <div class="filter-group"><label>Convênio</label><select><option>Todos</option></select></div>
-          <div class="filter-group"><label>Data</label><input type="text" value="17/06/2026 - 19/06/2026" /></div>
-          <div class="filter-group" style="justify-content:flex-end;flex:0"><button class="btn btn-success" style="white-space:nowrap" onclick="exportarCSV('atendimentos')">&#8659; CSV</button></div>
+          <div class="filter-group"><label>Convênio</label><select id="rel-atend-conv"><option value="">Todos</option></select></div>
+          <div class="filter-group"><label>De</label><input type="date" id="rel-atend-de" /></div>
+          <div class="filter-group"><label>Até</label><input type="date" id="rel-atend-ate" /></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0;gap:8px;display:flex;">
+            <button class="btn btn-primary" onclick="renderRelAtend()">Filtrar</button>
+            <button class="btn btn-success" style="white-space:nowrap" onclick="exportarCSV('atendimentos')">&#8659; CSV</button>
+          </div>
         </div>
       </div>
       <div id="rel-atend-container"></div>
@@ -729,14 +732,17 @@
       <div class="page-title">Relatório de Pacientes</div>
       <div class="filter-card">
         <div class="filter-row">
-          <div class="filter-group"><label>Setor</label><select><option>Todos</option></select></div>
-          <div class="filter-group"><label>Convênios</label><input type="text" placeholder="Todos" /></div>
-          <div class="filter-group"><label>Status Guia</label><select><option>Todos</option><option>Finalizada</option><option>Em aberto</option></select></div>
-          <div class="filter-group"><label>Tipo da Alta</label><select><option>Todos</option></select></div>
+          <div class="filter-group"><label>Convênio</label><select id="rel-pac-conv"><option value="">Todos</option></select></div>
+          <div class="filter-group"><label>Status Guia</label><select id="rel-pac-status"><option value="">Todos</option><option value="aberto">Em aberto</option><option value="alta">Com alta</option></select></div>
+          <div class="filter-group" style="justify-content:flex-end;flex:0;gap:8px;display:flex;">
+            <button class="btn btn-primary" onclick="renderRelPacientes()">Filtrar</button>
+            <button class="btn btn-primary btn-sm" onclick="window.print()">Imprimir</button>
+            <button class="btn btn-success btn-sm" onclick="exportarCSV('pacientes')">&#8659; CSV</button>
+          </div>
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><h3>&#9776; Relatório de Pacientes</h3><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="window.print()">Imprimir</button><button class="btn btn-success btn-sm" onclick="exportarCSV('pacientes')">&#8659; CSV</button></div></div>
+        <div class="card-header"><h3>&#9776; Relatório de Pacientes</h3></div>
         <table><thead><tr><th>Nome</th><th>Nº Atendimento</th><th>Convênio</th><th>Status Guia</th><th>Valor</th><th>Data Internação</th><th>Data Alta</th></tr></thead><tbody id="tb-rel-pacientes"></tbody></table>
       </div>
     </div>
@@ -1276,7 +1282,7 @@
       <div class="page-title">Profissionais</div>
       <div class="search-bar">
         <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-profissionais', this.value)" />
-        <button class="btn btn-success" onclick="openModal('modal-profissional')">+ Novo Profissional</button>
+        <button class="btn btn-success" onclick="document.getElementById('prof-edit-id').value='';openModal('modal-profissional')">+ Novo Profissional</button>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Profissionais</h3></div>
@@ -1290,7 +1296,7 @@
       <div class="search-bar">
         <input type="text" placeholder="Pesquisar por código ou nome..." oninput="filterProcedimentos(this.value)" />
         <button class="btn btn-primary" onclick="abrirTussModal()" style="background:#1a6bb5;">🔍 Buscar na TUSS</button>
-        <button class="btn btn-success" onclick="openModal('modal-procedimento')">+ Manual</button>
+        <button class="btn btn-success" onclick="document.getElementById('proc-edit-id').value='';document.getElementById('proc-modal-titulo').textContent='Novo Procedimento';openModal('modal-procedimento')">+ Manual</button>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Procedimentos Cadastrados</h3></div>
@@ -1303,7 +1309,7 @@
       <div class="page-title">Setores</div>
       <div class="search-bar">
         <input type="text" placeholder="Digite o nome para pesquisar" oninput="filterTable('tb-cad-setores', this.value)" />
-        <button class="btn btn-success" onclick="openModal('modal-setor')">+ Novo Setor</button>
+        <button class="btn btn-success" onclick="delete document.getElementById('modal-setor').dataset.editId;document.getElementById('modal-setor-titulo').textContent='Novo Setor';openModal('modal-setor')">+ Novo Setor</button>
       </div>
       <div class="card">
         <div class="card-header"><h3>&#9776; Lista de Setores</h3></div>
@@ -1677,7 +1683,8 @@
 <!-- Modal Paciente -->
 <div class="modal-overlay" id="modal-paciente">
   <div class="modal">
-    <h2>Novo Paciente</h2>
+    <h2 id="modal-paciente-titulo">Novo Paciente</h2>
+    <input type="hidden" id="pac-edit-id" />
     <div class="form-row">
       <div class="form-group"><label>Nome Completo *</label><input type="text" id="pac-nome" /></div>
       <div class="form-group"><label>Data de Nascimento</label><input type="date" id="pac-nascimento" /></div>
@@ -1686,7 +1693,7 @@
       <div class="form-group"><label>Convênio *</label><select id="pac-convenio"><option value="">Selecione</option></select></div>
     </div>
     <div class="form-actions">
-      <button class="btn" onclick="closeModal('modal-paciente')">Cancelar</button>
+      <button class="btn" onclick="document.getElementById('pac-edit-id').value='';closeModal('modal-paciente')">Cancelar</button>
       <button class="btn btn-success" onclick="savePaciente()">Salvar</button>
     </div>
   </div>
@@ -3424,7 +3431,7 @@ function renderPacientes() {
     const conv = convs.find(c=>c.id===p.convenio_id)||{};
     const idade = p.nascimento ? Math.floor((new Date()-new Date(p.nascimento))/31557600000) : '-';
     return `<tr data-search="${esc(p.nome).toLowerCase()}"><td>${esc(p.nome)}</td><td>${idade}</td><td>${esc(conv.nome||'-')}</td>
-      <td><button class="btn btn-primary btn-sm">Editar</button></td></tr>`;
+      <td><button class="btn btn-primary btn-sm" onclick="abrirEditarPaciente(${p.id})">Editar</button></td></tr>`;
   }).join('');
   updateConvenioSelects();
 }
@@ -3933,11 +3940,20 @@ function renderMapaOcupacao() {
 
 function renderRelAtend() {
   const guias = DB.get('guias'), pacs = DB.get('pacientes'), convs = DB.get('convenios'), procs = DB.get('procedimentos');
+  // Popula select de convênios se vazio
+  const convSel = document.getElementById('rel-atend-conv');
+  if (convSel && convSel.options.length <= 1) convs.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nome; convSel.appendChild(o); });
+  const filtroConvId = convSel ? parseInt(convSel.value)||null : null;
+  const filtroDe = document.getElementById('rel-atend-de')?.value || '';
+  const filtroAte = document.getElementById('rel-atend-ate')?.value || '';
   let html = '';
   guias.forEach(g => {
+    if (filtroConvId && g.convenio_id !== filtroConvId) return;
     const pac = pacs.find(p=>p.id===g.paciente_id)||{};
     const conv = convs.find(c=>c.id===g.convenio_id)||{};
-    const hist = (DB.get('hist_procs_'+g.id)||[]).filter(h=>!h.cancelado);
+    let hist = (DB.get('hist_procs_'+g.id)||[]).filter(h=>!h.cancelado);
+    if (filtroDe) hist = hist.filter(h => paraISO(h.data) >= filtroDe);
+    if (filtroAte) hist = hist.filter(h => paraISO(h.data) <= filtroAte);
     if (!hist.length) return;
     const rows = hist.map(h => {
       const proc = procs.find(p=>p.id===h.proc_id)||{};
@@ -3956,7 +3972,18 @@ function renderRelAtend() {
 
 function renderRelPacientes() {
   const pacs = DB.get('pacientes'), convs = DB.get('convenios'), guias = DB.get('guias');
-  const rows = pacs.map(p => {
+  // Popula select de convênios se vazio
+  const convSel = document.getElementById('rel-pac-conv');
+  if (convSel && convSel.options.length <= 1) convs.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nome; convSel.appendChild(o); });
+  const filtroConvId = convSel ? parseInt(convSel.value)||null : null;
+  const filtroStatus = document.getElementById('rel-pac-status')?.value || '';
+  const rows = pacs.filter(p => {
+    const guia = guias.find(g=>g.paciente_id===p.id)||{};
+    if (filtroConvId && (p.convenio_id||guia.convenio_id) !== filtroConvId) return false;
+    if (filtroStatus === 'alta' && !guia.alta) return false;
+    if (filtroStatus === 'aberto' && guia.alta) return false;
+    return true;
+  }).map(p => {
     const guia = guias.find(g=>g.paciente_id===p.id)||{};
     const conv = convs.find(c=>c.id===(p.convenio_id||guia.convenio_id))||{};
     const temAlta = !!guia.alta;
@@ -4058,12 +4085,33 @@ function initIdSeq() {
 
 function getNextId(key) { return ++_idSeq; }
 
+function abrirEditarPaciente(id) {
+  const p = (DB.get('pacientes')||[]).find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('pac-edit-id').value = id;
+  document.getElementById('modal-paciente-titulo').textContent = 'Editar Paciente';
+  document.getElementById('pac-nome').value = p.nome || '';
+  document.getElementById('pac-nascimento').value = p.nascimento || '';
+  document.getElementById('pac-convenio').value = p.convenio_id || '';
+  openModal('modal-paciente');
+}
+
 function savePaciente() {
   const nome = document.getElementById('pac-nome').value.trim();
   if (!nome) { alert('Nome é obrigatório'); return; }
-  DB.push('pacientes',{id:getNextId('pacientes'),nome,nascimento:document.getElementById('pac-nascimento').value,convenio_id:parseInt(document.getElementById('pac-convenio').value)||null});
+  const editId = parseInt(document.getElementById('pac-edit-id').value);
+  const obj = { nome, nascimento: document.getElementById('pac-nascimento').value, convenio_id: parseInt(document.getElementById('pac-convenio').value)||null };
+  if (editId) {
+    const lista = DB.get('pacientes');
+    const idx = lista.findIndex(p => p.id === editId);
+    if (idx >= 0) { lista[idx] = {...lista[idx], ...obj}; DB.set('pacientes', lista); }
+    document.getElementById('pac-edit-id').value = '';
+  } else {
+    DB.push('pacientes', {id: getNextId('pacientes'), ...obj});
+  }
+  document.getElementById('modal-paciente-titulo').textContent = 'Novo Paciente';
   closeModal('modal-paciente'); renderPacientes(); showToast('Paciente salvo!');
-  document.getElementById('pac-nome').value='';
+  document.getElementById('pac-nome').value = '';
 }
 
 let _convProcsTemp = [];
@@ -4809,9 +4857,10 @@ function showToast(msg, color, duration) {
 }
 
 // ===== CHARTS =====
-let chartsInit = false;
+let _chartProcInst = null, _chartSetoresInst = null;
 function initCharts() {
-  if (chartsInit) return; chartsInit=true;
+  if (_chartProcInst) { _chartProcInst.destroy(); _chartProcInst = null; }
+  if (_chartSetoresInst) { _chartSetoresInst.destroy(); _chartSetoresInst = null; }
   const labels=Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);return `${d.getDate()}/${d.getMonth()+1}`;});
   // Contar procedimentos reais por dia (últimos 30 dias)
   const guiasAll = DB.get('guias');
@@ -4828,13 +4877,13 @@ function initCharts() {
       }
     });
   });
-  new Chart(document.getElementById('chartProcedimentos'),{
+  _chartProcInst = new Chart(document.getElementById('chartProcedimentos'),{
     type:'line',data:{labels,datasets:[{data:labels.map(l=>contsPorDia[l]),borderColor:'#4a90d9',backgroundColor:'rgba(74,144,217,0.08)',fill:true,tension:0.4,pointRadius:0}]},
     options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0,beginAtZero:true}}}
   });
   const setores=DB.get('setores');
   const guiasAtivas=DB.get('guias').filter(g=>!g.alta);
-  new Chart(document.getElementById('chartSetores'),{
+  _chartSetoresInst = new Chart(document.getElementById('chartSetores'),{
     type:'bar',data:{labels:setores.map(s=>s.nome),datasets:[
       {label:'Leitos',data:setores.map(s=>s.leitos),backgroundColor:'#4a90d9'},
       {label:'Ocupados',data:setores.map(s=>guiasAtivas.filter(g=>g.setor&&g.setor.startsWith(s.nome+' - ')).length),backgroundColor:'#27ae60'}
@@ -4903,7 +4952,7 @@ function abrirPacienteDetalhe(guiaId) {
 
   // Status
   const hist = DB.get('hist_status_' + guia.id);
-  const statusAtual = hist && hist.length ? hist[hist.length-1] : {nome:'N1', cor:'#c8e6c9'};
+  const statusAtual = (hist && hist.filter(h => h.nome && h.cor).slice(-1)[0]) || {nome:'N1', cor:'#c8e6c9'};
   document.getElementById('det-status').textContent = statusAtual.nome;
   document.getElementById('det-status-box').style.background = statusAtual.cor;
 
@@ -4941,12 +4990,15 @@ function abrirPacienteDetalhe(guiaId) {
   document.getElementById('proc-data').value = hoje2;
   document.getElementById('proc-ims-prev').textContent = guia.ims_previo || '-';
   document.getElementById('proc-ims-adm').textContent = guia.ims_admissao || '-';
-  const procs = DB.get('procedimentos');
-  document.getElementById('proc-lista').innerHTML = procs.map((p,i) => `
+  const _todosProcs = DB.get('procedimentos');
+  const _convAtual = DB.get('convenios').find(c => c.id === pacienteAtivo?.convenio_id);
+  const _convProcIds = _convAtual?.procedimentos?.length ? _convAtual.procedimentos.map(p => p.proc_id) : null;
+  const procs = _convProcIds ? _todosProcs.filter(p => _convProcIds.includes(p.id)) : _todosProcs;
+  document.getElementById('proc-lista').innerHTML = procs.length ? procs.map((p,i) => `
     <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;transition:background 0.1s;" onmouseover="this.style.background='#f5f8ff'" onmouseout="this.style.background=''">
       <input type="radio" name="proc-sel" value="${p.id}" style="width:16px;height:16px;" />
       <span style="font-size:13px;">${p.nome}</span>
-    </label>`).join('');
+    </label>`).join('') : '<div style="padding:14px;color:#aaa;text-align:center;font-size:13px;">Nenhum procedimento cadastrado para este convênio.</div>';
 
   // Modal status
   document.getElementById('status-atual-display').textContent = statusAtual.nome;
@@ -5374,7 +5426,7 @@ function salvarMedidas() {
     const input = document.getElementById('med-val-' + m.id);
     if (input && input.value !== '') {
       const hist = JSON.parse(DB.getItem('hist_medidas_' + pacienteAtivo.id) || '[]');
-      hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: hojeISO(), usuario: usuarioAtual()});
+      hist.push({medida: m.nome, valor: input.value, unidade: m.unidade, data: dataVal || hojeISO(), usuario: usuarioAtual()});
       DB.setItem('hist_medidas_' + pacienteAtivo.id, JSON.stringify(hist));
       salvou = true;
     }
@@ -5502,7 +5554,7 @@ function gerarXMLAltaAutomatico(guia) {
 
   const now = new Date();
   const ts = now.toISOString().replace(/[-:T]/g,'').slice(0,14);
-  const dataHoje = now.toISOString().split('T')[0];
+  const dataHoje = hojeISO();
 
   // Monta itens de procedimento
   const itensXML = histProcs.map((hp, i) => {
@@ -5566,7 +5618,7 @@ function gerarXMLAltaAutomatico(guia) {
           </ans:dadosSolicitante>
           <ans:dadosAtendimento>
             <ans:dataInicioFaturamento>${guia.internacao ? guia.internacao.split('/').reverse().join('-') : dataHoje}</ans:dataInicioFaturamento>
-            <ans:dataFimFaturamento>${guia.alta || dataHoje}</ans:dataFimFaturamento>
+            <ans:dataFimFaturamento>${guia.alta ? paraISO(guia.alta) : dataHoje}</ans:dataFimFaturamento>
             <ans:tipoAtendimento>06</ans:tipoAtendimento>
             <ans:indicacaoAcidente>9</ans:indicacaoAcidente>
           </ans:dadosAtendimento>
@@ -5850,7 +5902,7 @@ function salvarAlterarMeta() {
   pacienteAtivo = guias[idx];
   // Registra no histórico de status
   const histStatus = DB.get('hist_status_' + pacienteAtivo.id);
-  const entradaMeta = { data: hojeISO(), status: `Meta alterada: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, usuario: currentUser?.nome || 'Sistema' };
+  const entradaMeta = { data: hojeISO(), nome: `Meta: ${anterior} → ${nova}${motivo?' ('+motivo+')':''}`, cor: '#8e44ad', usuario: currentUser?.nome || 'Sistema' };
   histStatus.push(entradaMeta);
   _mem['hist_status_' + pacienteAtivo.id] = histStatus;
   sbInsertHistStatus(pacienteAtivo.id, entradaMeta);
@@ -5995,7 +6047,7 @@ function gerarRelatorioExecutivoPDF() {
     metaHoje += meta;
     atendHoje += DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISOlocal&&!p.cancelado).length;
   });
-  guias.filter(g=>!g.inativo&&g.alta&&g.alta.startsWith(hojeISOlocal.slice(0,7))).forEach(()=>altasMes++);
+  guias.filter(g=>!g.inativo&&g.alta&&paraISO(g.alta).startsWith(hojeISOlocal.slice(0,7))).forEach(()=>altasMes++);
   const cobHoje = metaHoje > 0 ? Math.round(atendHoje/metaHoje*100) : 0;
 
   const glosas = DB.get('glosas') || [];
@@ -6117,7 +6169,7 @@ function renderCoberturaAssistencial() {
       <td>${g.meta_diaria ? g.meta_diaria.replace('_',' ') : '1x'}</td>
       <td style="font-weight:600;">${realizados}</td>
       <td style="color:${pendentes>0?'#e74c3c':'#27ae60'};font-weight:600;">${pendentes}</td>
-      <td>${ultAtend !== '-' ? new Date(ultAtend+'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
+      <td>${ultAtend !== '-' ? new Date(paraISO(ultAtend)+'T00:00:00').toLocaleDateString('pt-BR') : '-'}</td>
       <td>${profNome}</td>
       <td><span style="background:${cor};color:#fff;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:600;">${situacao}</span></td>
       <td><button class="btn btn-primary btn-sm" onclick="abrirPacienteDetalhe(${g.id})">Ver</button></td>
@@ -6240,7 +6292,7 @@ function renderIndicadoresCobertura() {
   let totalAtend = 0, totalMeta = 0, deficitTotal = 0;
   const cobPorDia = {}, setorData = {};
 
-  guias.forEach(g => {
+  guias.filter(g => !g.inativo && !g.alta).forEach(g => {
     if (filtroSetorNomeInd && !(g.setor || '').startsWith(filtroSetorNomeInd + ' - ')) return;
     const meta = metaMap[g.meta_diaria] ?? 1;
     const hist = DB.get('hist_procs_' + g.id);
@@ -6261,7 +6313,7 @@ function renderIndicadoresCobertura() {
     });
   });
 
-  const nPac = guias.filter(g => !filtroSetorNomeInd || (g.setor||'').startsWith(filtroSetorNomeInd+' - ')).length;
+  const nPac = guias.filter(g => !g.inativo && !g.alta && (!filtroSetorNomeInd || (g.setor||'').startsWith(filtroSetorNomeInd+' - '))).length;
   const nDias = dias.length || 1;
   document.getElementById('ind-elegíveis').textContent = totalMeta > 0 ? Math.round((totalAtend/totalMeta)*100)+'%' : '0%';
   document.getElementById('ind-atend-dia').textContent = (totalAtend/(nPac*nDias||1)).toFixed(1);
