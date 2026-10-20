@@ -595,10 +595,9 @@
       <div class="filter-card">
         <div class="filter-label">Filtros</div>
         <div class="filter-row">
-          <div class="filter-group"><label>Convênio</label><select><option>Todos</option></select></div>
-          <div class="filter-group"><label>Status</label><select><option>Todos</option><option>Arquivo Gerado</option><option>Enviado</option></select></div>
-          <div class="filter-group"><label>Nº do Lote</label><input type="text" /></div>
-          <div class="filter-group"><label>Paciente ou N. Atendimento</label><input type="text" placeholder="Buscar..." /></div>
+          <div class="filter-group"><label>Convênio</label><select id="flt-lote-conv" onchange="renderLotesPendente()"><option value="">Todos</option></select></div>
+          <div class="filter-group"><label>Status</label><select id="flt-lote-status" onchange="renderLotesPendente()"><option value="">Todos</option><option>Pendente</option><option>Arquivo Gerado</option><option>Enviado</option><option>Aguardando Resposta</option><option>Pago</option><option>Glosado Parcial</option><option>Glosado Total</option></select></div>
+          <div class="filter-group"><label>Competência</label><input type="text" id="flt-lote-comp" oninput="renderLotesPendente()" placeholder="MM/AAAA" maxlength="7" /></div>
         </div>
       </div>
       <div class="card">
@@ -615,9 +614,9 @@
       <div class="page-title">Lotes de Guias - Concluídas</div>
       <div class="filter-card">
         <div class="filter-row">
-          <div class="filter-group"><label>Convênio</label><select><option>Todos</option></select></div>
-          <div class="filter-group"><label>Nº do Lote</label><input type="text" /></div>
-          <div class="filter-group"><label>Paciente ou N. Atendimento</label><input type="text" placeholder="Buscar..." /></div>
+          <div class="filter-group"><label>Convênio</label><select id="flt-lotec-conv" onchange="renderLotesConcluida()"><option value="">Todos</option></select></div>
+          <div class="filter-group"><label>Competência</label><input type="text" id="flt-lotec-comp" oninput="renderLotesConcluida()" placeholder="MM/AAAA" maxlength="7" /></div>
+          <div class="filter-group"><label>Status Final</label><select id="flt-lotec-status" onchange="renderLotesConcluida()"><option value="">Todos</option><option>Pago</option><option>Glosado Parcial</option><option>Glosado Total</option><option>Concluído</option></select></div>
         </div>
       </div>
       <div class="card">
@@ -3493,14 +3492,42 @@ function calcTotalLote(lote) {
   return {total: fmtMoeda(total), qtd: guiasLote.length || lote.guias || 0};
 }
 
+const LOTE_STATUSES = ['Pendente','Arquivo Gerado','Enviado','Aguardando Resposta','Pago','Glosado Parcial','Glosado Total'];
+const LOTE_STATUS_COR = {
+  'Pendente':'#f39c12','Arquivo Gerado':'#4a90d9','Enviado':'#8e44ad',
+  'Aguardando Resposta':'#e67e22','Pago':'#27ae60',
+  'Glosado Parcial':'#e74c3c','Glosado Total':'#c0392b'
+};
+
 function renderLotesPendente() {
-  const lotes = DB.get('lotes').filter(l=>!l.concluido);
+  let lotes = DB.get('lotes').filter(l=>!l.concluido);
+
+  // Popula filtro de convênio na primeira vez
+  const selConv = document.getElementById('flt-lote-conv');
+  if (selConv && selConv.options.length <= 1) {
+    const convs = [...new Set(lotes.map(l=>l.convenio).filter(Boolean))];
+    convs.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selConv.appendChild(o); });
+  }
+
+  // Aplica filtros
+  const filtConv   = selConv?.value || '';
+  const filtStatus = document.getElementById('flt-lote-status')?.value || '';
+  const filtComp   = (document.getElementById('flt-lote-comp')?.value || '').trim();
+  if (filtConv)   lotes = lotes.filter(l => l.convenio === filtConv);
+  if (filtStatus) lotes = lotes.filter(l => l.status === filtStatus);
+  if (filtComp)   lotes = lotes.filter(l => (l.competencia||'').startsWith(filtComp));
+
+  const statusOpts = LOTE_STATUSES.map(s=>`<option value="${s}">${s}</option>`).join('');
   document.getElementById('tb-lotes-pendente').innerHTML = lotes.length ? lotes.map(l => {
     const {total, qtd} = calcTotalLote(l);
-    const protocolo = l.num_protocolo ? `<span style="font-size:11px;color:#555;">${l.num_protocolo}</span>` : '<span style="font-size:11px;color:#bbb;">—</span>';
-    return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
-    <td><span style="color:#f39c12;font-weight:600;">${l.status}</span></td>
-    <td>${l.data}</td><td>${protocolo}</td><td>${qtd}</td><td>${total}</td>
+    const protocolo = l.num_protocolo ? `<span style="font-size:11px;color:#555;">${esc(l.num_protocolo)}</span>` : '<span style="font-size:11px;color:#bbb;">—</span>';
+    const cor = LOTE_STATUS_COR[l.status] || '#888';
+    const statusSel = `<select style="border:1px solid ${cor};color:${cor};font-weight:600;font-size:12px;border-radius:4px;padding:2px 4px;background:#fff;cursor:pointer;" onchange="alterarStatusLote(${l.id},this.value)">
+      ${LOTE_STATUSES.map(s=>`<option value="${s}"${s===l.status?' selected':''}>${s}</option>`).join('')}
+    </select>`;
+    return `<tr><td>${esc(l.convenio||'-')}</td><td>${l.competencia||'-'}</td><td>#${l.id}</td>
+    <td>${statusSel}</td>
+    <td>${l.data||'-'}</td><td>${protocolo}</td><td style="text-align:center;font-weight:700;">${qtd}</td><td style="font-weight:700;">${total}</td>
     <td style="display:flex;gap:5px;flex-wrap:nowrap;">
       <button class="btn btn-sm btn-primary" onclick="abrirModalGerenciarLote(${l.id})">Gerenciar</button>
       <button class="btn btn-sm" style="background:#0a1628;color:#fff;font-size:11px;" onclick="gerarXMLLote(${l.id})">XML</button>
@@ -3509,15 +3536,50 @@ function renderLotesPendente() {
   }).join('') : '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote pendente</td></tr>';
 }
 
+function alterarStatusLote(loteId, novoStatus) {
+  const lotes = DB.get('lotes');
+  const idx = lotes.findIndex(l => l.id === loteId);
+  if (idx < 0) return;
+  lotes[idx].status = novoStatus;
+  // Se marcou Pago ou Glosado Total, pergunta se quer fechar o lote
+  if ((novoStatus === 'Pago' || novoStatus === 'Glosado Total') &&
+      confirm(`Lote #${loteId} marcado como "${novoStatus}".\nDeseja fechar o lote agora?`)) {
+    DB.set('lotes', lotes);
+    _executarFechamentoLote(loteId);
+    return;
+  }
+  DB.set('lotes', lotes);
+  renderLotesPendente();
+  showToast(`Status do Lote #${loteId} atualizado para "${novoStatus}"`, '#27ae60');
+}
+
 function renderLotesConcluida() {
-  const lotes = DB.get('lotes').filter(l=>l.concluido);
+  let lotes = DB.get('lotes').filter(l=>l.concluido);
+
+  // Popula filtro de convênio na primeira vez
+  const selConv = document.getElementById('flt-lotec-conv');
+  if (selConv && selConv.options.length <= 1) {
+    const convs = [...new Set(lotes.map(l=>l.convenio).filter(Boolean))];
+    convs.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; selConv.appendChild(o); });
+  }
+
+  const filtConv   = selConv?.value || '';
+  const filtComp   = (document.getElementById('flt-lotec-comp')?.value || '').trim();
+  const filtStatus = document.getElementById('flt-lotec-status')?.value || '';
+  if (filtConv)   lotes = lotes.filter(l => l.convenio === filtConv);
+  if (filtComp)   lotes = lotes.filter(l => (l.competencia||'').startsWith(filtComp));
+  if (filtStatus) lotes = lotes.filter(l => l.status === filtStatus || (filtStatus === 'Concluído' && !LOTE_STATUS_COR[l.status]));
+
   document.getElementById('tb-lotes-concluida').innerHTML = lotes.length ? lotes.map(l => {
     const {total, qtd} = calcTotalLote(l);
-    const protocolo = l.num_protocolo ? `<span style="font-size:11px;color:#555;">${l.num_protocolo}</span>` : '<span style="font-size:11px;color:#bbb;">—</span>';
-    return `<tr><td>${l.convenio}</td><td>${l.competencia||'-'}</td><td>${l.id}</td>
-    <td><span style="color:#27ae60;font-weight:600;">Concluído</span></td>
-    <td>${l.data}</td><td>${l.data_conclusao||'-'}</td><td>${protocolo}</td><td>${qtd}</td><td>${total}</td></tr>`;
-  }).join('') : '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote concluído</td></tr>';
+    const protocolo = l.num_protocolo ? `<span style="font-size:11px;color:#555;">${esc(l.num_protocolo)}</span>` : '<span style="font-size:11px;color:#bbb;">—</span>';
+    const cor = LOTE_STATUS_COR[l.status] || '#27ae60';
+    const statusLabel = l.status || 'Concluído';
+    return `<tr><td>${esc(l.convenio||'-')}</td><td>${l.competencia||'-'}</td><td>#${l.id}</td>
+    <td><span style="color:${cor};font-weight:600;">${statusLabel}</span></td>
+    <td>${l.data||'-'}</td><td>${l.data_conclusao||'-'}</td><td>${protocolo}</td>
+    <td style="text-align:center;font-weight:700;">${qtd}</td><td style="font-weight:700;">${total}</td></tr>`;
+  }).join('') : '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:20px;">Nenhum lote concluído</td></tr>';
 }
 
 function getLeitosNomes(s) {
