@@ -1872,7 +1872,7 @@
       <strong>Níveis de acesso:</strong><br>
       🔐 <strong>Gestão</strong> — Dashboard, Guias, Lotes, Mapas, Relatórios, Cadastros, Usuários<br>
       🩺 <strong>Fisioterapeuta</strong> — Dashboard, Mapas, Relatórios, Cadastros<br>
-      📋 <strong>Secretaria</strong> — Acesso total igual à Gestão (Guias, Lotes, Mapas, Relatórios, XML TISS, Cadastros, Usuários)
+      📋 <strong>Secretaria</strong> — Guias, Lotes, Mapas, XML TISS, Cadastros (sem acesso a financeiro, relatórios LGPD e gestão de usuários)
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-usuario')">Cancelar</button>
@@ -2800,16 +2800,21 @@ const DB = {
     if (k === 'pacientes') {
       // Detecta exclusões comparando com o cache anterior e apaga na tabela
       const antes = Array.isArray(_mem['pacientes']) ? _mem['pacientes'] : [];
+      const antesMapP = Object.fromEntries(antes.map(p => [p.id, JSON.stringify(p)]));
       const idsNovos = new Set(v.map(p => p.id));
       antes.forEach(p => { if (!idsNovos.has(p.id)) sbDeletePaciente(p.id); });
       _mem['pacientes'] = v;
-      sbUpsertPacientes(v);
+      const diffP = v.filter(p => antesMapP[p.id] === undefined || antesMapP[p.id] !== JSON.stringify(p));
+      if (diffP.length) sbUpsertPacientes(diffP);
     } else if (k === 'guias') {
       const antesG = Array.isArray(_mem['guias']) ? _mem['guias'] : [];
+      const antesMap = Object.fromEntries(antesG.map(g => [g.id, JSON.stringify(g)]));
       const idsNovosG = new Set(v.map(g => g.id));
       antesG.forEach(g => { if (!idsNovosG.has(g.id)) sbDeleteGuia(g.id); });
       _mem['guias'] = v;
-      sbUpsertGuias(v);
+      // Envia apenas guias novas ou que mudaram, não o array inteiro
+      const diff = v.filter(g => antesMap[g.id] === undefined || antesMap[g.id] !== JSON.stringify(g));
+      if (diff.length) sbUpsertGuias(diff);
     } else if (k === 'lotes') {
       _mem['lotes'] = v;
       sbUpsertLotes(v);
@@ -5617,9 +5622,8 @@ function salvarAlta() {
   closeModal('modal-alta');
   showToast('Alta registrada! Gerando XML TISS...', '#e74c3c');
 
-  // Gera XML automaticamente após 800ms
-  setTimeout(() => gerarXMLAltaAutomatico(pacienteAtivo), 800);
-  setTimeout(() => nav('mapa-ocupacao'), 2500);
+  // XML não é gerado automaticamente — usuário gera manualmente via botão na guia fechada
+  setTimeout(() => nav('mapa-ocupacao'), 800);
 }
 
 function gerarXMLAltaAutomatico(guia) {
@@ -5685,10 +5689,10 @@ function gerarXMLAltaAutomatico(guia) {
           <ans:cabecalhoGuia>
             <ans:registroANS>${conv.registro_ans || '000000'}</ans:registroANS>
             <ans:numeroGuiaPrestador>${guia.n_atendimento || guia.id}</ans:numeroGuiaPrestador>
-            <ans:numeroGuiaOperadora>${guia.n_autorizacao || ''}</ans:numeroGuiaOperadora>
+            <ans:numeroGuiaOperadora>${guia.num_autorizacao || ''}</ans:numeroGuiaOperadora>
           </ans:cabecalhoGuia>
           <ans:dadosBeneficiario>
-            <ans:numeroCarteira>${guia.n_carteirinha || ''}</ans:numeroCarteira>
+            <ans:numeroCarteira>${guia.carteirinha || ''}</ans:numeroCarteira>
             <ans:nomeBeneficiario>${pac.nome || ''}</ans:nomeBeneficiario>
           </ans:dadosBeneficiario>
           <ans:dadosSolicitante>
