@@ -1349,13 +1349,20 @@
         <div style="padding:12px 0 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
           <label style="font-size:13px;font-weight:600;">Período de retenção:</label>
           <select id="retencao-anos" onchange="renderRetencaoGuias()" style="padding:6px 10px;border:1px solid #ddd;border-radius:5px;font-size:13px;">
-            <option value="20">20 anos (padrão CFM)</option>
-            <option value="10">10 anos</option>
-            <option value="5">5 anos</option>
+            <option value="20">20 anos (padrão CFM / LGPD)</option>
           </select>
           <button class="btn btn-sm" style="background:#f0f2f5;color:#333;" onclick="renderRetencaoGuias()">Verificar</button>
         </div>
         <div id="retencao-resultado" style="margin-top:8px;font-size:13px;color:#666;"></div>
+      </div>
+
+      <!-- Prontuários Inativados -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <h3>&#128274; Prontuários Inativados</h3>
+          <small style="color:#888;">Dados preservados conforme LGPD — apenas administradores visualizam</small>
+        </div>
+        <div id="lista-inativados" style="font-size:13px;color:#666;padding:8px 0;">Carregando...</div>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -1449,6 +1456,73 @@
         <div class="card-header"><h3>&#128203; Checklist RIPD — Relatório de Impacto à Proteção de Dados</h3></div>
         <div style="padding:12px 0;font-size:13px;line-height:2;" id="ripd-checklist">
           <div style="color:#888;margin-bottom:8px;">Marque os itens conforme forem concluídos:</div>
+        </div>
+      </div>
+
+      <!-- ROPA — Registro das Operações de Tratamento (Art. 37 LGPD) -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3>&#128196; ROPA — Registro das Operações de Tratamento <small style="font-weight:400;color:#888;">(Art. 37 LGPD)</small></h3></div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;font-size:12px;border-collapse:collapse;">
+            <thead><tr style="background:#f0f2f5;">
+              <th style="padding:8px;text-align:left;">Operação</th>
+              <th style="padding:8px;">Finalidade</th>
+              <th style="padding:8px;">Base legal (LGPD)</th>
+              <th style="padding:8px;">Categoria de dados</th>
+              <th style="padding:8px;">Destinatários</th>
+              <th style="padding:8px;">Retenção</th>
+            </tr></thead>
+            <tbody>
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;font-weight:600;">Internação / admissão</td>
+                <td style="padding:8px;color:#444;">Registro da internação hospitalar e controle de leitos</td>
+                <td style="padding:8px;color:#444;">Art. 11, II, f — tutela da saúde (dados sensíveis)</td>
+                <td style="padding:8px;color:#444;">Nome, data de nascimento, convênio, diagnóstico</td>
+                <td style="padding:8px;color:#444;">Equipe de saúde autorizada, operadora de plano de saúde</td>
+                <td style="padding:8px;color:#444;">20 anos após alta (CFM Res. 1.821/07)</td>
+              </tr>
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;font-weight:600;">Registro de atendimentos fisioterapêuticos</td>
+                <td style="padding:8px;color:#444;">Documentar procedimentos realizados e evolução clínica</td>
+                <td style="padding:8px;color:#444;">Art. 11, II, f — tutela da saúde</td>
+                <td style="padding:8px;color:#444;">Procedimentos, datas, profissional responsável, status clínico</td>
+                <td style="padding:8px;color:#444;">Equipe de fisioterapia, médico solicitante</td>
+                <td style="padding:8px;color:#444;">20 anos após alta</td>
+              </tr>
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;font-weight:600;">Avaliação funcional (IMS / medidas)</td>
+                <td style="padding:8px;color:#444;">Mensurar capacidade funcional e mobilização do paciente</td>
+                <td style="padding:8px;color:#444;">Art. 11, II, f — tutela da saúde</td>
+                <td style="padding:8px;color:#444;">Escalas funcionais, medidas clínicas, datas de avaliação</td>
+                <td style="padding:8px;color:#444;">Equipe de saúde autorizada</td>
+                <td style="padding:8px;color:#444;">20 anos após alta</td>
+              </tr>
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;font-weight:600;">Faturamento / convênio (TISS)</td>
+                <td style="padding:8px;color:#444;">Cobrança dos serviços prestados à operadora de plano de saúde</td>
+                <td style="padding:8px;color:#444;">Art. 7, II — execução de contrato; Art. 11, II, f</td>
+                <td style="padding:8px;color:#444;">Identificação do paciente, procedimentos, valores, datas</td>
+                <td style="padding:8px;color:#444;">Operadora de plano de saúde (destinatária do XML TISS)</td>
+                <td style="padding:8px;color:#444;">10 anos (obrigação fiscal/contratual)</td>
+              </tr>
+              <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:8px;font-weight:600;">Log de auditoria (acesso e exportações)</td>
+                <td style="padding:8px;color:#444;">Rastreabilidade de acesso e exportação de dados pessoais</td>
+                <td style="padding:8px;color:#444;">Art. 6, X — responsabilização e prestação de contas</td>
+                <td style="padding:8px;color:#444;">Nome e e-mail do usuário, data/hora, tipo de operação</td>
+                <td style="padding:8px;color:#444;">DPO, auditoria interna, ANPD (se solicitado)</td>
+                <td style="padding:8px;color:#444;">5 anos</td>
+              </tr>
+              <tr>
+                <td style="padding:8px;font-weight:600;">Gestão de usuários do sistema</td>
+                <td style="padding:8px;color:#444;">Controle de acesso ao sistema</td>
+                <td style="padding:8px;color:#444;">Art. 7, II — execução de contrato (relação empregatícia)</td>
+                <td style="padding:8px;color:#444;">Nome, e-mail, perfil de acesso</td>
+                <td style="padding:8px;color:#444;">Administrador do sistema</td>
+                <td style="padding:8px;color:#444;">Enquanto o vínculo estiver ativo + 2 anos</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -2065,13 +2139,13 @@
 <!-- Modal Excluir Paciente -->
 <div class="modal-overlay" id="modal-excluir-paciente">
   <div class="modal" style="max-width:420px;">
-    <h2 style="color:#e74c3c;">&#128465; Excluir Paciente</h2>
+    <h2 style="color:#e74c3c;">&#128274; Inativar Prontuário</h2>
     <div style="background:#fdecea;border:1px solid #e74c3c;border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#c0392b;">
-      ⚠️ <strong>Atenção:</strong> Esta ação é irreversível. O paciente e todo o seu histórico (procedimentos, medidas, status) serão permanentemente removidos do sistema.
+      ⚠️ <strong>Atenção:</strong> O prontuário será ocultado de todas as visualizações, mas os dados <strong>serão preservados</strong> conforme exigido pela LGPD. Um administrador poderá consultá-los na seção de prontuários inativados.
     </div>
     <p id="excluir-pac-nome" style="font-size:15px;font-weight:600;color:#0a1628;margin-bottom:16px;"></p>
     <div class="form-group">
-      <label>Motivo da exclusão *</label>
+      <label>Motivo da inativação *</label>
       <select id="excluir-pac-motivo" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;">
         <option value="">Selecione...</option>
         <option value="Cadastro duplicado">Cadastro duplicado</option>
@@ -2086,12 +2160,12 @@
       <input type="text" id="excluir-pac-outro" placeholder="Descreva o motivo..." style="width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;" />
     </div>
     <div class="form-group">
-      <label style="font-weight:600;color:#e74c3c;">Para confirmar, digite EXCLUIR abaixo:</label>
-      <input type="text" id="excluir-pac-confirm" placeholder="Digite EXCLUIR" style="width:100%;padding:8px;border:2px solid #e74c3c;border-radius:5px;font-size:14px;" />
+      <label style="font-weight:600;color:#e74c3c;">Para confirmar, digite INATIVAR abaixo:</label>
+      <input type="text" id="excluir-pac-confirm" placeholder="Digite INATIVAR" style="width:100%;padding:8px;border:2px solid #e74c3c;border-radius:5px;font-size:14px;" />
     </div>
     <div class="form-actions">
       <button class="btn" onclick="closeModal('modal-excluir-paciente')">Cancelar</button>
-      <button class="btn btn-danger" onclick="confirmarExcluirPaciente()">&#128465; Excluir Definitivamente</button>
+      <button class="btn btn-danger" onclick="confirmarExcluirPaciente()">&#128274; Inativar Prontuário</button>
     </div>
   </div>
 </div>
@@ -2642,6 +2716,24 @@ async function carregarGlosas() {
   } catch(e) { console.warn('Glosas load error:', e.message); }
 }
 
+// ===== LGPD — LOG IMUTÁVEL (INSERT-only via RLS) =====
+async function sbInsertAuditLog(tipo, detalhes, guiaId) {
+  try {
+    await fetch(`${SB_URL}/audit_log`, {
+      method: 'POST',
+      headers: { ...getHeaders(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        tipo,
+        detalhes: detalhes || null,
+        guia_id: guiaId || null,
+        usuario: currentUser?.nome || 'sistema',
+        email: currentUser?.email || null,
+        criado_em: new Date().toISOString()
+      })
+    });
+  } catch(e) { console.warn('audit_log insert error:', e.message); }
+}
+
 const DB = {
   get: k => { const v = _mem[k]; return Array.isArray(v) ? v : (v !== undefined ? v : []); },
   set: (k, v) => {
@@ -3179,7 +3271,7 @@ function renderRelIMS() {
   const seteDias = new Date(hoje); seteDias.setDate(hoje.getDate() - 7);
 
   // altas nos últimos 7 dias
-  const comAlta = guias.filter(g => g.alta);
+  const comAlta = guias.filter(g => !g.inativo && g.alta);
   const altasRecentes = comAlta.filter(g => {
     const partes = g.alta.split('/');
     if (partes.length < 3) return false;
@@ -3239,7 +3331,7 @@ function renderRelIMS() {
 function renderKpis() {
   const profissionais = DB.get('profissionais').filter(p => p.ativo == 1);
   const setores = DB.get('setores');
-  const guias = DB.get('guias').filter(g => !g.alta);
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.alta);
   const totalLeitos = setores.reduce((s, x) => s + (parseInt(x.leitos) || 0), 0);
   const pacAtivos = guias.length;
   const pct = totalLeitos > 0 ? Math.round(pacAtivos / totalLeitos * 100) : 0;
@@ -3398,49 +3490,84 @@ function openEditSetor(id) {
   openModal('modal-setor');
 }
 
-function exportarLogCSV() {
-  const raw = DB.getItem('log_acesso_fichas');
-  const logs = raw ? JSON.parse(raw) : [];
-  if (!logs.length) { showToast('Nenhum registro para exportar', '#f39c12'); return; }
-  const header = 'Data/Hora,Usuario,Email,Atendimento';
-  const rows = [...logs].reverse().map(l => {
-    const dt = new Date(l.data_hora).toLocaleString('pt-BR');
-    return `"${dt}","${l.usuario||''}","${l.email||''}","${l.num_at||l.guia_id}"`;
-  });
-  const csv = [header, ...rows].join('\n');
-  const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url;
-  a.download = `log-acesso-fichas-${hojeISO()}.csv`;
-  a.click(); URL.revokeObjectURL(url);
-  showToast('CSV exportado!');
+async function exportarLogCSV() {
+  try {
+    const r = await fetch(`${SB_URL}/audit_log?order=criado_em.desc&limit=1000`, { headers: getHeaders() });
+    const logs = r.ok ? await r.json() : [];
+    if (!logs.length) { showToast('Nenhum registro para exportar', '#f39c12'); return; }
+    const header = 'Data/Hora,Usuario,Email,Tipo,Detalhes,Atendimento';
+    const rows = logs.map(l => {
+      const dt = new Date(l.criado_em).toLocaleString('pt-BR');
+      return `"${dt}","${l.usuario||''}","${l.email||''}","${l.tipo||''}","${l.detalhes||''}","${l.guia_id||''}"`;
+    });
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['﻿'+csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url;
+    a.download = `log-auditoria-${hojeISO()}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast('CSV exportado!');
+  } catch(e) { showToast('Erro ao exportar log: ' + e.message, '#e74c3c'); }
 }
 
-function renderLogAcesso() {
-  const raw = DB.getItem('log_acesso_fichas');
-  const logs = raw ? JSON.parse(raw) : [];
+async function renderLogAcesso() {
   const tb = document.getElementById('tb-log-acesso');
   if (!tb) return;
-  if (!logs.length) {
-    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum acesso registrado ainda</td></tr>';
+  tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Carregando...</td></tr>';
+  try {
+    const r = await fetch(`${SB_URL}/audit_log?order=criado_em.desc&limit=100`, { headers: getHeaders() });
+    const logs = r.ok ? await r.json() : [];
+    if (!logs.length) {
+      tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px;">Nenhum acesso registrado ainda</td></tr>';
+      return;
+    }
+    tb.innerHTML = logs.map(l => {
+      const dt = new Date(l.criado_em);
+      const fmt = `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+      return `<tr>
+        <td style="white-space:nowrap">${fmt}</td>
+        <td>${esc(l.usuario||'-')}</td>
+        <td style="color:#888;font-size:12px">${esc(l.email||'-')}</td>
+        <td>${esc(l.tipo||'')}${l.detalhes ? ' — ' + esc(l.detalhes) : ''}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#e74c3c;padding:16px;">Erro ao carregar log</td></tr>';
+  }
+}
+
+function renderInativados() {
+  const el = document.getElementById('lista-inativados');
+  if (!el) return;
+  if (currentUser?.perfil !== 'admin') {
+    el.innerHTML = '<span style="color:#888;">Acesso restrito a administradores.</span>';
     return;
   }
-  // Mostra mais recentes primeiro
-  tb.innerHTML = [...logs].reverse().slice(0, 100).map(l => {
-    const dt = new Date(l.data_hora);
-    const fmt = `${dt.toLocaleDateString('pt-BR')} ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
-    return `<tr>
-      <td style="white-space:nowrap">${fmt}</td>
-      <td>${l.usuario||'-'}</td>
-      <td style="color:#888;font-size:12px">${l.email||'-'}</td>
-      <td>Atd. ${l.num_at||l.guia_id}</td>
-    </tr>`;
-  }).join('');
+  const inativos = DB.get('guias').filter(g => g.inativo);
+  const pacs = DB.get('pacientes');
+  if (!inativos.length) {
+    el.innerHTML = '<span style="color:#27ae60;">Nenhum prontuário inativado.</span>';
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead><tr style="background:#f0f2f5;"><th style="padding:8px;text-align:left;">Paciente</th><th style="padding:8px;">Motivo</th><th style="padding:8px;">Inativado em</th><th style="padding:8px;">Por</th></tr></thead>
+    <tbody>${inativos.map(g => {
+      const pac = pacs.find(p => p.id === g.paciente_id);
+      const dt = g.inativo_em ? new Date(g.inativo_em).toLocaleDateString('pt-BR') : '—';
+      return `<tr style="border-bottom:1px solid #eee;">
+        <td style="padding:8px;">${esc(pac?.nome || 'Paciente removido')}</td>
+        <td style="padding:8px;color:#666;">${esc(g.inativo_motivo || '—')}</td>
+        <td style="padding:8px;color:#666;">${dt}</td>
+        <td style="padding:8px;color:#666;">${esc(g.inativo_por || '—')}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
 }
 
 async function renderUsuarios() {
   renderListaClinicas();
   renderLogAcesso();
+  renderInativados();
   const tb = document.getElementById('tb-usuarios');
   tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:16px;">Carregando...</td></tr>';
   let usuarios;
@@ -3608,7 +3735,7 @@ function renderMapaGeral() {
 
 function _popularFiltrosMapa() {
   const setores = DB.get('setores'), convs = DB.get('convenios'), profs = DB.get('profissionais');
-  const guias = DB.get('guias').filter(g => !g.alta);
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.alta);
 
   const selSetor = document.getElementById('mapa-filtro-setor');
   if (selSetor) {
@@ -4229,10 +4356,7 @@ function avaliarForcaSenha(v) {
 
 // ===== SEGURANÇA — LOG DE EXPORTS (LGPD rastreabilidade) =====
 function registrarLogExport(tipo) {
-  const log = JSON.parse(DB.getItem('log_exports') || '[]');
-  log.push({tipo, usuario: currentUser?.nome||'?', email: currentUser?.email||'?', data_hora: new Date().toISOString()});
-  if (log.length > 200) log.splice(0, log.length - 200);
-  DB.setItem('log_exports', JSON.stringify(log));
+  sbInsertAuditLog('export', tipo, null);
 }
 
 // ===== LGPD PAGE =====
@@ -4691,18 +4815,8 @@ function abrirPacienteDetalhe(guiaId) {
   if (!guia) return;
   pacienteAtivo = guia;
 
-  // Log de acesso à ficha do paciente (LGPD rastreabilidade)
-  const logAcesso = DB.getItem('log_acesso_fichas') ? JSON.parse(DB.getItem('log_acesso_fichas')) : [];
-  logAcesso.push({
-    guia_id: guia.id,
-    num_at: guia.num_at,
-    usuario: currentUser ? currentUser.nome : '?',
-    email: currentUser ? currentUser.email : '?',
-    data_hora: new Date().toISOString()
-  });
-  // Mantém apenas os últimos 500 registros para não crescer indefinidamente
-  if (logAcesso.length > 500) logAcesso.splice(0, logAcesso.length - 500);
-  DB.setItem('log_acesso_fichas', JSON.stringify(logAcesso));
+  // Log de acesso à ficha do paciente (LGPD rastreabilidade — imutável no Supabase)
+  sbInsertAuditLog('acesso-ficha', `Atendimento ${guia.num_at || guia.id}`, guia.id);
 
   const pacs = DB.get('pacientes');
   const convs = DB.get('convenios');
@@ -5443,7 +5557,7 @@ function verificarAlertaTurno() {
   if (!isFimTurno) return;
 
   const hoje = hojeISO();
-  const guias = DB.get('guias').filter(g => !g.alta);
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.alta);
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const semAtend = guias.filter(g => {
     const meta = metaMap[g.meta_diaria] ?? 1;
@@ -5460,40 +5574,28 @@ function verificarAlertaTurno() {
 
 function confirmarExcluirPaciente() {
   const motivo = document.getElementById('excluir-pac-motivo').value;
-  if (!motivo) { alert('Selecione o motivo da exclusão.'); return; }
+  if (!motivo) { alert('Selecione o motivo da inativação.'); return; }
   const confirmText = document.getElementById('excluir-pac-confirm').value.trim();
-  if (confirmText !== 'EXCLUIR') { alert('Digite EXCLUIR (em maiúsculas) para confirmar.'); return; }
+  if (confirmText !== 'INATIVAR') { alert('Digite INATIVAR (em maiúsculas) para confirmar.'); return; }
   if (!pacienteAtivo) return;
 
   const guiaId = pacienteAtivo.id;
-  const pacId = pacienteAtivo.paciente_id;
 
-  // Remove guia
-  let guias = DB.get('guias').filter(g => g.id !== guiaId);
+  // Soft delete: marca inativo, preserva todos os dados
+  const guias = DB.get('guias');
+  const idx = guias.findIndex(g => g.id === guiaId);
+  if (idx < 0) return;
+  guias[idx].inativo = true;
+  guias[idx].inativo_em = new Date().toISOString();
+  guias[idx].inativo_motivo = motivo;
+  guias[idx].inativo_por = currentUser?.nome || 'sistema';
   DB.set('guias', guias);
-
-  // Remove históricos desta guia
-  sbDeleteHistProcsGuia(guiaId);
-  sbDeleteHistStatusGuia(guiaId);
-  sbDeleteHistIMSGuia(guiaId);
-  ['hist_procs_', 'hist_ims_', 'hist_status_'].forEach(prefix => {
-    _mem[prefix + guiaId] = [];
-  });
-  ['hist_medidas_', 'hist_mob_', 'hist_checklist_'].forEach(prefix => {
-    DB.setItem(prefix + guiaId, '[]');
-  });
-
-  // Remove paciente se não tiver outras guias vinculadas
-  const outrasGuias = guias.filter(g => g.paciente_id === pacId);
-  if (outrasGuias.length === 0) {
-    let pacs = DB.get('pacientes').filter(p => p.id !== pacId);
-    DB.set('pacientes', pacs);
-  }
+  sbInsertAuditLog('inativacao-prontuario', motivo, guiaId);
 
   closeModal('modal-excluir-paciente');
   pacienteAtivo = null;
-  showToast('Paciente excluído do sistema.', '#6c757d');
-  setTimeout(() => nav('mapa-ocupacao'), 1200);
+  showToast('Prontuário inativado. Os dados foram preservados conforme a LGPD.', '#6c757d');
+  setTimeout(() => nav('mapa-ocupacao'), 1400);
 }
 
 function abrirModalExcluirPaciente() {
@@ -5737,7 +5839,7 @@ function gerarNotificacoes() {
   // Turno: manhã 7-13, tarde 13-19, noite 19-7
   const turno = horaAtual >= 7 && horaAtual < 13 ? 'manhã' : horaAtual >= 13 && horaAtual < 19 ? 'tarde' : 'noite';
 
-  const guias = DB.get('guias').filter(g => !g.alta);
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.alta);
   const pacNotif = DB.get('pacientes');
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
   const notifs = [];
@@ -5847,7 +5949,7 @@ function gerarRelatorioExecutivoPDF() {
     metaHoje += meta;
     atendHoje += DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISOlocal&&!p.cancelado).length;
   });
-  guias.filter(g=>g.alta&&g.alta.startsWith(hojeISOlocal.slice(0,7))).forEach(()=>altasMes++);
+  guias.filter(g=>!g.inativo&&g.alta&&g.alta.startsWith(hojeISOlocal.slice(0,7))).forEach(()=>altasMes++);
   const cobHoje = metaHoje > 0 ? Math.round(atendHoje/metaHoje*100) : 0;
 
   const glosas = DB.get('glosas') || [];
@@ -5928,7 +6030,7 @@ function renderCoberturaAssistencial() {
   const hoje = hojeISO();
   document.getElementById('cobertura-data-ref').textContent = new Date().toLocaleDateString('pt-BR');
 
-  const guias = DB.get('guias').filter(g => !g.alta);
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.alta);
   const setores = DB.get('setores');
   const profs = DB.get('profissionais');
 
@@ -5988,7 +6090,7 @@ function renderCoberturaAssistencial() {
 // ===== OPORTUNIDADE FINANCEIRA =====
 function renderOportunidadeFinanceira() {
   const hoje = hojeISO();
-  const guias = DB.get('guias').filter(g => !g.alta);
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.alta);
   const setores = DB.get('setores');
   const procs = DB.get('procedimentos');
   const metaMap = { '1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0 };
@@ -6154,7 +6256,7 @@ function renderIndicadoresCobertura() {
 function gerarRelatorioCoberturaExec() {
   const hoje = new Date().toLocaleDateString('pt-BR');
   const hojeISOstr = hojeISO();
-  const guias = DB.get('guias').filter(g => !g.alta);
+  const guias = DB.get('guias').filter(g => !g.inativo && !g.alta);
   const setores = DB.get('setores');
   const pacientes = DB.get('pacientes');
   const procedimentos = DB.get('procedimentos');
@@ -6285,7 +6387,7 @@ function renderPainelFinanceiro() {
   const filtAte = document.getElementById('fin-ate').value ? new Date(document.getElementById('fin-ate').value) : null;
   if (filtAte) filtAte.setHours(23,59,59);
 
-  let guias = DB.get('guias');
+  let guias = DB.get('guias').filter(g=>!g.inativo);
   if (filtConv) guias = guias.filter(g=>g.convenio_id===filtConv);
   if (filtDe) guias = guias.filter(g=>{const d=parseDataBR(g.internacao);return d&&d>=filtDe;});
   if (filtAte) guias = guias.filter(g=>{const d=parseDataBR(g.internacao);return d&&d<=filtAte;});
@@ -6516,7 +6618,7 @@ function renderGuiasFechadas() {
   if (filtAte) filtAte.setHours(23,59,59);
   const busca = (document.getElementById('gf-busca').value||'').toLowerCase().trim();
 
-  let guias = DB.get('guias').filter(g => g.alta);
+  let guias = DB.get('guias').filter(g => !g.inativo && g.alta);
   if (filtConv) guias = guias.filter(g => g.convenio_id === filtConv);
   if (filtTipo) guias = guias.filter(g => g.tipo_alta === filtTipo);
   if (filtDe)  guias = guias.filter(g => { const d=parseFlexData(g.alta); return d && d >= filtDe; });
@@ -6586,7 +6688,7 @@ function renderRelAltaFisio() {
   if (filtAte) filtAte.setHours(23,59,59);
 
   const pacs = DB.get('pacientes');
-  let guias = DB.get('guias').filter(g=>g.alta);
+  let guias = DB.get('guias').filter(g=>!g.inativo&&g.alta);
 
   if (filtConv) guias = guias.filter(g=>g.convenio_id===filtConv);
   if (filtTipo) guias = guias.filter(g=>g.tipo_alta===filtTipo);
@@ -6687,7 +6789,7 @@ function exportarCSV(tipo) {
   if (tipo === 'ims') {
     filename = `ims_${hojeStr}.csv`;
     rows.push(['Paciente','Convênio','IMS Prévio','IMS Admissão','IMS Alta','Data Alta','Dias Internado','Elegível','Adequado']);
-    const guias = DB.get('guias').filter(g=>g.alta);
+    const guias = DB.get('guias').filter(g=>!g.inativo&&g.alta);
     const pacs = DB.get('pacientes'), convs = DB.get('convenios');
     guias.forEach(g => {
       const pac = pacs.find(p=>p.id===g.paciente_id)||{};
@@ -6755,7 +6857,7 @@ function exportarCSV(tipo) {
     filename = `alta_fisio_${hojeStr}.csv`;
     rows.push(['Paciente','Setor','Convênio','Data Internação','Data Alta','Dias Internado','Tipo Alta','IMS Prévio','IMS Admissão','IMS Alta']);
     const pacs2 = DB.get('pacientes'), convs2 = DB.get('convenios');
-    DB.get('guias').filter(g=>g.alta).forEach(g=>{
+    DB.get('guias').filter(g=>!g.inativo&&g.alta).forEach(g=>{
       const pac2=pacs2.find(p=>p.id===g.paciente_id)||{};
       const conv2=convs2.find(c=>c.id===g.convenio_id)||{};
       const intern=g.internacao?new Date(g.internacao.split('/').reverse().join('-')):null;
@@ -6771,7 +6873,7 @@ function exportarCSV(tipo) {
     filename = `guias_fechadas_${hojeStr}.csv`;
     rows.push(['Paciente','Setor','Convênio','Internação','Alta','Dias','Tipo Alta','Valor','Nº Atend.']);
     const pacs3 = DB.get('pacientes'), convs3 = DB.get('convenios');
-    DB.get('guias').filter(g=>g.alta).forEach(g=>{
+    DB.get('guias').filter(g=>!g.inativo&&g.alta).forEach(g=>{
       const pac3=pacs3.find(p=>p.id===g.paciente_id)||{};
       const conv3=convs3.find(c=>c.id===g.convenio_id)||{};
       function px(s){if(!s)return null;if(!s.includes('/')){const d=new Date(s);return isNaN(d)?null:d;}const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
@@ -7118,7 +7220,7 @@ function renderSemAtendHoje() {
 // ===== ALERTA X DIAS SEM ATENDIMENTO =====
 function renderAlertaSemAtend() {
   const dias = parseInt(document.getElementById('alerta-dias-input')?.value) || 3;
-  const guiasAtivas = DB.get('guias').filter(g => !g.alta);
+  const guiasAtivas = DB.get('guias').filter(g => !g.inativo && !g.alta);
   const pacs = DB.get('pacientes');
   const hoje = new Date();
   const semAtend = guiasAtivas.filter(g => {
