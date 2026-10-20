@@ -333,6 +333,20 @@
   <div style="color:#4a90d9;font-size:13px;">Carregando dados...</div>
   <div style="width:48px;height:48px;border:4px solid #1a2e50;border-top-color:#4a90d9;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
 </div>
+
+<!-- ===== TELA DE ERRO DE CONEXÃO ===== -->
+<div id="offline-screen" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0a1628,#0d2247);z-index:9998;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:24px;">
+  <div style="font-size:48px;">⚠️</div>
+  <div style="color:#fff;font-size:22px;font-weight:800;">Sem conexão com o servidor</div>
+  <div style="color:#aab8d4;font-size:14px;max-width:380px;line-height:1.6;">
+    Não foi possível carregar os dados do banco.<br>
+    Para proteger os registros, <strong style="color:#f39c12;">o sistema não permite salvar em modo offline.</strong>
+  </div>
+  <button onclick="tentarReconectar()" style="margin-top:8px;padding:12px 32px;background:#4a90d9;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">
+    🔄 Tentar novamente
+  </button>
+  <div id="offline-erro-detalhe" style="color:#e74c3c;font-size:12px;margin-top:4px;"></div>
+</div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- ===== TELA DE LOGIN ===== -->
@@ -2335,6 +2349,7 @@ function esc(s) {
 
 const _mem = {};
 let _carregamentoOk = false;
+let _erroCarregamento = null;
 
 async function sbGet() {
   try {
@@ -2698,17 +2713,46 @@ async function carregarDados() {
       carregarGlosas()
     ]);
     clearTimeout(timer);
-    if (!rStore.ok) { console.warn('Supabase retornou:', rStore.status); return; }
+    if (!rStore.ok) {
+      console.warn('Supabase retornou:', rStore.status);
+      _erroCarregamento = `Servidor retornou erro ${rStore.status}`;
+      return;
+    }
     const rows = await rStore.json();
     rows.forEach(row => { _mem[row.key] = row.value; });
     _carregamentoOk = true;
+    _erroCarregamento = null;
     // Carrega históricos das guias ativas após ter as guias no cache
     carregarTodosHistProcs();
     carregarTodosHistStatus();
     carregarTodosHistIMS();
   } catch(e) {
     clearTimeout(timer);
-    console.warn('Supabase indisponível, modo offline:', e.message);
+    const motivo = e.name === 'AbortError' ? 'Tempo limite de 6s esgotado' : e.message;
+    console.warn('Supabase indisponível, modo offline:', motivo);
+    _erroCarregamento = motivo;
+  }
+}
+
+async function tentarReconectar() {
+  document.getElementById('offline-erro-detalhe').textContent = '';
+  document.getElementById('offline-screen').querySelector('button').textContent = '⏳ Conectando...';
+  document.getElementById('offline-screen').querySelector('button').disabled = true;
+  await carregarDados();
+  if (_carregamentoOk) {
+    document.getElementById('offline-screen').style.display = 'none';
+    // Re-renderiza a página ativa com os dados recém-carregados
+    const activePage = document.querySelector('.page.active');
+    if (activePage) {
+      const pageId = activePage.id.replace('page-', '');
+      renderPage(pageId);
+      if (pageId === 'dashboard') renderKpis();
+    }
+  } else {
+    const btn = document.getElementById('offline-screen').querySelector('button');
+    btn.textContent = '🔄 Tentar novamente';
+    btn.disabled = false;
+    document.getElementById('offline-erro-detalhe').textContent = _erroCarregamento || 'Falha desconhecida';
   }
 }
 
@@ -3027,6 +3071,11 @@ async function doLogin() {
     }
 
     _ativarSessao(user);
+    // Se o carregamento falhou após o login, mostra o overlay de erro
+    if (!_carregamentoOk) {
+      document.getElementById('offline-erro-detalhe').textContent = _erroCarregamento || '';
+      document.getElementById('offline-screen').style.display = 'flex';
+    }
   } catch(e) {
     console.error('doLogin exception:', e);
     document.getElementById('login-error').style.display = 'block';
@@ -7348,6 +7397,11 @@ function exportarBackup() {
         if (user) {
           _ativarSessao(user);
           restaurou = true;
+          // Sessão restaurada, mas dados não carregaram — bloqueia o app
+          if (!_carregamentoOk) {
+            document.getElementById('offline-erro-detalhe').textContent = _erroCarregamento || '';
+            document.getElementById('offline-screen').style.display = 'flex';
+          }
         }
       } else {
         // Token expirado — limpa e pede login novamente
