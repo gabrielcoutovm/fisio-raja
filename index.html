@@ -369,8 +369,8 @@
       <a href="#" onclick="mostrarRecuperarSenha();return false;" style="font-size:12px;color:#4a90d9;text-decoration:none;">Esqueci minha senha</a>
     </p>
     <p style="margin-top:10px;font-size:11px;color:#999;text-align:center;line-height:1.5;">
-      Ao acessar, você concorda com o uso de dados conforme a
-      <strong>LGPD (Lei 13.709/2018)</strong>.<br>
+      O tratamento de dados segue a <strong>LGPD (Lei 13.709/2018)</strong>, com base legal na
+      tutela da saúde (Art. 11, II, f).<br>
       Os dados de pacientes são confidenciais e de uso exclusivo dos profissionais autorizados.
     </p>
   </div>
@@ -3625,7 +3625,7 @@ async function renderUsuarios() {
       <td><span class="icon-ativo ${u.ativo?'sim':'nao'}">${u.ativo?'✔':'✘'}</span></td>
       <td style="white-space:nowrap;">
         <button class="btn btn-primary btn-sm" onclick="openEditUsuario(${u.id})">Editar</button>
-        ${podeRedefinir ? `<button class="btn btn-sm" style="background:#f39c12;color:#fff;margin-left:4px;" onclick="enviarResetSenha('${u.email}','${u.nome.replace(/'/g,"\\'")}')">🔑 Redefinir</button>` : ''}
+        ${podeRedefinir ? `<button class="btn btn-sm" style="background:#f39c12;color:#fff;margin-left:4px;" data-email="${esc(u.email)}" data-nome="${esc(u.nome)}" onclick="enviarResetSenha(this.dataset.email,this.dataset.nome)">🔑 Redefinir</button>` : ''}
         ${u.id!==currentUser.id?`<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="toggleUsuarioAtivo(${u.id})">
           ${u.ativo?'Desativar':'Ativar'}
         </button>`:''}
@@ -3766,7 +3766,7 @@ function renderMapaGeral() {
       const titulo = guia.alta ? 'Alta fisioterapêutica' : (atendidoHoje ? '' : 'Sem atendimento hoje');
       return `<div class="leito-cell ocupado ${classeExtra}" onclick="abrirPacienteDetalhe(${guia.id})" title="${esc(titulo)}"><div class="leito-num">${num}</div><div class="leito-nome">${esc(pac.nome.split(' ').slice(0,2).join(' '))}</div><div class="leito-conv">(${esc(conv?conv.nome:'')})</div></div>`;
     }).join('');
-    return `<div class="mapa-setor"><div class="mapa-setor-title">${s.nome}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
+    return `<div class="mapa-setor"><div class="mapa-setor-title">${esc(s.nome)}</div><div class="mapa-grid">${leitosHtml}</div></div>`;
   }).join('');
 }
 
@@ -3777,19 +3777,19 @@ function _popularFiltrosMapa() {
   const selSetor = document.getElementById('mapa-filtro-setor');
   if (selSetor) {
     const v = selSetor.value;
-    selSetor.innerHTML = '<option value="">Todos</option>' + setores.map(s=>`<option value="${s.id}">${s.nome}</option>`).join('');
+    selSetor.innerHTML = '<option value="">Todos</option>' + setores.map(s=>`<option value="${s.id}">${esc(s.nome)}</option>`).join('');
     selSetor.value = v;
   }
   const selConv = document.getElementById('mapa-filtro-conv');
   if (selConv) {
     const v = selConv.value;
-    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
     selConv.value = v;
   }
   const selProf = document.getElementById('mapa-filtro-prof');
   if (selProf) {
     const v = selProf.value;
-    selProf.innerHTML = '<option value="">Todos</option>' + profs.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+    selProf.innerHTML = '<option value="">Todos</option>' + profs.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('');
     selProf.value = v;
   }
   const selStatus = document.getElementById('mapa-filtro-status');
@@ -3962,8 +3962,8 @@ function renderRelAtend() {
         <td>${esc(h.usuario||'-')}</td></tr>`;
     }).join('');
     html += `<div style="margin-bottom:20px;">
-      <div style="color:#e74c3c;font-weight:700;font-size:13px;margin-bottom:8px;">${g.setor||'-'} - ${pac.nome||'-'} (${conv.nome||'-'})
-      <span style="float:right;color:#333;font-weight:400;font-size:12px;">Internação: ${g.internacao||'-'} - Nº: ${g.num_at||'-'}</span></div>
+      <div style="color:#e74c3c;font-weight:700;font-size:13px;margin-bottom:8px;">${esc(g.setor||'-')} - ${esc(pac.nome||'-')} (${esc(conv.nome||'-')})
+      <span style="float:right;color:#333;font-weight:400;font-size:12px;">Internação: ${esc(g.internacao||'-')} - Nº: ${esc(g.num_at||'-')}</span></div>
       <div class="card"><table><thead><tr><th>Data</th><th>Código</th><th>Nome</th><th>Qtd.</th><th>Verificado</th><th>Usuário</th></tr></thead>
       <tbody>${rows}</tbody></table></div></div>`;
   });
@@ -3992,7 +3992,7 @@ function renderRelPacientes() {
       : `<span class="badge badge-success">Em Aberto</span>`;
     return `<tr><td>${esc(p.nome)}</td><td>${esc(guia.num_at||'-')}</td><td>${esc(conv.nome||'-')}</td>
       <td>${badgeHtml}</td>
-      <td>${guia.valor||'-'}</td><td>${guia.internacao||'-'}</td><td>${guia.alta||'-'}</td></tr>`;
+      <td>${esc(guia.valor||'-')}</td><td>${esc(guia.internacao||'-')}</td><td>${esc(guia.alta||'-')}</td></tr>`;
   }).join('');
   document.getElementById('tb-rel-pacientes').innerHTML = rows || '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:20px;">Nenhum paciente cadastrado</td></tr>';
 }
@@ -4982,7 +4982,7 @@ function abrirPacienteDetalhe(guiaId) {
   document.getElementById('edit-pac-tipo').value = guia.tipo_internacao || 'Clinico';
   // preencher convênios no select editar
   const editConvSel = document.getElementById('edit-pac-conv');
-  editConvSel.innerHTML = '<option value="">Selecione</option>' + convs.map(c=>`<option value="${c.id}" ${c.id===pac.convenio_id?'selected':''}>${c.nome}</option>`).join('');
+  editConvSel.innerHTML = '<option value="">Selecione</option>' + convs.map(c=>`<option value="${c.id}" ${c.id===pac.convenio_id?'selected':''}>${esc(c.nome)}</option>`).join('');
 
   // Modal lançar proc
   document.getElementById('proc-setor-label').textContent = guia.setor;
@@ -5012,7 +5012,7 @@ function abrirPacienteDetalhe(guiaId) {
   // Modal transferir
   document.getElementById('transfer-atual').textContent = guia.setor;
   const setores = DB.get('setores');
-  document.getElementById('transfer-setor').innerHTML = '<option value="">Selecione o setor</option>' + setores.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  document.getElementById('transfer-setor').innerHTML = '<option value="">Selecione o setor</option>' + setores.map(s=>`<option value="${esc(s.nome)}">${esc(s.nome)}</option>`).join('');
   document.getElementById('transfer-leito').innerHTML = '<option value="">Selecione o leito</option>';
 
   // Modal medidas
@@ -5270,13 +5270,13 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
 
   // Preencher selects
   const convs = DB.get('convenios');
-  document.getElementById('novoat-convenio').innerHTML = '<option value="">Selecione...</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('novoat-convenio').innerHTML = '<option value="">Selecione...</option>' + convs.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
   const status = DB.get('status_paciente');
-  document.getElementById('novoat-status').innerHTML = '<option value="">Selecione...</option>' + status.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+  document.getElementById('novoat-status').innerHTML = '<option value="">Selecione...</option>' + status.map(s=>`<option value="${esc(s.nome)}">${esc(s.nome)}</option>`).join('');
   const clinicas = DB.get('clinicas')||[];
-  document.getElementById('novoat-clinica').innerHTML = '<option value="">Selecione...</option>' + clinicas.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+  document.getElementById('novoat-clinica').innerHTML = '<option value="">Selecione...</option>' + clinicas.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('');
   const profs = (DB.get('profissionais')||[]).filter(p=>p.ativo!==0);
-  document.getElementById('novoat-profissional').innerHTML = '<option value="">Selecione (opcional)...</option>' + profs.map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  document.getElementById('novoat-profissional').innerHTML = '<option value="">Selecione (opcional)...</option>' + profs.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join('');
 
   if (setorNome && leitoNum) {
     document.getElementById('novoat-setor-leito').textContent = `${setorNome} - ${leitoNum}`;
@@ -5285,7 +5285,7 @@ function abrirNovoAtendimento(setorNome, leitoNum, origem) {
     document.getElementById('novoat-setor-leito').textContent = '—';
     document.getElementById('novoat-select-setor-wrap').style.display = 'block';
     const setores = DB.get('setores');
-    document.getElementById('novoat-setor').innerHTML = '<option value="">Selecione o setor</option>' + setores.map(s=>`<option value="${s.nome}">${s.nome}</option>`).join('');
+    document.getElementById('novoat-setor').innerHTML = '<option value="">Selecione o setor</option>' + setores.map(s=>`<option value="${esc(s.nome)}">${esc(s.nome)}</option>`).join('');
     document.getElementById('novoat-leito').innerHTML = '<option value="">Selecione o leito</option>';
   }
 
@@ -5949,9 +5949,9 @@ function gerarNotificacoes() {
     const procs = DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hoje&&!p.cancelado);
     const nomePac = (pacNotif.find(p => p.id === g.paciente_id)||{}).nome || ('Paciente '+g.paciente_id);
     if (procs.length === 0) {
-      notifs.push({ tipo: 'sem-atend', cor: '#e74c3c', icon: '🔴', texto: `<strong>${nomePac}</strong> sem atendimento hoje`, sub: `${g.setor||'-'} — Meta: ${g.meta_diaria||'1x'}`, guiaId: g.id });
+      notifs.push({ tipo: 'sem-atend', cor: '#e74c3c', icon: '🔴', texto: `<strong>${esc(nomePac)}</strong> sem atendimento hoje`, sub: `${esc(g.setor||'-')} — Meta: ${esc(g.meta_diaria||'1x')}`, guiaId: g.id });
     } else if (procs.length < meta) {
-      notifs.push({ tipo: 'parcial', cor: '#f39c12', icon: '🟡', texto: `<strong>${nomePac}</strong> abaixo da meta`, sub: `${procs.length}/${meta} atendimentos — ${g.setor||'-'}`, guiaId: g.id });
+      notifs.push({ tipo: 'parcial', cor: '#f39c12', icon: '🟡', texto: `<strong>${esc(nomePac)}</strong> abaixo da meta`, sub: `${procs.length}/${meta} atendimentos — ${esc(g.setor||'-')}`, guiaId: g.id });
     }
   });
 
@@ -6096,7 +6096,7 @@ function gerarRelatorioExecutivoPDF() {
 
   <h2>Pacientes por Convênio</h2>
   <table><thead><tr><th>Convênio</th><th>Ativos</th><th>Altas no Mês</th></tr></thead><tbody>
-  ${Object.entries(porConv).map(([n,d])=>`<tr><td>${n}</td><td>${d.ativos}</td><td>${d.altas}</td></tr>`).join('')}
+  ${Object.entries(porConv).map(([n,d])=>`<tr><td>${esc(n)}</td><td>${d.ativos}</td><td>${d.altas}</td></tr>`).join('')}
   </tbody></table>
 
   <h2>Glosas — Resumo</h2>
@@ -6115,7 +6115,7 @@ function gerarRelatorioExecutivoPDF() {
     const real=DB.get('hist_procs_'+g.id).filter(p=>paraISO(p.data)===hojeISOlocal&&!p.cancelado).length;
     const sit=meta===0?'Dispensado':real>=meta?'Meta atingida':real>0?'Parcial':'Não atendido';
     const pacN=(setores_pdf_pacs.find(p=>p.id===g.paciente_id)||{}).nome||('Pac.'+g.paciente_id);
-    return `<tr><td>${pacN}</td><td>${g.setor||'-'}</td><td>${(g.meta_diaria||'1x').replace(/_/g,' ')}</td><td>${real}</td><td><span class="badge ${sit==='Meta atingida'?'verde':sit==='Não atendido'?'vermelho':'amarelo'}">${sit}</span></td></tr>`;
+    return `<tr><td>${esc(pacN)}</td><td>${esc(g.setor||'-')}</td><td>${(g.meta_diaria||'1x').replace(/_/g,' ')}</td><td>${real}</td><td><span class="badge ${sit==='Meta atingida'?'verde':sit==='Não atendido'?'vermelho':'amarelo'}">${esc(sit)}</span></td></tr>`;
   }).join('')}
   </tbody></table>
   </body></html>`);
@@ -6278,7 +6278,7 @@ function renderIndicadoresCobertura() {
   // populate filter
   const selInd = document.getElementById('ind-setor');
   if (selInd.options.length <= 1) {
-    setores.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.nome; selInd.appendChild(o); });
+    setores.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.textContent = s.nome; selInd.appendChild(o); }); // textContent é seguro
   }
 
   const metaMap = {'1x':1,'2x':2,'3x':3,'conforme_necessidade':1,'sem_atendimento':0,'alta_fisio':0};
@@ -6474,7 +6474,7 @@ function renderPainelFinanceiro() {
   const convs = DB.get('convenios');
   const sel = document.getElementById('fin-convenio');
   if (sel && sel.options.length <= 1) {
-    sel.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+    sel.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
   }
   function parseMoeda(v){if(!v)return 0;return parseFloat(String(v).replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;}
   function fmtMoeda(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
@@ -6705,7 +6705,7 @@ function renderGuiasFechadas() {
   const convs = DB.get('convenios'), pacs = DB.get('pacientes');
   const selConv = document.getElementById('gf-convenio');
   if (selConv && selConv.options.length <= 1) {
-    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
   }
   function parseFlexData(s){if(!s)return null;if(!s.includes('/')){const d=new Date(s);return isNaN(d)?null:d;}const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
 
@@ -6775,7 +6775,7 @@ function renderRelAltaFisio() {
   const convs = DB.get('convenios');
   const selConv = document.getElementById('altafisio-convenio');
   if (selConv && selConv.options.length <= 1) {
-    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+    selConv.innerHTML = '<option value="">Todos</option>' + convs.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
   }
   function parseDataBR(s){if(!s)return null;if(!s.includes('/')){const d=new Date(s);return isNaN(d)?null:d;}const p=s.split('/');return p.length===3?new Date(`${p[2]}-${p[1]}-${p[0]}`):null;}
 
@@ -7082,7 +7082,7 @@ function gerarXMLLote(loteId) {
 // ===== CRIAR LOTE =====
 function abrirModalCriarLote() {
   const convs = DB.get('convenios').filter(c=>c.ativo!==false);
-  document.getElementById('lote-convenio').innerHTML = '<option value="">Selecione...</option>' + convs.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('lote-convenio').innerHTML = '<option value="">Selecione...</option>' + convs.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('');
   const d = new Date();
   document.getElementById('lote-competencia').value = `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   openModal('modal-criar-lote');
@@ -7250,7 +7250,7 @@ function buscaGlobal(q) {
       const conv = guia ? convs.find(c => c.id === guia.convenio_id) : null;
       const status = guia ? (guia.alta ? '<span class="busca-result-badge" style="background:#f5f5f5;color:#888;">Alta</span>' : '<span class="busca-result-badge" style="background:#e8f5e9;color:#27ae60;">Ativo</span>') : '<span class="busca-result-badge" style="background:#f0f0f0;color:#aaa;">Sem guia</span>';
       return `<div class="busca-result-item" onclick="abrirPacienteBusca(${p.id})">
-        <div><strong>${p.nome}</strong><div style="font-size:11px;color:#888;">${conv ? conv.nome : 'Sem convênio'} ${guia ? '· '+guia.setor : ''}</div></div>
+        <div><strong>${esc(p.nome)}</strong><div style="font-size:11px;color:#888;">${conv ? esc(conv.nome) : 'Sem convênio'} ${guia && guia.setor ? '· '+esc(guia.setor) : ''}</div></div>
         ${status}
       </div>`;
     }).join('');
